@@ -1424,10 +1424,44 @@ h3 {
 }
 
 .cdek-widget-box {
-  min-height: 360px;
   margin: 0.75rem 0;
   border: 1px solid var(--line);
-  background: #fff;
+  background: rgba(255,255,255,0.02);
+  overflow: hidden;
+}
+
+.pvz-map {
+  width: 100%;
+  height: min(420px, 58vh);
+  min-height: 280px;
+  background: #d9d6cf;
+  z-index: 1;
+}
+
+.cdek-widget-box .map-attr {
+  margin: 0.45rem 0.75rem 0.65rem;
+}
+
+.pvz-popup {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: #1a1a1a;
+}
+
+.pvz-popup strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.pvz-popup button {
+  margin-top: 0.45rem;
+  border: 1px solid #c45c26;
+  background: #c45c26;
+  color: #fff;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+  font: inherit;
 }
 
 .check-line {

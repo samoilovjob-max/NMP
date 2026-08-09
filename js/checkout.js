@@ -26,7 +26,11 @@
   const deliveryInfo = document.getElementById("deliveryInfo");
   const tariffCodeInput = document.getElementById("tariffCode");
   const payBtn = document.getElementById("payBtn");
+  const mapBox = document.getElementById("cdekWidget");
   let publicConfig = null;
+  let pvzMap = null;
+  let pvzMarkersLayer = null;
+  let latestPvz = [];
 
   const user = Store.getUser();
   if (user) {
@@ -138,34 +142,105 @@
     }
   };
 
-  const loadPvz = async (cityCode) => {
-    pvzList.innerHTML = `<p class="form-note">Загружаем пункты выдачи СДЭК…</p>`;
-    try {
-      const list = await api(`/api/cdek/pvz?city_code=${encodeURIComponent(cityCode)}`);
-      if (!list.length) {
-        pvzList.innerHTML = `<p class="form-note">В этом городе пока нет доступных ПВЗ</p>`;
-        return;
-      }
-      pvzList.innerHTML = list
-        .map(
-          (item) => `
-        <button type="button" class="pvz-item" data-code="${item.code}" data-address="${item.address}">
+  const selectPvz = (item) => {
+    if (!item) return;
+    pvzCode.value = item.code || "";
+    pvzAddress.value = item.address || item.name || "";
+    pvzSelected.textContent = "Выбрано: " + pvzAddress.value;
+    pvzList.querySelectorAll(".pvz-item").forEach((el) => {
+      el.classList.toggle("active", el.dataset.code === item.code);
+    });
+    calculateDelivery();
+  };
+
+  const renderPvzList = (list) => {
+    if (!list.length) {
+      pvzList.innerHTML = `<p class="form-note">В этом городе пока нет доступных ПВЗ</p>`;
+      return;
+    }
+    pvzList.innerHTML = list
+      .map(
+        (item) => `
+        <button type="button" class="pvz-item${item.code === pvzCode.value ? " active" : ""}" data-code="${item.code}" data-address="${item.address}">
           <strong>${item.code}</strong>
           <span>${item.address}</span>
           <span>${item.work_time || ""}</span>
         </button>`
-        )
-        .join("");
-      pvzList.querySelectorAll(".pvz-item").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          pvzList.querySelectorAll(".pvz-item").forEach((el) => el.classList.remove("active"));
-          btn.classList.add("active");
-          pvzCode.value = btn.dataset.code;
-          pvzAddress.value = btn.dataset.address;
-          pvzSelected.textContent = "Выбрано: " + btn.dataset.address;
-          calculateDelivery();
+      )
+      .join("");
+    pvzList.querySelectorAll(".pvz-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = latestPvz.find((p) => p.code === btn.dataset.code);
+        selectPvz(item || { code: btn.dataset.code, address: btn.dataset.address });
+      });
+    });
+  };
+
+  const showOsmMap = (list) => {
+    if (!window.L || !mapBox) return;
+    const mapEl = document.getElementById("pvzMap");
+    if (!mapEl) return;
+
+    mapBox.hidden = false;
+    const points = list.filter((p) => Number(p.latitude) && Number(p.longitude));
+
+    if (!pvzMap) {
+      pvzMap = window.L.map(mapEl, { scrollWheelZoom: true });
+      window.L
+        .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        })
+        .addTo(pvzMap);
+      pvzMarkersLayer = window.L.layerGroup().addTo(pvzMap);
+    }
+
+    pvzMarkersLayer.clearLayers();
+    const bounds = [];
+    points.forEach((item) => {
+      const latLng = [Number(item.latitude), Number(item.longitude)];
+      bounds.push(latLng);
+      const marker = window.L.marker(latLng);
+      marker.bindPopup(`
+        <div class="pvz-popup">
+          <strong>${item.code}</strong>
+          <div>${item.address || ""}</div>
+          <div>${item.work_time || ""}</div>
+          <button type="button" data-pick="${item.code}">Выбрать этот ПВЗ</button>
+        </div>
+      `);
+      marker.on("popupopen", () => {
+        const btn = document.querySelector(`.pvz-popup button[data-pick="${item.code}"]`);
+        btn?.addEventListener("click", () => {
+          selectPvz(item);
+          marker.closePopup();
+          window.NMP_toast("ПВЗ выбран: " + item.code);
         });
       });
+      marker.on("click", () => selectPvz(item));
+      marker.addTo(pvzMarkersLayer);
+    });
+
+    window.setTimeout(() => {
+      pvzMap.invalidateSize();
+      if (bounds.length) pvzMap.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 });
+      else pvzMap.setView([61.7849, 34.3469], 11);
+    }, 60);
+  };
+
+  const loadPvz = async (cityCode, { showMap = false } = {}) => {
+    pvzList.innerHTML = `<p class="form-note">Загружаем пункты выдачи СДЭК…</p>`;
+    try {
+      const list = await api(`/api/cdek/pvz?city_code=${encodeURIComponent(cityCode)}`);
+      latestPvz = Array.isArray(list) ? list : [];
+      renderPvzList(latestPvz);
+      if (showMap) {
+        if (!window.L) {
+          window.NMP_toast("Карта недоступна. Выберите ПВЗ из списка ниже.");
+        } else {
+          showOsmMap(latestPvz);
+        }
+      }
     } catch (error) {
       pvzList.innerHTML = `<p class="form-note">Ошибка загрузки ПВЗ: ${error.message}</p>`;
     }
@@ -209,56 +284,13 @@
   });
 
   document.getElementById("openCdekWidget")?.addEventListener("click", async () => {
-    const box = document.getElementById("cdekWidget");
-    if (!publicConfig) return;
     if (!cityCodeInput.value) {
       window.NMP_toast("Сначала выберите город получения");
       cityInput.focus();
       return;
     }
-
-    if (publicConfig.yandexMapsApiKey && window.CDEKWidget) {
-      box.hidden = false;
-      box.innerHTML = "";
-      // eslint-disable-next-line no-new
-      new window.CDEKWidget({
-        from: {
-          country_code: "RU",
-          city: publicConfig.fromCity,
-          code: publicConfig.fromCityCode,
-          address: publicConfig.fromAddress
-        },
-        root: "cdekWidget",
-        apiKey: publicConfig.yandexMapsApiKey,
-        servicePath: publicConfig.servicePath || "/api/cdek/service",
-        defaultLocation: cityInput.value,
-        lang: "rus",
-        currency: "RUB",
-        canChoose: true,
-        hideDeliveryOptions: { door: true, office: false },
-        goods: [
-          {
-            width: publicConfig.package?.width || 40,
-            height: publicConfig.package?.height || 10,
-            length: publicConfig.package?.length || 60,
-            weight: publicConfig.package?.weight || 8000
-          }
-        ],
-        onChoose(_type, tariff, address) {
-          pvzCode.value = address?.code || "";
-          pvzAddress.value = address?.address || address?.name || "";
-          pvzSelected.textContent = "Выбрано: " + pvzAddress.value;
-          if (tariff?.tariff_code) tariffCodeInput.value = tariff.tariff_code;
-          calculateDelivery();
-        }
-      });
-    } else {
-      window.NMP_toast(
-        "Карта доступна после YANDEX_MAPS_API_KEY в .env. Сейчас выберите ПВЗ из списка ниже."
-      );
-      if (cityCodeInput.value) loadPvz(cityCodeInput.value);
-      pvzList.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    await loadPvz(cityCodeInput.value, { showMap: true });
+    mapBox?.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
   form.addEventListener("submit", async (event) => {
@@ -381,7 +413,7 @@
     .finally(() => {
       renderSummary();
       if (cityCodeInput.value) {
-        loadPvz(cityCodeInput.value);
+        loadPvz(cityCodeInput.value, { showMap: false });
         calculateDelivery();
       }
     });

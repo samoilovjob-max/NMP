@@ -331,7 +331,8 @@ app.get("/api/health", async (_req, res) => {
         code: CONFIG.fromCityCode,
         address: CONFIG.fromAddress
       },
-      yandexMaps: Boolean(CONFIG.yandexKey),
+      mapProvider: "openstreetmap",
+      yandexMaps: false,
       yookassa: yookassaReady,
       yookassaNeedsShopId: yookassaSecretOnly,
       paymentsDemo: CONFIG.paymentsDemo && !yookassaReady,
@@ -347,7 +348,8 @@ app.get("/api/config/public", (_req, res) => {
     fromCity: CONFIG.fromCity,
     fromCityCode: CONFIG.fromCityCode,
     fromAddress: CONFIG.fromAddress,
-    yandexMapsApiKey: CONFIG.yandexKey,
+    mapProvider: "openstreetmap",
+    yandexMapsApiKey: "",
     servicePath: "/api/cdek/service",
     package: CONFIG.package,
     payments: {
