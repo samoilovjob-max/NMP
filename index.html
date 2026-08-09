@@ -15,7 +15,7 @@
   <header class="site-header" id="header">
     <div class="header-inner">
       <a class="brand" href="#top" aria-label="Northern Magical Place">
-        <img src="images/logo-mark.jpg" alt="" width="42" height="42" />
+        <img class="brand-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="64" height="64" />
         <span class="brand-text">
           <span>Northern</span>
           <span>Magical Place</span>
@@ -31,13 +31,13 @@
       </nav>
 
       <div class="header-actions">
-        <button class="icon-btn" type="button" aria-label="Личный кабинет" title="Личный кабинет">
+        <a class="icon-btn" href="account.html" aria-label="Личный кабинет" title="Личный кабинет">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.8-3.2 4.2-4.8 7-4.8s5.2 1.6 7 4.8"/></svg>
-        </button>
-        <button class="icon-btn" type="button" id="cartBtn" aria-label="Корзина" title="Корзина">
+        </a>
+        <a class="icon-btn" href="checkout.html" aria-label="Корзина" title="Корзина">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
-          <span class="cart-count" id="cartCount">0</span>
-        </button>
+          <span class="cart-count" data-cart-count>0</span>
+        </a>
         <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -57,7 +57,7 @@
           <h1>Карельский уют в любой точке мира</h1>
           <p class="lead">Премиальные разборные костровые системы Flat-Pack от Northern Magical Place из конструкционной стали от 3 мм.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#product-1">Оформить заказ</a>
+            <a class="btn btn-primary" href="product.html?id=1">Оформить заказ</a>
             <a class="btn btn-ghost" href="#features">Преимущества</a>
           </div>
         </div>
@@ -67,7 +67,7 @@
           <div>
             <strong>Flat-Pack Очаг</strong>
             <p>Главный продукт сезона — разборный очаг с зоной для готовки.</p>
-            <button class="btn btn-primary" type="button" data-add-cart="Flat-Pack Очаг">В корзину</button>
+            <a class="btn btn-primary" href="product.html?id=1">Подробнее</a>
           </div>
         </aside>
       </div>
@@ -84,32 +84,32 @@
 
         <div class="features-grid">
           <article class="feature-card reveal">
-            <div class="num">01</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 10V7a4 4 0 0 1 8 0v3"/><rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M12 14v3"/></svg></div>
             <h3>Сборка без инструментов</h3>
             <p>Никаких отвёрток или ключей. Все элементы конструкции собираются исключительно вручную за считанные секунды.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">02</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V7l8-4Z"/><path d="m9 12 2 2 4-4"/></svg></div>
             <h3>Инженерная прочность</h3>
             <p>Продуманная геометрия и надёжные пазовые соединения создают жёсткую, устойчивую конструкцию, которая не «ведёт» от огня.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">03</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21c4-3.2 6-6.2 6-9a6 6 0 1 0-12 0c0 2.8 2 5.8 6 9Z"/><path d="M10 11c.5-2 1.5-3 2-4 1 1.5 1.5 2.8 2 4"/></svg></div>
             <h3>Художественная перфорация</h3>
             <p>Детализированные узоры обеспечивают идеальный приток воздуха для равномерного горения и создают завораживающий вид в темноте.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">04</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="1"/><path d="M8 7V5h8v2M7 17v2h10v-2"/></svg></div>
             <h3>Абсолютно плоский формат</h3>
             <p>В сложенном виде система превращается в компактный плоский пакет — минимум объёма в багажнике и максимум свободы на маршруте.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">05</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 8h13l5 4v6H3V8Z"/><path d="M16 8v4h5"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg></div>
             <h3>Чистый багажник</h3>
             <p>Конструкция убирается в плотный чехол из специального материала и сохраняет чистоту салона после использования.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">06</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h16v11H4z"/><path d="M7 8V6.5A2.5 2.5 0 0 1 9.5 4h5A2.5 2.5 0 0 1 17 6.5V8"/><path d="M8 13h8M8 16h5"/></svg></div>
             <h3>Конструкционная сталь</h3>
             <p>Пластичный и вязкий металл: если на раскалённый очаг попадёт вода, снег или начнётся ливень — чаша не растрескается и не потеряет форму. Она просто остынет.</p>
           </article>
@@ -128,61 +128,61 @@
 
         <div class="products">
           <article class="product reveal" id="product-1">
-            <div class="product-media">
+            <a class="product-media" href="product.html?id=1">
               <img src="images/product-1.png" alt="Товар 1 — разборный очаг с зоной приготовления" />
-            </div>
+            </a>
             <div class="product-body">
               <div class="badge">Хит сезона</div>
-              <h3>Flat-Pack Очаг с зоной готовки</h3>
+              <h3><a href="product.html?id=1">Flat-Pack Очаг с зоной готовки</a></h3>
               <p>Практичная разборная конструкция объединяет в себе прочный очаг и удобную зону для приготовления еды на живом огне. Она легко собирается без инструментов, занимает минимум места в багажнике и создана специально для того, чтобы в любой точке маршрута у вас был свой надёжный и комфортный очаг.</p>
               <div class="product-meta">
                 <span class="price">от 18 900 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Flat-Pack Очаг с зоной готовки">В корзину</button>
+                <a class="btn btn-primary" href="product.html?id=1">Подробнее</a>
               </div>
             </div>
           </article>
 
           <article class="product reveal" id="product-2">
-            <div class="product-media">
+            <a class="product-media" href="product.html?id=2">
               <img src="images/product-2.png" alt="Товар 2 — дизайнерская чаша-гриль" />
-            </div>
+            </a>
             <div class="product-body">
               <div class="badge">Дизайн</div>
-              <h3>Чаша-гриль Hi-Tech</h3>
+              <h3><a href="product.html?id=2">Чаша-гриль Hi-Tech</a></h3>
               <p>Современная дизайнерская костровая чаша-гриль сборно-разборного типа. Это стильное, технологичное и практичное решение в эстетике минимализма и хай-тек.</p>
               <div class="product-meta">
                 <span class="price">от 21 500 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Чаша-гриль Hi-Tech">В корзину</button>
+                <a class="btn btn-primary" href="product.html?id=2">Подробнее</a>
               </div>
             </div>
           </article>
 
           <article class="product reveal" id="product-3">
-            <div class="product-media">
+            <a class="product-media" href="product.html?id=3">
               <img src="images/product-3.jpg" alt="Товар 3 — костровая чаша с эстетикой природы" />
-            </div>
+            </a>
             <div class="product-body">
               <div class="badge">Природа</div>
-              <h3>Чаша Northern Wild</h3>
+              <h3><a href="product.html?id=3">Чаша Northern Wild</a></h3>
               <p>Стильная сборно-разборная костровая чаша сочетает в себе эстетику дикой природы, продуманную инженерию и абсолютную мобильность. Идеальный выбор для ценителей эстетичного кемпинга, душевных дачных вечеров и практичных подарков для тех, у кого «уже всё есть».</p>
               <div class="product-meta">
                 <span class="price">от 19 900 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Чаша Northern Wild">В корзину</button>
+                <a class="btn btn-primary" href="product.html?id=3">Подробнее</a>
               </div>
             </div>
           </article>
 
           <article class="product reveal" id="product-4">
-            <div class="product-media">
+            <a class="product-media" href="product.html?id=4">
               <img src="images/product-4.png" alt="Товар 4 — шестигранная премиальная чаша" />
-            </div>
+            </a>
             <div class="product-body">
               <div class="badge">Арт-объект</div>
-              <h3>Hex Bowl Premium</h3>
+              <h3><a href="product.html?id=4">Hex Bowl Premium</a></h3>
               <p>Премиальный арт-объект для вашей зоны отдыха. Шестигранная разборная чаша, сочетающая архитектурный дизайн, высокую надёжность и максимальный комфорт в эксплуатации.</p>
               <div class="product-meta">
                 <span class="price">от 24 900 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Hex Bowl Premium">В корзину</button>
+                <a class="btn btn-primary" href="product.html?id=4">Подробнее</a>
               </div>
             </div>
           </article>
@@ -230,7 +230,7 @@
             </div>
           </article>
 
-          <article class="life-item life-wide reveal">
+          <article class="life-item reveal">
             <figure>
               <img src="images/camping.png" alt="Кемпинг с друзьями" />
             </figure>
@@ -408,10 +408,10 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <img src="images/logo-mark.jpg" alt="" />
+          <img class="footer-logo" src="images/logo-full.jpg" alt="Northern Magical Place" />
           <div>
-            <strong style="font-family:var(--font-display);letter-spacing:0.08em;text-transform:uppercase;">Northern Magical Place</strong>
             <p>Карельские костровые системы Flat-Pack</p>
+            <p><a href="account.html">Личный кабинет</a></p>
           </div>
         </div>
         <div class="footer-col">
@@ -437,6 +437,9 @@
   </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

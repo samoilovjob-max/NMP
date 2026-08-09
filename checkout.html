@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Оформление заказа — Northern Magical Place</title>
+  <link rel="icon" href="images/logo-mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header scrolled" id="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="Northern Magical Place">
+        <img class="brand-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="64" height="64" />
+        <span class="brand-text">
+          <span>Northern</span>
+          <span>Magical Place</span>
+        </span>
+      </a>
+      <nav class="nav" id="nav">
+        <a href="index.html#catalog">Изделия</a>
+        <a href="account.html">Личный кабинет</a>
+        <a href="buyers.html">Доставка</a>
+      </nav>
+      <div class="header-actions">
+        <a class="icon-btn" href="account.html" aria-label="Личный кабинет">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.8-3.2 4.2-4.8 7-4.8s5.2 1.6 7 4.8"/></svg>
+        </a>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero compact">
+      <div class="container">
+        <div class="eyebrow">Заказ</div>
+        <h1>Оформление заказа</h1>
+        <p class="lead">Доставка через СДЭК · Оплата через ЮKassa · Статус заказа — в личном кабинете</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:2rem;">
+      <div class="container checkout-grid">
+        <form class="checkout-form" id="checkoutForm">
+          <h2>Данные получателя</h2>
+          <div class="field-row">
+            <div class="field">
+              <label for="lastName">Фамилия</label>
+              <input id="lastName" name="lastName" required autocomplete="family-name" />
+            </div>
+            <div class="field">
+              <label for="firstName">Имя</label>
+              <input id="firstName" name="firstName" required autocomplete="given-name" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="middleName">Отчество</label>
+            <input id="middleName" name="middleName" autocomplete="additional-name" />
+          </div>
+          <div class="field">
+            <label for="phone">Мобильный телефон</label>
+            <input id="phone" name="phone" type="tel" required placeholder="+7 (___) ___-__-__" autocomplete="tel" />
+          </div>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </div>
+
+          <h2>Доставка СДЭК</h2>
+          <div class="field">
+            <label for="city">Город получения</label>
+            <input id="city" name="city" list="cityList" required placeholder="Начните вводить город" />
+            <datalist id="cityList">
+              <option value="Москва"></option>
+              <option value="Санкт-Петербург"></option>
+              <option value="Петрозаводск"></option>
+              <option value="Мурманск"></option>
+              <option value="Архангельск"></option>
+              <option value="Казань"></option>
+              <option value="Екатеринбург"></option>
+              <option value="Новосибирск"></option>
+              <option value="Краснодар"></option>
+              <option value="Владивосток"></option>
+            </datalist>
+          </div>
+
+          <div class="field">
+            <label>Пункт выдачи СДЭК</label>
+            <div class="pvz-toolbar">
+              <button class="btn btn-ghost" type="button" id="openCdekWidget">Выбрать пункт на карте СДЭК</button>
+            </div>
+            <div id="cdekWidget" class="cdek-widget-box" hidden></div>
+            <div id="pvzList" class="pvz-list" role="listbox" aria-label="Пункты выдачи"></div>
+            <input type="hidden" id="pvzCode" name="pvzCode" required />
+            <input type="hidden" id="pvzAddress" name="pvzAddress" required />
+            <p class="form-note" id="pvzSelected">Пункт выдачи не выбран</p>
+          </div>
+
+          <div class="field">
+            <label for="comment">Комментарий к заказу</label>
+            <textarea id="comment" name="comment" rows="3" placeholder="Необязательно"></textarea>
+          </div>
+
+          <label class="check-line">
+            <input type="checkbox" id="agree" required />
+            <span>Согласен с <a href="privacy.html" target="_blank">политикой конфиденциальности</a> и условиями оплаты</span>
+          </label>
+
+          <button class="btn btn-primary" type="submit" id="payBtn">Оплатить через ЮKassa</button>
+          <p class="form-note">После оплаты создаётся личный кабинет, где отображаются статусы: сборка → отправка (сдача в СДЭК) → прибыл для получения.</p>
+        </form>
+
+        <aside class="checkout-summary" id="checkoutSummary"></aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-simple">
+      <img class="footer-logo" src="images/logo-full.jpg" alt="Northern Magical Place" />
+      <p>© 2026 Northern Magical Place</p>
+    </div>
+  </footer>
+
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@cdek-it/widget@3"></script>
+  <script src="https://yookassa.ru/checkout-widget/v1/checkout-widget.js"></script>
+  <script src="js/checkout.js"></script>
+</body>
+</html>

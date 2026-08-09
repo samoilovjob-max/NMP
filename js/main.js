@@ -1,18 +1,36 @@
 (() => {
+  const Store = window.NMP_Store;
+
+  const showToast = (message) => {
+    let toast = document.getElementById("toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "toast";
+      toast.className = "toast";
+      toast.setAttribute("role", "status");
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add("show");
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(() => toast.classList.remove("show"), 2400);
+  };
+  window.NMP_toast = showToast;
+
+  const refreshCartBadge = () => {
+    document.querySelectorAll("[data-cart-count]").forEach((el) => {
+      el.textContent = String(Store.cartCount());
+    });
+  };
+
   const header = document.getElementById("header");
   const nav = document.getElementById("nav");
   const menuToggle = document.getElementById("menuToggle");
-  const cartCount = document.getElementById("cartCount");
-  const toast = document.getElementById("toast");
-  const contactForm = document.getElementById("contactForm");
-
-  let cart = 0;
 
   const onScroll = () => {
     if (!header) return;
-    header.classList.toggle("scrolled", window.scrollY > 24);
+    header.classList.toggle("scrolled", window.scrollY > 16);
   };
-
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
@@ -23,7 +41,6 @@
       menuToggle.setAttribute("aria-expanded", String(open));
       document.body.style.overflow = open ? "hidden" : "";
     });
-
     nav.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", () => {
         nav.classList.remove("open");
@@ -34,24 +51,20 @@
     });
   }
 
-  const showToast = (message) => {
-    if (!toast) return;
-    toast.textContent = message;
-    toast.classList.add("show");
-    window.clearTimeout(showToast._t);
-    showToast._t = window.setTimeout(() => toast.classList.remove("show"), 2200);
-  };
-
   document.querySelectorAll("[data-add-cart]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      cart += 1;
-      if (cartCount) cartCount.textContent = String(cart);
-      showToast(`«${btn.getAttribute("data-add-cart")}» добавлен в корзину`);
+    btn.addEventListener("click", (event) => {
+      event.preventDefault();
+      const id = btn.getAttribute("data-add-cart");
+      Store.addToCart(id);
+      const product = window.NMP_getProduct?.(id);
+      showToast(`«${product?.name || "Товар"}» добавлен в корзину`);
     });
   });
 
-  document.getElementById("cartBtn")?.addEventListener("click", () => {
-    showToast(cart ? `В корзине: ${cart}` : "Корзина пока пуста");
+  document.querySelectorAll("[data-go-cart]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      window.location.href = "checkout.html";
+    });
   });
 
   document.querySelectorAll(".faq-item button").forEach((btn) => {
@@ -63,6 +76,7 @@
     });
   });
 
+  const contactForm = document.getElementById("contactForm");
   if (contactForm) {
     contactForm.addEventListener("submit", (event) => {
       event.preventDefault();
@@ -82,10 +96,13 @@
           }
         });
       },
-      { threshold: 0.14, rootMargin: "0px 0px -8% 0px" }
+      { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }
     );
     revealEls.forEach((el) => io.observe(el));
   } else {
     revealEls.forEach((el) => el.classList.add("visible"));
   }
+
+  window.addEventListener("nmp:cart", refreshCartBadge);
+  refreshCartBadge();
 })();
