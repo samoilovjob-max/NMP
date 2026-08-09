@@ -73,31 +73,23 @@
           <h2>Доставка СДЭК</h2>
           <div class="field">
             <label for="city">Город получения</label>
-            <input id="city" name="city" list="cityList" required placeholder="Начните вводить город" />
-            <datalist id="cityList">
-              <option value="Москва"></option>
-              <option value="Санкт-Петербург"></option>
-              <option value="Петрозаводск"></option>
-              <option value="Мурманск"></option>
-              <option value="Архангельск"></option>
-              <option value="Казань"></option>
-              <option value="Екатеринбург"></option>
-              <option value="Новосибирск"></option>
-              <option value="Краснодар"></option>
-              <option value="Владивосток"></option>
-            </datalist>
+            <input id="city" name="city" required placeholder="Начните вводить город" autocomplete="off" />
+            <input type="hidden" id="cityCode" name="cityCode" required />
+            <div id="citySuggest" class="suggest-list"></div>
           </div>
 
           <div class="field">
             <label>Пункт выдачи СДЭК</label>
             <div class="pvz-toolbar">
-              <button class="btn btn-ghost" type="button" id="openCdekWidget">Выбрать пункт на карте СДЭК</button>
+              <button class="btn btn-ghost" type="button" id="openCdekWidget">Открыть карту / обновить список ПВЗ</button>
             </div>
             <div id="cdekWidget" class="cdek-widget-box" hidden></div>
             <div id="pvzList" class="pvz-list" role="listbox" aria-label="Пункты выдачи"></div>
             <input type="hidden" id="pvzCode" name="pvzCode" required />
             <input type="hidden" id="pvzAddress" name="pvzAddress" required />
+            <input type="hidden" id="tariffCode" name="tariffCode" value="136" />
             <p class="form-note" id="pvzSelected">Пункт выдачи не выбран</p>
+            <p class="form-note" id="deliveryInfo">Стоимость и сроки появятся после выбора города</p>
           </div>
 
           <div class="field">

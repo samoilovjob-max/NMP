@@ -1,15 +1,14 @@
 window.NMP_CONFIG = {
-  // ЮKassa: укажите shopId из личного кабинета https://yookassa.ru
+  apiBase: "", // same origin when using `npm start`
   yookassa: {
-    shopId: "", // например "123456"
+    shopId: "",
     testMode: true
   },
-  // СДЭК: для живого виджета ПВЗ и трекинга нужны ключи API
-  // https://www.cdek.ru/ru/integration/
   cdek: {
-    account: "",
-    secure: "",
-    fromCity: "Петрозаводск"
+    // секреты только на сервере (.env). Здесь публичные настройки.
+    fromCity: "Петрозаводск",
+    fromAddress: "Лесной проспект 47",
+    servicePath: "/api/cdek/service"
   },
   contacts: {
     email: "info@northmp.su",

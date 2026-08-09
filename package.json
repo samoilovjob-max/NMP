@@ -1,0 +1,20 @@
+{
+  "name": "northern-magical-place",
+  "version": "1.0.0",
+  "description": "Лендинг и заказ костровых систем Northern Magical Place с интеграцией СДЭК",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samoilovjob-max/NMP.git"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

@@ -4,9 +4,42 @@
   const params = new URLSearchParams(window.location.search);
   const focusId = params.get("order");
 
-  const render = () => {
-    let orders = Store.getOrders().map((order) => Store.syncOrderTracking(order));
+  const api = (path) =>
+    fetch((window.NMP_CONFIG?.apiBase || "") + path).then(async (res) => {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw Object.assign(new Error(data.message || "Ошибка API"), { data, status: res.status });
+      return data;
+    });
+
+  const syncLive = async (order) => {
+    const query = order.cdek?.trackNumber || order.cdek?.uuid || order.id;
+    if (!query) return Store.syncOrderTracking(order);
+    try {
+      const live = await api(`/api/cdek/track/${encodeURIComponent(query)}`);
+      const history = (live.history || []).map((h) => ({
+        at: h.date_time,
+        title: h.name,
+        detail: h.city || ""
+      }));
+      return Store.updateOrder(order.id, {
+        status: live.statusSite || order.status,
+        cdek: {
+          ...order.cdek,
+          trackNumber: live.cdekNumber || order.cdek?.trackNumber || "",
+          uuid: live.uuid || order.cdek?.uuid || "",
+          stage: live.current?.name || order.cdek?.stage,
+          history: history.length ? history : order.cdek?.history || []
+        }
+      });
+    } catch {
+      return Store.syncOrderTracking(order);
+    }
+  };
+
+  const render = async () => {
     const user = Store.getUser();
+    let orders = Store.getOrders();
+    orders = await Promise.all(orders.map((order) => syncLive(order)));
 
     if (!user && !orders.length) {
       root.innerHTML = `
@@ -29,6 +62,7 @@
                <p>${user.city || ""}</p>`
             : `<p class="lead">Данные появятся после заказа</p>`
         }
+        <button class="btn btn-ghost" type="button" id="refreshTracking">Обновить статусы СДЭК</button>
         <a class="btn btn-ghost" href="checkout.html">Перейти в корзину</a>
       </aside>
       <div class="account-orders">
@@ -71,20 +105,35 @@
                 </div>
 
                 <div class="cdek-box">
-                  <h4>СДЭК · отслеживание</h4>
+                  <h4>СДЭК · живой трекинг</h4>
                   <p><strong>Этап:</strong> ${order.cdek?.stage || "—"}</p>
-                  <p><strong>Трек-номер:</strong> ${order.cdek?.trackNumber || "будет присвоен при сдаче в СДЭК"}</p>
+                  <p><strong>Трек-номер:</strong> ${order.cdek?.trackNumber || "ожидается после обработки заявки"}</p>
+                  <p><strong>UUID:</strong> ${order.cdek?.uuid || "—"}</p>
                   <p><strong>ПВЗ:</strong> ${order.pvzAddress || order.cdek?.pvzAddress || "—"}</p>
-                  <p class="form-note">При подключении API СДЭК статус подтягивается автоматически из кабинета перевозчика. Сейчас отображается актуальная логика статусов заказа на сайте.</p>
+                  ${
+                    order.cdek?.history?.length
+                      ? `<ul class="track-history">${order.cdek.history
+                          .slice(0, 8)
+                          .map(
+                            (h) =>
+                              `<li><strong>${h.title || ""}</strong><span>${h.detail || ""} ${
+                                h.at ? new Date(h.at).toLocaleString("ru-RU") : ""
+                              }</span></li>`
+                          )
+                          .join("")}</ul>`
+                      : ""
+                  }
                   ${
                     order.cdek?.trackNumber
-                      ? `<a class="btn btn-ghost" target="_blank" rel="noopener" href="https://www.cdek.ru/ru/tracking?order_id=${encodeURIComponent(order.cdek.trackNumber)}">Открыть трекинг СДЭК</a>`
+                      ? `<a class="btn btn-ghost" target="_blank" rel="noopener" href="https://www.cdek.ru/ru/tracking?order_id=${encodeURIComponent(
+                          order.cdek.trackNumber
+                        )}">Открыть на сайте СДЭК</a>`
                       : ""
                   }
                 </div>
 
                 <p class="form-note">Оплата: ${
-                  order.paymentStatus === "paid" ? "оплачен через ЮKassa" : "ожидает оплату / подтверждение ЮKassa"
+                  order.paymentStatus === "paid" ? "оплачен (ЮKassa / демо)" : "ожидает оплату"
                 }</p>
               </article>`;
                 })
@@ -92,10 +141,16 @@
             : `<p class="lead">Заказов пока нет</p>`
         }
       </div>`;
+
+    document.getElementById("refreshTracking")?.addEventListener("click", () => {
+      window.NMP_toast("Обновляем статусы СДЭК…");
+      render();
+    });
   };
 
-  render();
-  if (focusId) {
-    document.getElementById(`order-${focusId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  render().then(() => {
+    if (focusId) {
+      document.getElementById(`order-${focusId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  });
 })();
