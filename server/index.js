@@ -639,60 +639,76 @@ app.post("/api/payments/create", async (req, res) => {
     )}&payment=return`;
     const skuList = order.items.map((i) => i.sku).join(", ");
 
-    const payment = await yookassaRequest("payments", {
+    const paymentBody = {
+      amount: {
+        value: Number(order.total).toFixed(2),
+        currency: "RUB"
+      },
+      capture: true,
+      confirmation: {
+        type: "redirect",
+        return_url: returnUrl
+      },
+      description: `NMP ${order.id} · ${skuList}`.slice(0, 128),
+      metadata: {
+        orderId: order.id,
+        skus: skuList
+      }
+    };
+
+    // Чек 54-ФЗ — если в ЮKassa включена онлайн-касса. Иначе отправим платёж без receipt.
+    if (String(process.env.YOOKASSA_SEND_RECEIPT || "true").toLowerCase() === "true") {
+      paymentBody.receipt = {
+        customer: {
+          email: order.customer.email,
+          phone: String(order.customer.phone || "").replace(/[^\d+]/g, "")
+        },
+        items: [
+          ...order.items.map((item) => ({
+            description: `${item.sku} ${item.name}`.slice(0, 128),
+            quantity: String(item.qty),
+            amount: {
+              value: Number(item.price).toFixed(2),
+              currency: "RUB"
+            },
+            vat_code: Number(process.env.YOOKASSA_VAT_CODE || 1),
+            payment_mode: "full_payment",
+            payment_subject: "commodity"
+          })),
+          ...(order.deliverySum > 0
+            ? [
+                {
+                  description: "Доставка СДЭК",
+                  quantity: "1",
+                  amount: {
+                    value: Number(order.deliverySum).toFixed(2),
+                    currency: "RUB"
+                  },
+                  vat_code: Number(process.env.YOOKASSA_VAT_CODE || 1),
+                  payment_mode: "full_payment",
+                  payment_subject: "service"
+                }
+              ]
+            : [])
+        ]
+      };
+    }
+
+    let payment = await yookassaRequest("payments", {
       method: "POST",
       idempotenceKey: crypto.randomUUID(),
-      json: {
-        amount: {
-          value: Number(order.total).toFixed(2),
-          currency: "RUB"
-        },
-        capture: true,
-        confirmation: {
-          type: "redirect",
-          return_url: returnUrl
-        },
-        description: `NMP ${order.id} · ${skuList}`.slice(0, 128),
-        metadata: {
-          orderId: order.id,
-          skus: skuList
-        },
-        receipt: {
-          customer: {
-            email: order.customer.email,
-            phone: String(order.customer.phone || "").replace(/[^\d+]/g, "")
-          },
-          items: [
-            ...order.items.map((item) => ({
-              description: `${item.sku} ${item.name}`.slice(0, 128),
-              quantity: String(item.qty),
-              amount: {
-                value: Number(item.price).toFixed(2),
-                currency: "RUB"
-              },
-              vat_code: 1,
-              payment_mode: "full_payment",
-              payment_subject: "commodity"
-            })),
-            ...(order.deliverySum > 0
-              ? [
-                  {
-                    description: "Доставка СДЭК",
-                    quantity: "1",
-                    amount: {
-                      value: Number(order.deliverySum).toFixed(2),
-                      currency: "RUB"
-                    },
-                    vat_code: 1,
-                    payment_mode: "full_payment",
-                    payment_subject: "service"
-                  }
-                ]
-              : [])
-          ]
-        }
-      }
+      json: paymentBody
     });
+
+    // Если касса не подключена — повторяем без receipt
+    if (!payment.ok && paymentBody.receipt) {
+      delete paymentBody.receipt;
+      payment = await yookassaRequest("payments", {
+        method: "POST",
+        idempotenceKey: crypto.randomUUID(),
+        json: paymentBody
+      });
+    }
 
     if (!payment.ok) {
       return res.status(payment.status).json({
