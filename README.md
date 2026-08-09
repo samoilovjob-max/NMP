@@ -56,11 +56,11 @@ npm start
 YOOKASSA_SHOP_ID=1420560
 YOOKASSA_SECRET_KEY=live_...
 PAYMENTS_DEMO=false
-PUBLIC_BASE_URL=https://ваш-домен.ru
+PUBLIC_BASE_URL=https://northmp.su
 ```
 
 2. В ЮKassa → Настройки → HTTP-уведомления:
-   `https://ваш-домен.ru/api/payments/webhook`
+   `https://northmp.su/api/payments/webhook`
    События: `payment.succeeded`, `payment.canceled`
 
 ### Почему так
