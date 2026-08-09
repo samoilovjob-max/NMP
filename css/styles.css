@@ -341,6 +341,13 @@ h3 {
   background: var(--ember-soft);
 }
 
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .btn-ghost {
   background: transparent;
   border-color: rgba(232, 230, 225, 0.35);
@@ -1579,6 +1586,16 @@ h3 {
   margin: 0.8rem 0 1.1rem;
   color: var(--frost-dim);
   font-size: 0.9rem;
+}
+
+.check-line a {
+  color: var(--frost);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.check-line a:hover {
+  color: var(--ember-soft);
 }
 
 .order-card {
