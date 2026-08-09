@@ -142,37 +142,55 @@
     }
   };
 
+  let latestCities = [];
+
   const selectPvz = (item) => {
     if (!item) return;
-    pvzCode.value = item.code || "";
-    pvzAddress.value = item.address || item.name || "";
+    pvzCode.value = String(item.code || "");
+    pvzAddress.value = String(item.address || item.name || "");
     pvzSelected.textContent = "Выбрано: " + pvzAddress.value;
+    pvzSelected.style.color = "#f3f1ec";
     pvzList.querySelectorAll(".pvz-item").forEach((el) => {
-      el.classList.toggle("active", el.dataset.code === item.code);
+      el.classList.toggle("active", el.dataset.code === String(item.code));
     });
     calculateDelivery();
+    window.NMP_toast?.("ПВЗ выбран: " + item.code);
   };
 
   const renderPvzList = (list) => {
+    pvzList.replaceChildren();
     if (!list.length) {
-      pvzList.innerHTML = `<p class="form-note">В этом городе пока нет доступных ПВЗ</p>`;
+      const empty = document.createElement("p");
+      empty.className = "form-note";
+      empty.textContent = "В этом городе пока нет доступных ПВЗ";
+      pvzList.appendChild(empty);
       return;
     }
-    pvzList.innerHTML = list
-      .map(
-        (item) => `
-        <button type="button" class="pvz-item${item.code === pvzCode.value ? " active" : ""}" data-code="${item.code}" data-address="${item.address}">
-          <strong>${item.code}</strong>
-          <span>${item.address}</span>
-          <span>${item.work_time || ""}</span>
-        </button>`
-      )
-      .join("");
-    pvzList.querySelectorAll(".pvz-item").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const item = latestPvz.find((p) => p.code === btn.dataset.code);
-        selectPvz(item || { code: btn.dataset.code, address: btn.dataset.address });
+
+    const hint = document.createElement("p");
+    hint.className = "form-note";
+    hint.textContent = `Найдено ПВЗ: ${list.length}. Нажмите на пункт ниже, чтобы выбрать.`;
+    pvzList.appendChild(hint);
+
+    list.forEach((item) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "pvz-item" + (String(item.code) === pvzCode.value ? " active" : "");
+      btn.dataset.code = String(item.code || "");
+
+      const title = document.createElement("strong");
+      title.textContent = item.code || "ПВЗ";
+      const addr = document.createElement("span");
+      addr.textContent = item.address || item.name || "";
+      const time = document.createElement("span");
+      time.textContent = item.work_time || "";
+
+      btn.append(title, addr, time);
+      btn.addEventListener("click", (event) => {
+        event.preventDefault();
+        selectPvz(item);
       });
+      pvzList.appendChild(btn);
     });
   };
 
@@ -185,7 +203,10 @@
     const points = list.filter((p) => Number(p.latitude) && Number(p.longitude));
 
     if (!pvzMap) {
-      pvzMap = window.L.map(mapEl, { scrollWheelZoom: true });
+      pvzMap = window.L.map(mapEl, {
+        scrollWheelZoom: false,
+        tapTolerance: 25
+      });
       window.L
         .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
@@ -201,22 +222,21 @@
       const latLng = [Number(item.latitude), Number(item.longitude)];
       bounds.push(latLng);
       const marker = window.L.marker(latLng);
-      marker.bindPopup(`
-        <div class="pvz-popup">
-          <strong>${item.code}</strong>
-          <div>${item.address || ""}</div>
-          <div>${item.work_time || ""}</div>
-          <button type="button" data-pick="${item.code}">Выбрать этот ПВЗ</button>
-        </div>
-      `);
-      marker.on("popupopen", () => {
-        const btn = document.querySelector(`.pvz-popup button[data-pick="${item.code}"]`);
-        btn?.addEventListener("click", () => {
-          selectPvz(item);
-          marker.closePopup();
-          window.NMP_toast("ПВЗ выбран: " + item.code);
-        });
+      const popup = document.createElement("div");
+      popup.className = "pvz-popup";
+      popup.innerHTML = `<strong></strong><div class="addr"></div><div class="time"></div>`;
+      popup.querySelector("strong").textContent = item.code || "";
+      popup.querySelector(".addr").textContent = item.address || "";
+      popup.querySelector(".time").textContent = item.work_time || "";
+      const pick = document.createElement("button");
+      pick.type = "button";
+      pick.textContent = "Выбрать этот ПВЗ";
+      pick.addEventListener("click", () => {
+        selectPvz(item);
+        marker.closePopup();
       });
+      popup.appendChild(pick);
+      marker.bindPopup(popup);
       marker.on("click", () => selectPvz(item));
       marker.addTo(pvzMarkersLayer);
     });
@@ -225,10 +245,26 @@
       pvzMap.invalidateSize();
       if (bounds.length) pvzMap.fitBounds(bounds, { padding: [28, 28], maxZoom: 14 });
       else pvzMap.setView([61.7849, 34.3469], 11);
-    }, 60);
+    }, 120);
+  };
+
+  const applyCity = (city) => {
+    if (!city) return;
+    cityInput.value = city.city || cityInput.value;
+    cityCodeInput.value = String(city.code || "");
+    citySuggest.replaceChildren();
+    pvzCode.value = "";
+    pvzAddress.value = "";
+    pvzSelected.textContent = "Пункт выдачи не выбран — выберите из списка ниже";
+    loadPvz(cityCodeInput.value, { showMap: false });
+    calculateDelivery();
   };
 
   const loadPvz = async (cityCode, { showMap = false } = {}) => {
+    if (!cityCode) {
+      pvzList.innerHTML = `<p class="form-note">Сначала выберите город из подсказки</p>`;
+      return;
+    }
     pvzList.innerHTML = `<p class="form-note">Загружаем пункты выдачи СДЭК…</p>`;
     try {
       const list = await api(`/api/cdek/pvz?city_code=${encodeURIComponent(cityCode)}`);
@@ -241,56 +277,64 @@
           showOsmMap(latestPvz);
         }
       }
+      // На мобильных сразу показываем список, чтобы можно было выбрать без карты
+      pvzList.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (error) {
-      pvzList.innerHTML = `<p class="form-note">Ошибка загрузки ПВЗ: ${error.message}</p>`;
+      pvzList.innerHTML = "";
+      const err = document.createElement("p");
+      err.className = "form-note";
+      err.textContent = "Ошибка загрузки ПВЗ: " + error.message;
+      pvzList.appendChild(err);
     }
   };
 
   let suggestTimer = null;
   cityInput.addEventListener("input", () => {
     window.clearTimeout(suggestTimer);
+    cityCodeInput.value = "";
     suggestTimer = window.setTimeout(async () => {
       const q = cityInput.value.trim();
       if (q.length < 2) {
-        citySuggest.innerHTML = "";
+        citySuggest.replaceChildren();
+        latestCities = [];
         return;
       }
       try {
         const cities = await api(`/api/cdek/cities?q=${encodeURIComponent(q)}`);
-        citySuggest.innerHTML = cities
-          .map(
-            (c) =>
-              `<button type="button" class="suggest-item" data-code="${c.code}" data-city="${c.city}">${c.city}${
-                c.region ? ", " + c.region : ""
-              }</button>`
-          )
-          .join("");
-        citySuggest.querySelectorAll(".suggest-item").forEach((btn) => {
-          btn.addEventListener("click", () => {
-            cityInput.value = btn.dataset.city;
-            cityCodeInput.value = btn.dataset.code;
-            citySuggest.innerHTML = "";
-            pvzCode.value = "";
-            pvzAddress.value = "";
-            pvzSelected.textContent = "Пункт выдачи не выбран";
-            loadPvz(btn.dataset.code);
-            calculateDelivery();
-          });
+        latestCities = Array.isArray(cities) ? cities : [];
+        citySuggest.replaceChildren();
+        latestCities.forEach((c) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "suggest-item";
+          btn.textContent = c.city + (c.region ? ", " + c.region : "");
+          btn.addEventListener("click", () => applyCity(c));
+          citySuggest.appendChild(btn);
         });
       } catch {
-        citySuggest.innerHTML = "";
+        citySuggest.replaceChildren();
+        latestCities = [];
       }
     }, 250);
   });
 
+  // Если пользователь не нажал подсказку — берём первый точный/ближайший город
+  cityInput.addEventListener("change", () => {
+    if (cityCodeInput.value || !latestCities.length) return;
+    const q = cityInput.value.trim().toLowerCase();
+    const exact = latestCities.find((c) => String(c.city || "").toLowerCase() === q);
+    applyCity(exact || latestCities[0]);
+  });
+
   document.getElementById("openCdekWidget")?.addEventListener("click", async () => {
     if (!cityCodeInput.value) {
-      window.NMP_toast("Сначала выберите город получения");
+      window.NMP_toast("Сначала выберите город получения из подсказки");
       cityInput.focus();
       return;
     }
     await loadPvz(cityCodeInput.value, { showMap: true });
-    mapBox?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Список важнее карты для выбора
+    pvzList.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   form.addEventListener("submit", async (event) => {

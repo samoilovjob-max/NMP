@@ -134,11 +134,13 @@ h3 {
   position: fixed;
   inset: 0 0 auto;
   z-index: 100;
-  height: var(--header-h);
+  min-height: var(--header-h);
+  height: auto;
   display: flex;
   align-items: center;
   transition: background 0.35s var(--ease), backdrop-filter 0.35s var(--ease), border-color 0.35s;
   border-bottom: 1px solid transparent;
+  overflow: visible;
 }
 
 .site-header.scrolled {
@@ -171,16 +173,16 @@ h3 {
 .brand-logo,
 .brand-mark {
   width: auto;
-  height: 58px;
-  aspect-ratio: 120 / 72;
+  height: 54px;
+  max-width: 118px;
+  aspect-ratio: 160 / 78;
   object-fit: contain;
   object-position: left center;
-  border-radius: 0;
+  border-radius: 8px;
   flex-shrink: 0;
   box-shadow: none;
   background: transparent;
   display: block;
-  /* keep full mark visible, never crop peaks */
   overflow: visible;
 }
 
@@ -1113,35 +1115,69 @@ h3 {
     aspect-ratio: 16 / 10;
   }
 
+  .site-header {
+    background: rgba(12, 13, 12, 0.94);
+    border-bottom-color: rgba(243, 241, 236, 0.12);
+  }
+
   .menu-toggle {
     display: flex;
+    position: relative;
+    z-index: 260;
+    background: #1a1c1a;
+    border-color: rgba(243, 241, 236, 0.35);
+  }
+
+  .menu-toggle span {
+    background: #f3f1ec;
+  }
+
+  .header-actions {
+    margin-left: auto;
+    position: relative;
+    z-index: 260;
+  }
+
+  .brand {
+    position: relative;
+    z-index: 260;
   }
 
   .nav {
     position: fixed;
     inset: 0;
-    background: rgba(12, 13, 12, 0.97);
+    z-index: 240;
+    background: #0c0d0c;
     flex-direction: column;
-    justify-content: center;
-    gap: 1.5rem;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 0;
+    padding: calc(var(--header-h) + 1.25rem) 1.5rem 2rem;
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 0.3s;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    overflow-y: auto;
   }
 
   .nav.open {
     opacity: 1;
+    visibility: visible;
     pointer-events: auto;
   }
 
   .nav a {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
     font-family: var(--font-display);
-    color: var(--frost);
+    color: #f3f1ec !important;
+    padding: 1rem 0.25rem;
+    border-bottom: 1px solid rgba(243, 241, 236, 0.12);
+    width: 100%;
   }
 
-  .header-actions {
-    margin-left: auto;
+  .nav a:first-child {
+    font-size: 1.55rem;
+    color: #fff !important;
   }
 
   .brand-text {
@@ -1367,15 +1403,22 @@ h3 {
   display: grid;
   gap: 0.55rem;
   margin-top: 0.75rem;
+  max-height: min(420px, 50vh);
+  overflow-y: auto;
+  padding-right: 0.15rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pvz-item {
   text-align: left;
   border: 1px solid var(--line);
-  background: rgba(0,0,0,0.15);
+  background: rgba(0,0,0,0.28);
   color: var(--frost);
-  padding: 0.8rem 0.9rem;
+  padding: 0.9rem 0.95rem;
   cursor: pointer;
+  width: 100%;
+  min-height: 64px;
+  touch-action: manipulation;
 }
 
 .pvz-item strong {
@@ -1445,8 +1488,8 @@ h3 {
 
 .pvz-map {
   width: 100%;
-  height: min(420px, 58vh);
-  min-height: 280px;
+  height: min(320px, 45vh);
+  min-height: 220px;
   background: #d9d6cf;
   z-index: 1;
 }

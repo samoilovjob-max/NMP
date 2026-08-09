@@ -14,7 +14,7 @@
   <header class="site-header scrolled" id="header">
     <div class="header-inner">
       <a class="brand" href="index.html" aria-label="Northern Magical Place">
-        <img class="brand-logo" src="images/logo-mark.svg" alt="Northern Magical Place" width="120" height="72" />
+        <img class="brand-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="160" height="78" />
         <span class="brand-text">
           <span>Northern</span>
           <span>Magical Place</span>
@@ -80,14 +80,17 @@
 
           <div class="field">
             <label>Пункт выдачи СДЭК</label>
+            <p class="form-note">1) Выберите город из подсказки → 2) Нажмите пункт ПВЗ в списке</p>
+            <div id="pvzList" class="pvz-list" role="listbox" aria-label="Пункты выдачи">
+              <p class="form-note">Список ПВЗ появится после выбора города</p>
+            </div>
             <div class="pvz-toolbar">
-              <button class="btn btn-ghost" type="button" id="openCdekWidget">Показать карту ПВЗ (OpenStreetMap)</button>
+              <button class="btn btn-ghost" type="button" id="openCdekWidget">Показать на карте (необязательно)</button>
             </div>
             <div id="cdekWidget" class="cdek-widget-box" hidden>
               <div id="pvzMap" class="pvz-map" aria-label="Карта пунктов выдачи СДЭК"></div>
               <p class="form-note map-attr">Карта: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
             </div>
-            <div id="pvzList" class="pvz-list" role="listbox" aria-label="Пункты выдачи"></div>
             <input type="hidden" id="pvzCode" name="pvzCode" required />
             <input type="hidden" id="pvzAddress" name="pvzAddress" required />
             <input type="hidden" id="tariffCode" name="tariffCode" value="136" />
