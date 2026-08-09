@@ -4,6 +4,9 @@
 
 Сайт: [http://northmp.su/](http://northmp.su/)
 
+**Полная инструкция по управлению сайтом** (товары, цены, фото, админка, оплата, СДЭК):  
+[`docs/UPRAVLENIE-SAJTOM.md`](docs/UPRAVLENIE-SAJTOM.md)
+
 ## Запуск
 
 ```bash
