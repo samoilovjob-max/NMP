@@ -30,9 +30,11 @@ const CONFIG = {
     secretKey: process.env.YOOKASSA_SECRET_KEY || "",
     apiUrl: "https://api.yookassa.ru/v3"
   },
+  // Демо, если явно включено, ключей нет, или передан только secret без shopId
   paymentsDemo:
     String(process.env.PAYMENTS_DEMO || "").toLowerCase() === "true" ||
-    (!process.env.YOOKASSA_SHOP_ID && !process.env.YOOKASSA_SECRET_KEY),
+    (!process.env.YOOKASSA_SHOP_ID && !process.env.YOOKASSA_SECRET_KEY) ||
+    (Boolean(process.env.YOOKASSA_SECRET_KEY) && !process.env.YOOKASSA_SHOP_ID),
   package: {
     weight: Number(process.env.PACKAGE_WEIGHT || 8000),
     length: Number(process.env.PACKAGE_LENGTH || 60),
@@ -42,6 +44,7 @@ const CONFIG = {
 };
 
 const yookassaReady = Boolean(CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
+const yookassaSecretOnly = Boolean(!CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
 
 let tokenCache = { value: "", expiresAt: 0 };
 
@@ -330,6 +333,7 @@ app.get("/api/health", async (_req, res) => {
       },
       yandexMaps: Boolean(CONFIG.yandexKey),
       yookassa: yookassaReady,
+      yookassaNeedsShopId: yookassaSecretOnly,
       paymentsDemo: CONFIG.paymentsDemo && !yookassaReady,
       admin: Boolean(CONFIG.adminToken)
     });
@@ -349,7 +353,8 @@ app.get("/api/config/public", (_req, res) => {
     payments: {
       mode: yookassaReady ? "yookassa" : "demo",
       shopId: yookassaReady ? CONFIG.yookassa.shopId : "",
-      demo: CONFIG.paymentsDemo && !yookassaReady
+      demo: CONFIG.paymentsDemo && !yookassaReady,
+      needsShopId: yookassaSecretOnly
     },
     shipSlaHours: CONFIG.shipSlaHours
   });
