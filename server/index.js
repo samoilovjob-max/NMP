@@ -169,11 +169,19 @@ function publicOrder(order) {
   };
 }
 
+function normalizeAdminToken(raw) {
+  let token = String(raw || "").trim();
+  if (/^bearer\s+/i.test(token)) token = token.replace(/^bearer\s+/i, "").trim();
+  if (/^admin_token\s*=\s*/i.test(token)) token = token.replace(/^admin_token\s*=\s*/i, "").trim();
+  return token;
+}
+
 function adminGuard(req, res, next) {
   const header = req.headers.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : req.headers["x-admin-token"] || "";
+  const raw = header.startsWith("Bearer ") ? header.slice(7) : req.headers["x-admin-token"] || "";
+  const token = normalizeAdminToken(raw);
   if (!CONFIG.adminToken || token !== CONFIG.adminToken) {
-    return res.status(401).json({ message: "Требуется токен админки" });
+    return res.status(401).json({ message: "Неверный токен админки. Проверьте ADMIN_TOKEN в .env" });
   }
   next();
 }

@@ -3,24 +3,36 @@
   const TOKEN_KEY = "nmp_admin_token";
   let state = { tab: "products", cms: null, orders: null, editingProductId: null };
 
-  const getToken = () => sessionStorage.getItem(TOKEN_KEY) || "";
-  const setToken = (value) => sessionStorage.setItem(TOKEN_KEY, value);
+  const normalizeToken = (value) => {
+    let token = String(value || "").trim();
+    if (/^bearer\s+/i.test(token)) token = token.replace(/^bearer\s+/i, "").trim();
+    if (/^admin_token\s*=\s*/i.test(token)) token = token.replace(/^admin_token\s*=\s*/i, "").trim();
+    return token;
+  };
 
-  const api = (path, options = {}) =>
-    fetch((window.NMP_CONFIG?.apiBase || "") + path, {
+  const getToken = () => normalizeToken(sessionStorage.getItem(TOKEN_KEY) || "");
+  const setToken = (value) => sessionStorage.setItem(TOKEN_KEY, normalizeToken(value));
+
+  const api = (path, options = {}) => {
+    const headers = {
+      Authorization: `Bearer ${getToken()}`,
+      ...(options.headers || {})
+    };
+    if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
+    return fetch((window.NMP_CONFIG?.apiBase || "") + path, {
       ...options,
-      headers: {
-        ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-        Authorization: `Bearer ${getToken()}`,
-        ...(options.headers || {})
-      }
+      headers
     }).then(async (res) => {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw Object.assign(new Error(data.message || "Ошибка API"), { data, status: res.status });
       return data;
     });
+  };
 
-  const money = (value) => window.NMP_formatPrice(Number(value || 0));
+  const money = (value) =>
+    typeof window.NMP_formatPrice === "function"
+      ? window.NMP_formatPrice(Number(value || 0))
+      : new Intl.NumberFormat("ru-RU").format(Number(value || 0)) + " ₽";
   const when = (iso) => (iso ? new Date(iso).toLocaleString("ru-RU") : "—");
   const esc = (s) =>
     String(s ?? "")
@@ -120,20 +132,26 @@
     root.innerHTML = `
       <form class="admin-login" id="adminLogin">
         <h2>Вход в админку</h2>
-        <p class="form-note">Токен берётся из <code>ADMIN_TOKEN</code> в файле <code>.env</code>.</p>
+        <p class="form-note">Вставьте значение <code>ADMIN_TOKEN</code> из файла <code>.env</code> на сервере (только сам ключ, без <code>ADMIN_TOKEN=</code>).</p>
         <div class="field">
-          <label for="adminToken">ADMIN_TOKEN</label>
-          <input id="adminToken" name="token" type="password" required autocomplete="current-password" />
+          <label for="adminToken">Токен доступа</label>
+          <input id="adminToken" name="token" type="text" required autocomplete="off" spellcheck="false" placeholder="вставьте токен сюда" />
         </div>
-        ${error ? `<p class="form-note" style="color:#c45c26">${error}</p>` : ""}
+        ${error ? `<p class="form-note" style="color:#c45c26">${esc(error)}</p>` : ""}
         <button class="btn btn-primary" type="submit">Войти</button>
       </form>`;
     document.getElementById("adminLogin").addEventListener("submit", async (event) => {
       event.preventDefault();
-      setToken(event.target.token.value.trim());
+      const token = normalizeToken(event.target.token.value);
+      if (!token) {
+        renderLogin("Вставьте токен");
+        return;
+      }
+      setToken(token);
       try {
         await load();
       } catch (err) {
+        sessionStorage.removeItem(TOKEN_KEY);
         renderLogin(err.message || "Неверный токен");
       }
     });
