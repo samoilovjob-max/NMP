@@ -896,7 +896,7 @@ const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
   console.log(`NMP server http://127.0.0.1:${port}`);
   console.log(`CDEK from: ${CONFIG.fromCity}, ${CONFIG.fromAddress}`);
-  console.log(`Yandex Maps: ${CONFIG.yandexKey ? "on" : "off"}`);
+  console.log(`Map: OpenStreetMap (Leaflet)`);
   console.log(`YooKassa: ${yookassaReady ? "on" : CONFIG.paymentsDemo ? "demo" : "off"}`);
   console.log(`Admin: ${CONFIG.adminToken ? "/admin.html" : "token missing"}`);
 });
