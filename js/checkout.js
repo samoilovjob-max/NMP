@@ -26,11 +26,25 @@
   const deliveryInfo = document.getElementById("deliveryInfo");
   const tariffCodeInput = document.getElementById("tariffCode");
   const payBtn = document.getElementById("payBtn");
+  const agreeBox = document.getElementById("agree");
   const mapBox = document.getElementById("cdekWidget");
+  const pvzToolbar = document.querySelector(".pvz-toolbar");
   let publicConfig = null;
   let pvzMap = null;
   let pvzMarkersLayer = null;
   let latestPvz = [];
+  let pvzCollapsed = false;
+
+  const setPvzExtrasVisible = (visible) => {
+    if (pvzToolbar) pvzToolbar.hidden = !visible;
+    if (mapBox && !visible) mapBox.hidden = true;
+  };
+
+  const syncPayButton = () => {
+    const hasCart = cartLines().length > 0;
+    const agreed = Boolean(agreeBox?.checked);
+    payBtn.disabled = !(hasCart && agreed);
+  };
 
   const user = Store.getUser();
   if (user) {
@@ -55,7 +69,7 @@
     const lines = cartLines();
     if (!lines.length) {
       summaryEl.innerHTML = `<h2>Корзина пуста</h2><p class="lead">Выберите изделие в каталоге.</p><a class="btn btn-primary" href="index.html#catalog">К изделиям</a>`;
-      payBtn.disabled = true;
+      syncPayButton();
       return;
     }
     const total = lines.reduce((s, l) => s + l.sum, 0);
@@ -112,7 +126,7 @@
         renderSummary();
       });
     });
-    payBtn.disabled = false;
+    syncPayButton();
   };
 
   const calculateDelivery = async () => {
@@ -144,15 +158,44 @@
 
   let latestCities = [];
 
+  const renderSelectedPvz = (item) => {
+    pvzList.replaceChildren();
+    const selected = document.createElement("div");
+    selected.className = "pvz-item active pvz-item-selected";
+    const title = document.createElement("strong");
+    title.textContent = "Выбран ПВЗ · " + (item.code || "");
+    const addr = document.createElement("span");
+    addr.textContent = item.address || item.name || "";
+    const time = document.createElement("span");
+    time.textContent = item.work_time || "";
+    selected.append(title, addr, time);
+    pvzList.appendChild(selected);
+
+    const changeBtn = document.createElement("button");
+    changeBtn.type = "button";
+    changeBtn.className = "btn btn-ghost";
+    changeBtn.style.marginTop = "0.55rem";
+    changeBtn.textContent = "Изменить пункт выдачи";
+    changeBtn.addEventListener("click", () => {
+      pvzCollapsed = false;
+      pvzCode.value = "";
+      pvzAddress.value = "";
+      pvzSelected.textContent = "Пункт выдачи не выбран — выберите из списка ниже";
+      setPvzExtrasVisible(true);
+      renderPvzList(latestPvz);
+    });
+    pvzList.appendChild(changeBtn);
+  };
+
   const selectPvz = (item) => {
     if (!item) return;
     pvzCode.value = String(item.code || "");
     pvzAddress.value = String(item.address || item.name || "");
     pvzSelected.textContent = "Выбрано: " + pvzAddress.value;
     pvzSelected.style.color = "#f3f1ec";
-    pvzList.querySelectorAll(".pvz-item").forEach((el) => {
-      el.classList.toggle("active", el.dataset.code === String(item.code));
-    });
+    pvzCollapsed = true;
+    setPvzExtrasVisible(false);
+    renderSelectedPvz(item);
     calculateDelivery();
     window.NMP_toast?.("ПВЗ выбран: " + item.code);
   };
@@ -167,6 +210,14 @@
       return;
     }
 
+    if (pvzCollapsed && pvzCode.value) {
+      const selected = list.find((item) => String(item.code) === pvzCode.value);
+      if (selected) {
+        renderSelectedPvz(selected);
+        return;
+      }
+    }
+
     const hint = document.createElement("p");
     hint.className = "form-note";
     hint.textContent = `Найдено ПВЗ: ${list.length}. Нажмите на пункт ниже, чтобы выбрать.`;
@@ -175,7 +226,7 @@
     list.forEach((item) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "pvz-item" + (String(item.code) === pvzCode.value ? " active" : "");
+      btn.className = "pvz-item";
       btn.dataset.code = String(item.code || "");
 
       const title = document.createElement("strong");
@@ -253,12 +304,18 @@
     cityInput.value = city.city || cityInput.value;
     cityCodeInput.value = String(city.code || "");
     citySuggest.replaceChildren();
+    pvzCollapsed = false;
     pvzCode.value = "";
     pvzAddress.value = "";
     pvzSelected.textContent = "Пункт выдачи не выбран — выберите из списка ниже";
+    setPvzExtrasVisible(true);
     loadPvz(cityCodeInput.value, { showMap: false });
     calculateDelivery();
   };
+
+  agreeBox?.addEventListener("change", () => {
+    syncPayButton();
+  });
 
   const loadPvz = async (cityCode, { showMap = false } = {}) => {
     if (!cityCode) {
@@ -341,6 +398,11 @@
     event.preventDefault();
     const lines = cartLines();
     if (!lines.length) return;
+    if (!agreeBox?.checked) {
+      window.NMP_toast("Подтвердите согласие с политикой конфиденциальности");
+      syncPayButton();
+      return;
+    }
     if (!cityCodeInput.value || !pvzCode.value || !pvzAddress.value) {
       window.NMP_toast("Выберите город и пункт выдачи СДЭК");
       return;
@@ -430,8 +492,11 @@
       window.location.href = `account.html?order=${encodeURIComponent(order.id)}`;
     } catch (error) {
       window.NMP_toast(error.message || "Не удалось оформить заказ");
-      payBtn.disabled = false;
-      payBtn.textContent = "Оплатить через ЮKassa";
+      payBtn.textContent =
+        publicConfig?.payments?.mode === "yookassa"
+          ? "Оплатить через ЮKassa"
+          : "Оплатить (демо) и создать заказ";
+      syncPayButton();
     }
   });
 
@@ -456,6 +521,7 @@
     })
     .finally(() => {
       renderSummary();
+      syncPayButton();
       if (cityCodeInput.value) {
         loadPvz(cityCodeInput.value, { showMap: false });
         calculateDelivery();

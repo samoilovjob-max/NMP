@@ -931,15 +931,18 @@ h3 {
 
 .footer-brand img,
 .footer-logo {
-  width: min(200px, 64vw);
-  height: auto;
-  max-height: 110px;
+  width: auto;
+  height: 54px;
+  max-width: 118px;
+  aspect-ratio: 160 / 78;
   object-fit: contain;
   object-position: left center;
-  border-radius: 0;
+  border-radius: 8px;
   background: transparent;
   display: block;
-  color: var(--frost);
+  flex-shrink: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .footer-simple {
