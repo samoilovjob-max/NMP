@@ -1,33 +1,136 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
-  const id = params.get("id") || "1";
+  const id = params.get("id") || params.get("slug") || "1";
   const product = window.NMP_getProduct(id);
   const root = document.getElementById("productRoot");
+  const siteUrl = "https://northmp.su";
+
+  const upsertMeta = (attr, key, content) => {
+    if (!content) return;
+    let el = document.head.querySelector(`meta[${attr}="${key}"]`);
+    if (!el) {
+      el = document.createElement("meta");
+      el.setAttribute(attr, key);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("content", content);
+  };
+
+  const upsertLink = (rel, href) => {
+    let el = document.head.querySelector(`link[rel="${rel}"]`);
+    if (!el) {
+      el = document.createElement("link");
+      el.setAttribute("rel", rel);
+      document.head.appendChild(el);
+    }
+    el.setAttribute("href", href);
+  };
 
   if (!product || !root) {
-    if (root) root.innerHTML = `<p class="lead">Товар не найден. <a href="index.html#catalog">Вернуться в каталог</a></p>`;
+    if (root) {
+      root.innerHTML = `<p class="lead">Товар не найден. <a href="index.html#catalog">Вернуться в каталог</a></p>`;
+    }
+    document.title = "Товар не найден — Northern Magical Place";
     return;
   }
 
-  document.title = `${product.name} — Northern Magical Place`;
+  const pageUrl = `${siteUrl}/product.html?id=${encodeURIComponent(product.id)}`;
+  const absoluteImage = product.image.startsWith("http")
+    ? product.image
+    : `${siteUrl}/${product.image.replace(/^\//, "")}`;
+
+  document.title = product.seoTitle || `${product.name} — Northern Magical Place`;
+  upsertMeta("name", "description", product.seoDescription || product.short);
+  upsertMeta("name", "keywords", (product.keywords || []).join(", "));
+  upsertMeta("property", "og:type", "product");
+  upsertMeta("property", "og:site_name", "Northern Magical Place");
+  upsertMeta("property", "og:locale", "ru_RU");
+  upsertMeta("property", "og:title", product.seoTitle || product.name);
+  upsertMeta("property", "og:description", product.seoDescription || product.short);
+  upsertMeta("property", "og:url", pageUrl);
+  upsertMeta("property", "og:image", absoluteImage);
+  upsertMeta("name", "twitter:card", "summary_large_image");
+  upsertMeta("name", "twitter:title", product.seoTitle || product.name);
+  upsertMeta("name", "twitter:description", product.seoDescription || product.short);
+  upsertMeta("name", "twitter:image", absoluteImage);
+  upsertLink("canonical", pageUrl);
+
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    sku: product.sku,
+    mpn: product.sku,
+    image: [absoluteImage],
+    description: product.seoDescription || product.description,
+    brand: {
+      "@type": "Brand",
+      name: "Northern Magical Place"
+    },
+    category: (product.keywords || [])[0] || "Костровые системы",
+    offers: {
+      "@type": "Offer",
+      url: pageUrl,
+      priceCurrency: "RUB",
+      price: String(product.price),
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+      seller: {
+        "@type": "Organization",
+        name: "Northern Magical Place"
+      }
+    }
+  };
+
+  const faqSchema =
+    product.faq?.length
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: product.faq.map((item) => ({
+            "@type": "Question",
+            name: item.q,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: item.a
+            }
+          }))
+        }
+      : null;
+
+  document.querySelectorAll("script[data-seo-jsonld]").forEach((node) => node.remove());
+  const injectJsonLd = (data) => {
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.dataset.seoJsonld = "1";
+    script.textContent = JSON.stringify(data);
+    document.head.appendChild(script);
+  };
+  injectJsonLd(productSchema);
+  if (faqSchema) injectJsonLd(faqSchema);
+
+  const gallery = product.gallery || [product.image];
+  const galleryAlts = product.galleryAlts || [];
 
   root.innerHTML = `
     <div class="product-gallery reveal visible">
       <div class="product-stage">
-        <img id="mainImage" src="${product.image}" alt="${product.name}" />
+        <img id="mainImage" src="${product.image}" alt="${product.imageAlt || product.name}" />
       </div>
       <div class="thumbs">
-        ${product.gallery
+        ${gallery
           .map(
             (src, index) =>
-              `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}"><img src="${src}" alt="" /></button>`
+              `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}" data-alt="${
+                galleryAlts[index] || product.imageAlt || product.name
+              }"><img src="${src}" alt="${galleryAlts[index] || product.name}" /></button>`
           )
           .join("")}
       </div>
     </div>
     <div class="product-info reveal visible">
       <div class="badge">${product.badge}</div>
-      <h1>${product.name}</h1>
+      <h1>${product.h1 || product.name}</h1>
       <p class="sku-label">Артикул ${product.sku}</p>
       <p class="price-lg">${window.NMP_formatPrice(product.price)}</p>
       <p class="lead">${product.description}</p>
@@ -39,6 +142,49 @@
         <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>
       </div>
       <p class="form-note">Доставка по России через СДЭК · Оплата через ЮKassa · После заказа откроется личный кабинет</p>
+
+      ${
+        product.useCases?.length
+          ? `<section class="seo-block">
+              <h2>Когда выбирают ${product.name}</h2>
+              <ul class="spec-list">
+                ${product.useCases.map((item) => `<li>${item}</li>`).join("")}
+              </ul>
+            </section>`
+          : ""
+      }
+
+      ${
+        product.keywords?.length
+          ? `<section class="seo-block">
+              <h2>Ключевые сценарии и запросы</h2>
+              <p class="seo-keywords">${product.keywords
+                .map((word) => `<span>${word}</span>`)
+                .join("")}</p>
+            </section>`
+          : ""
+      }
+
+      ${
+        product.faq?.length
+          ? `<section class="seo-block">
+              <h2>Частые вопросы</h2>
+              <div class="product-faq">
+                ${product.faq
+                  .map(
+                    (item) => `
+                  <details class="product-faq-item">
+                    <summary>${item.q}</summary>
+                    <p>${item.a}</p>
+                  </details>`
+                  )
+                  .join("")}
+              </div>
+            </section>`
+          : ""
+      }
+
+      <p class="form-note">Смотрите также: <a href="index.html#catalog">каталог костровых систем Northern Magical Place</a></p>
       <p><a href="index.html#catalog">← Все изделия</a></p>
     </div>
   `;
@@ -49,10 +195,10 @@
       root.querySelectorAll(".thumb").forEach((el) => el.classList.remove("active"));
       btn.classList.add("active");
       mainImage.src = btn.getAttribute("data-src");
+      mainImage.alt = btn.getAttribute("data-alt") || product.name;
     });
   });
 
-  // re-bind add to cart for dynamically inserted button
   root.querySelector("[data-add-cart]")?.addEventListener("click", () => {
     window.NMP_Store.addToCart(product.id);
     window.NMP_toast(`«${product.name}» добавлен в корзину`);

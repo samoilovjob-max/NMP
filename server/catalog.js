@@ -4,7 +4,7 @@ const PRODUCTS = [
     id: "1",
     sku: "NMP-FP-01",
     slug: "flat-pack-ochag",
-    name: "Flat-Pack Очаг с зоной готовки",
+    name: "Flat-Pack Очаг — походная костровая система",
     price: 18900,
     image: "images/product-1.png"
   },
@@ -12,7 +12,7 @@ const PRODUCTS = [
     id: "2",
     sku: "NMP-HT-02",
     slug: "chasha-grill-hitech",
-    name: "Чаша-гриль Hi-Tech",
+    name: "Чаша-гриль Hi-Tech — костровая чаша для дома",
     price: 21500,
     image: "images/product-2.png"
   },
@@ -20,7 +20,7 @@ const PRODUCTS = [
     id: "3",
     sku: "NMP-NW-03",
     slug: "northern-wild",
-    name: "Чаша Northern Wild",
+    name: "Northern Wild — костровой очаг",
     price: 19900,
     image: "images/product-3.jpg"
   },
@@ -28,7 +28,7 @@ const PRODUCTS = [
     id: "4",
     sku: "NMP-HX-04",
     slug: "hex-bowl-premium",
-    name: "Hex Bowl Premium",
+    name: "Hex Bowl Premium — костровая чаша",
     price: 24900,
     image: "images/product-4.png"
   }
