@@ -1,6 +1,7 @@
 window.NMP_PRODUCTS = [
   {
     id: "1",
+    sku: "NMP-FP-01",
     slug: "flat-pack-ochag",
     name: "Flat-Pack Очаг с зоной готовки",
     badge: "Хит сезона",
@@ -19,6 +20,7 @@ window.NMP_PRODUCTS = [
   },
   {
     id: "2",
+    sku: "NMP-HT-02",
     slug: "chasha-grill-hitech",
     name: "Чаша-гриль Hi-Tech",
     badge: "Дизайн",
@@ -37,6 +39,7 @@ window.NMP_PRODUCTS = [
   },
   {
     id: "3",
+    sku: "NMP-NW-03",
     slug: "northern-wild",
     name: "Чаша Northern Wild",
     badge: "Природа",
@@ -55,6 +58,7 @@ window.NMP_PRODUCTS = [
   },
   {
     id: "4",
+    sku: "NMP-HX-04",
     slug: "hex-bowl-premium",
     name: "Hex Bowl Premium",
     badge: "Арт-объект",

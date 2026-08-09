@@ -28,6 +28,7 @@
     <div class="product-info reveal visible">
       <div class="badge">${product.badge}</div>
       <h1>${product.name}</h1>
+      <p class="sku-label">Артикул ${product.sku}</p>
       <p class="price-lg">${window.NMP_formatPrice(product.price)}</p>
       <p class="lead">${product.description}</p>
       <ul class="spec-list">

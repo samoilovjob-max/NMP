@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Админка заказов — Northern Magical Place</title>
+  <link rel="icon" href="images/logo-mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header scrolled" id="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html" aria-label="Northern Magical Place">
+        <img class="brand-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="64" height="64" />
+        <span class="brand-text">
+          <span>Northern</span>
+          <span>Magical Place</span>
+        </span>
+      </a>
+      <nav class="nav" id="nav">
+        <a href="index.html">Сайт</a>
+        <a href="admin.html" class="active">Админка</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero compact">
+      <div class="container">
+        <div class="eyebrow">Операции</div>
+        <h1>Админка заказов</h1>
+        <p class="lead">Артикулы, оплата, срок отгрузки и статус СДЭК — в одном месте.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:1.5rem;">
+      <div class="container">
+        <div id="adminRoot" class="admin-root"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -1,8 +1,11 @@
 const path = require("path");
-const fs = require("fs");
+const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
+
+const { PRODUCTS, resolveOrderItems } = require("./catalog");
+const store = require("./orders-store");
 
 const app = express();
 app.use(cors());
@@ -10,8 +13,6 @@ app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const ROOT = path.join(__dirname, "..");
-const DATA_DIR = path.join(__dirname, "data");
-const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 
 const CONFIG = {
   account: process.env.CDEK_ACCOUNT,
@@ -21,6 +22,17 @@ const CONFIG = {
   fromCityCode: Number(process.env.CDEK_FROM_CITY_CODE || 450),
   fromAddress: process.env.CDEK_FROM_ADDRESS || "Лесной проспект 47",
   yandexKey: process.env.YANDEX_MAPS_API_KEY || "",
+  publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, ""),
+  adminToken: process.env.ADMIN_TOKEN || "",
+  shipSlaHours: Number(process.env.SHIP_SLA_HOURS || 48),
+  yookassa: {
+    shopId: process.env.YOOKASSA_SHOP_ID || "",
+    secretKey: process.env.YOOKASSA_SECRET_KEY || "",
+    apiUrl: "https://api.yookassa.ru/v3"
+  },
+  paymentsDemo:
+    String(process.env.PAYMENTS_DEMO || "").toLowerCase() === "true" ||
+    (!process.env.YOOKASSA_SHOP_ID && !process.env.YOOKASSA_SECRET_KEY),
   package: {
     weight: Number(process.env.PACKAGE_WEIGHT || 8000),
     length: Number(process.env.PACKAGE_LENGTH || 60),
@@ -29,8 +41,7 @@ const CONFIG = {
   }
 };
 
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, "[]", "utf8");
+const yookassaReady = Boolean(CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
 
 let tokenCache = { value: "", expiresAt: 0 };
 
@@ -59,7 +70,7 @@ async function getToken() {
   return tokenCache.value;
 }
 
-async function cdekRequest(methodPath, { method = "GET", query, json, form } = {}) {
+async function cdekRequest(methodPath, { method = "GET", query, json } = {}) {
   const token = await getToken();
   let url = `${CONFIG.apiUrl}/${methodPath.replace(/^\//, "")}`;
   if (query) {
@@ -78,9 +89,7 @@ async function cdekRequest(methodPath, { method = "GET", query, json, form } = {
   };
 
   const init = { method, headers };
-  if (form) {
-    init.body = form;
-  } else if (json) {
+  if (json) {
     headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(json);
   }
@@ -96,18 +105,6 @@ async function cdekRequest(methodPath, { method = "GET", query, json, form } = {
   return { ok: res.ok, status: res.status, data, text };
 }
 
-function readOrders() {
-  try {
-    return JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-function writeOrders(orders) {
-  fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), "utf8");
-}
-
 function mapCdekStatus(code, name) {
   const n = `${code || ""} ${name || ""}`.toLowerCase();
   if (/вручен|выдан|получен/.test(n)) return "arrived";
@@ -116,6 +113,209 @@ function mapCdekStatus(code, name) {
   if (/в пути|отправлен|транзит|передан|доставляется/.test(n)) return "shipped";
   return null;
 }
+
+function publicOrder(order) {
+  if (!order) return null;
+  return {
+    id: order.id,
+    createdAt: order.createdAt,
+    paidAt: order.paidAt,
+    shipByAt: order.shipByAt,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    items: order.items,
+    total: order.total,
+    goodsTotal: order.goodsTotal,
+    deliverySum: order.deliverySum,
+    city: order.city,
+    cityCode: order.cityCode,
+    pvzCode: order.pvzCode,
+    pvzAddress: order.pvzAddress,
+    tariffCode: order.tariffCode,
+    comment: order.comment,
+    cdek: order.cdek,
+    customer: {
+      lastName: order.customer?.lastName,
+      firstName: order.customer?.firstName,
+      middleName: order.customer?.middleName,
+      phone: order.customer?.phone,
+      email: order.customer?.email,
+      city: order.customer?.city
+    }
+  };
+}
+
+function adminGuard(req, res, next) {
+  const header = req.headers.authorization || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : req.headers["x-admin-token"] || "";
+  if (!CONFIG.adminToken || token !== CONFIG.adminToken) {
+    return res.status(401).json({ message: "Требуется токен админки" });
+  }
+  next();
+}
+
+function baseUrlFromReq(req) {
+  if (CONFIG.publicBaseUrl) return CONFIG.publicBaseUrl;
+  const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  return `${proto}://${host}`;
+}
+
+async function createCdekWaybill(order) {
+  const phone = String(order.customer?.phone || "").replace(/[^\d]/g, "");
+  const packagesItems = order.items.map((item, index) => ({
+    name: `${item.sku} · ${item.name}`,
+    ware_key: String(item.sku || item.productId || index + 1),
+    payment: { value: 0 },
+    cost: Number(item.price || 0),
+    weight: Math.max(100, Math.round(CONFIG.package.weight / Math.max(order.items.length, 1))),
+    amount: Number(item.qty || 1)
+  }));
+
+  const payload = {
+    type: 1,
+    number: String(order.id),
+    tariff_code: Number(order.tariffCode || 136),
+    comment:
+      order.comment ||
+      `Northern Magical Place${order.pvzAddress ? ` · ПВЗ: ${order.pvzAddress}` : ""}`,
+    delivery_point: String(order.pvzCode),
+    from_location: {
+      code: CONFIG.fromCityCode,
+      address: CONFIG.fromAddress
+    },
+    recipient: {
+      name: `${order.customer.lastName} ${order.customer.firstName} ${order.customer.middleName || ""}`.trim(),
+      phones: [{ number: phone }],
+      ...(order.customer.email ? { email: order.customer.email } : {})
+    },
+    packages: [
+      {
+        number: "1",
+        weight: CONFIG.package.weight,
+        length: CONFIG.package.length,
+        width: CONFIG.package.width,
+        height: CONFIG.package.height,
+        items: packagesItems
+      }
+    ]
+  };
+
+  const result = await cdekRequest("orders", { method: "POST", json: payload });
+  if (!result.ok) {
+    const message =
+      result.data?.requests?.[0]?.errors || result.data?.message || result.data || "CDEK error";
+    throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+  }
+
+  const entity = result.data?.entity || {};
+  let uuid = entity.uuid;
+  let cdekNumber = entity.cdek_number || "";
+
+  if (uuid && !cdekNumber) {
+    await new Promise((r) => setTimeout(r, 1200));
+    const info = await cdekRequest(`orders/${uuid}`);
+    cdekNumber = info.data?.entity?.cdek_number || cdekNumber;
+  }
+
+  store.rememberCdekMap({
+    number: String(order.id),
+    uuid,
+    cdekNumber,
+    pvzCode: order.pvzCode,
+    pvzAddress: order.pvzAddress,
+    createdAt: new Date().toISOString(),
+    recipient: order.customer
+  });
+
+  return { uuid, cdekNumber };
+}
+
+async function markOrderPaid(orderId, { paymentId = "", source = "manual" } = {}) {
+  const order = store.getOrder(orderId);
+  if (!order) throw new Error("Заказ не найден");
+  if (order.paymentStatus === "paid") return order;
+
+  const paidAt = new Date();
+  const shipByAt = new Date(paidAt.getTime() + CONFIG.shipSlaHours * 3600 * 1000);
+
+  let cdekPatch = {
+    ...order.cdek,
+    stage: "Оплачен · сборка на производстве",
+    history: [
+      ...(order.cdek?.history || []),
+      {
+        at: paidAt.toISOString(),
+        title: "Оплата получена",
+        detail: source === "yookassa" ? `ЮKassa · ${paymentId}` : "Демо / ручное подтверждение"
+      }
+    ]
+  };
+
+  try {
+    const cdek = await createCdekWaybill({ ...order, paidAt: paidAt.toISOString() });
+    cdekPatch = {
+      ...cdekPatch,
+      uuid: cdek.uuid || "",
+      trackNumber: cdek.cdekNumber || "",
+      stage: cdek.cdekNumber
+        ? `Создан в СДЭК · № ${cdek.cdekNumber}`
+        : "Заявка создана в СДЭК, номер появится после обработки",
+      history: [
+        ...cdekPatch.history,
+        {
+          at: new Date().toISOString(),
+          title: "Передано в СДЭК",
+          detail: cdek.cdekNumber || cdek.uuid || "Заявка принята"
+        }
+      ]
+    };
+  } catch (error) {
+    cdekPatch = {
+      ...cdekPatch,
+      stage: "Оплата принята. СДЭК: " + error.message,
+      history: [
+        ...cdekPatch.history,
+        {
+          at: new Date().toISOString(),
+          title: "Ошибка создания накладной СДЭК",
+          detail: error.message
+        }
+      ]
+    };
+  }
+
+  return store.updateOrder(orderId, {
+    paymentStatus: "paid",
+    paymentId: paymentId || order.paymentId || "",
+    paidAt: paidAt.toISOString(),
+    shipByAt: shipByAt.toISOString(),
+    status: "assembly",
+    cdek: cdekPatch
+  });
+}
+
+async function yookassaRequest(methodPath, { method = "GET", json, idempotenceKey } = {}) {
+  const auth = Buffer.from(`${CONFIG.yookassa.shopId}:${CONFIG.yookassa.secretKey}`).toString(
+    "base64"
+  );
+  const headers = {
+    Authorization: `Basic ${auth}`,
+    Accept: "application/json"
+  };
+  if (json) headers["Content-Type"] = "application/json";
+  if (idempotenceKey) headers["Idempotence-Key"] = idempotenceKey;
+
+  const res = await fetch(`${CONFIG.yookassa.apiUrl}/${methodPath.replace(/^\//, "")}`, {
+    method,
+    headers,
+    body: json ? JSON.stringify(json) : undefined
+  });
+  const data = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, data };
+}
+
+/* ---------- Public config / health ---------- */
 
 app.get("/api/health", async (_req, res) => {
   try {
@@ -128,7 +328,10 @@ app.get("/api/health", async (_req, res) => {
         code: CONFIG.fromCityCode,
         address: CONFIG.fromAddress
       },
-      yandexMaps: Boolean(CONFIG.yandexKey)
+      yandexMaps: Boolean(CONFIG.yandexKey),
+      yookassa: yookassaReady,
+      paymentsDemo: CONFIG.paymentsDemo && !yookassaReady,
+      admin: Boolean(CONFIG.adminToken)
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
@@ -142,11 +345,22 @@ app.get("/api/config/public", (_req, res) => {
     fromAddress: CONFIG.fromAddress,
     yandexMapsApiKey: CONFIG.yandexKey,
     servicePath: "/api/cdek/service",
-    package: CONFIG.package
+    package: CONFIG.package,
+    payments: {
+      mode: yookassaReady ? "yookassa" : "demo",
+      shopId: yookassaReady ? CONFIG.yookassa.shopId : "",
+      demo: CONFIG.paymentsDemo && !yookassaReady
+    },
+    shipSlaHours: CONFIG.shipSlaHours
   });
 });
 
-/** Widget-compatible proxy: action=offices | calculate */
+app.get("/api/products", (_req, res) => {
+  res.json(PRODUCTS);
+});
+
+/* ---------- CDEK ---------- */
+
 app.all("/api/cdek/service", async (req, res) => {
   try {
     const payload = { ...req.query, ...(req.body || {}) };
@@ -242,7 +456,6 @@ app.post("/api/cdek/calculate", async (req, res) => {
       ]
     };
 
-    // Prefer specific tariff calc when known; else tarifflist
     let result;
     if (tariffCode) {
       result = await cdekRequest("calculator/tariff", {
@@ -273,7 +486,7 @@ app.post("/api/cdek/calculate", async (req, res) => {
       tariff: best
         ? {
             code: best.tariff_code || tariffCode || null,
-            name: best.tariff_name || best.tariff_name || "СДЭК",
+            name: best.tariff_name || "СДЭК",
             delivery_sum: best.delivery_sum,
             period_min: best.period_min,
             period_max: best.period_max,
@@ -288,115 +501,11 @@ app.post("/api/cdek/calculate", async (req, res) => {
   }
 });
 
-app.post("/api/cdek/orders", async (req, res) => {
-  try {
-    const {
-      number,
-      tariffCode = 136,
-      recipient,
-      toCityCode,
-      pvzCode,
-      pvzAddress,
-      items = [],
-      comment = ""
-    } = req.body || {};
-
-    if (!number || !recipient?.name || !recipient?.phone || !pvzCode) {
-      return res.status(400).json({ message: "number, recipient, pvzCode required" });
-    }
-
-    const packagesItems = (items.length ? items : [{ name: "Костровая система", cost: 1, amount: 1 }]).map(
-      (item, index) => ({
-        name: item.name || `Товар ${index + 1}`,
-        ware_key: String(item.productId || index + 1),
-        payment: { value: 0 },
-        cost: Number(item.price || item.cost || 0),
-        weight: Math.max(100, Math.round(CONFIG.package.weight / Math.max(items.length, 1))),
-        amount: Number(item.qty || item.amount || 1)
-      })
-    );
-
-    const phone = String(recipient.phone || "").replace(/[^\d]/g, "");
-    const payload = {
-      type: 1,
-      number: String(number),
-      tariff_code: Number(tariffCode),
-      comment: comment || `Northern Magical Place${pvzAddress ? ` · ПВЗ: ${pvzAddress}` : ""}`,
-      delivery_point: String(pvzCode),
-      from_location: {
-        code: CONFIG.fromCityCode,
-        address: CONFIG.fromAddress
-      },
-      recipient: {
-        name: recipient.name,
-        phones: [{ number: phone }],
-        ...(recipient.email ? { email: recipient.email } : {})
-      },
-      packages: [
-        {
-          number: "1",
-          weight: CONFIG.package.weight,
-          length: CONFIG.package.length,
-          width: CONFIG.package.width,
-          height: CONFIG.package.height,
-          items: packagesItems
-        }
-      ]
-    };
-    // toCityCode нужен только для калькулятора на фронте
-    void toCityCode;
-
-    const result = await cdekRequest("orders", { method: "POST", json: payload });
-    if (!result.ok) {
-      return res.status(result.status).json({
-        ok: false,
-        message: result.data?.requests?.[0]?.errors || result.data?.message || result.data,
-        raw: result.data
-      });
-    }
-
-    const entity = result.data?.entity || {};
-    const uuid = entity.uuid;
-    let cdekNumber = entity.cdek_number || "";
-
-    // Sometimes number appears after short delay
-    if (uuid && !cdekNumber) {
-      await new Promise((r) => setTimeout(r, 1200));
-      const info = await cdekRequest(`orders/${uuid}`);
-      cdekNumber = info.data?.entity?.cdek_number || cdekNumber;
-    }
-
-    const orders = readOrders();
-    const record = {
-      number: String(number),
-      uuid,
-      cdekNumber,
-      pvzCode,
-      pvzAddress,
-      createdAt: new Date().toISOString(),
-      recipient
-    };
-    orders.unshift(record);
-    writeOrders(orders.slice(0, 500));
-
-    res.json({
-      ok: true,
-      uuid,
-      cdekNumber,
-      pvzCode,
-      request: result.data
-    });
-  } catch (error) {
-    res.status(500).json({ ok: false, message: error.message });
-  }
-});
-
 app.get("/api/cdek/track/:query", async (req, res) => {
   try {
     const q = String(req.params.query || "").trim();
     if (!q) return res.status(400).json({ message: "track query required" });
 
-    // Try by CDEK number, then by UUID, then by client number
     let result = await cdekRequest(`orders`, { query: { cdek_number: q } });
     if (!result.ok || !result.data?.entity) {
       result = await cdekRequest(`orders/${q}`);
@@ -405,14 +514,10 @@ app.get("/api/cdek/track/:query", async (req, res) => {
       result = await cdekRequest(`orders`, { query: { im_number: q } });
     }
 
-    // Fallback: search local map then fetch uuid
     if (!result.ok || !result.data?.entity) {
-      const local = readOrders().find(
-        (o) => o.number === q || o.cdekNumber === q || o.uuid === q
-      );
-      if (local?.uuid) {
-        result = await cdekRequest(`orders/${local.uuid}`);
-      }
+      const local = store.findCdekMap(q) || store.getOrder(q);
+      const uuid = local?.uuid || local?.cdek?.uuid;
+      if (uuid) result = await cdekRequest(`orders/${uuid}`);
     }
 
     if (!result.ok || !result.data?.entity) {
@@ -449,10 +554,326 @@ app.get("/api/cdek/track/:query", async (req, res) => {
   }
 });
 
+/* ---------- Shop orders + YooKassa ---------- */
+
+app.post("/api/orders", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const {
+      lastName,
+      firstName,
+      middleName = "",
+      phone,
+      email,
+      city,
+      cityCode,
+      pvzCode,
+      pvzAddress,
+      tariffCode = 136,
+      deliverySum = 0,
+      comment = "",
+      items: rawItems = []
+    } = body;
+
+    if (!lastName || !firstName || !phone || !email || !cityCode || !pvzCode || !pvzAddress) {
+      return res.status(400).json({ message: "Заполните данные получателя и ПВЗ" });
+    }
+
+    const items = resolveOrderItems(rawItems);
+    const goodsTotal = items.reduce((sum, item) => sum + item.sum, 0);
+    const delivery = Math.max(0, Number(deliverySum) || 0);
+    const total = goodsTotal + delivery;
+
+    const order = store.createOrder({
+      customer: { lastName, firstName, middleName, phone, email, city, cityCode },
+      items,
+      goodsTotal,
+      deliverySum: delivery,
+      total,
+      city,
+      cityCode,
+      pvzCode,
+      pvzAddress,
+      tariffCode: Number(tariffCode) || 136,
+      comment
+    });
+
+    res.json({ ok: true, order: publicOrder(order) });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.get("/api/orders/:id", (req, res) => {
+  const order = store.getOrder(req.params.id);
+  if (!order) return res.status(404).json({ message: "Заказ не найден" });
+  res.json({ ok: true, order: publicOrder(order) });
+});
+
+app.post("/api/payments/create", async (req, res) => {
+  try {
+    const { orderId } = req.body || {};
+    const order = store.getOrder(orderId);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    if (order.paymentStatus === "paid") {
+      return res.json({ ok: true, alreadyPaid: true, order: publicOrder(order) });
+    }
+
+    if (!yookassaReady) {
+      if (!CONFIG.paymentsDemo) {
+        return res.status(503).json({
+          message: "ЮKassa не настроена. Добавьте YOOKASSA_SHOP_ID и YOOKASSA_SECRET_KEY в .env"
+        });
+      }
+      return res.json({
+        ok: true,
+        mode: "demo",
+        confirmationUrl: `${baseUrlFromReq(req)}/account.html?order=${encodeURIComponent(
+          order.id
+        )}&pay=demo`
+      });
+    }
+
+    const returnUrl = `${baseUrlFromReq(req)}/account.html?order=${encodeURIComponent(
+      order.id
+    )}&payment=return`;
+    const skuList = order.items.map((i) => i.sku).join(", ");
+
+    const payment = await yookassaRequest("payments", {
+      method: "POST",
+      idempotenceKey: crypto.randomUUID(),
+      json: {
+        amount: {
+          value: Number(order.total).toFixed(2),
+          currency: "RUB"
+        },
+        capture: true,
+        confirmation: {
+          type: "redirect",
+          return_url: returnUrl
+        },
+        description: `NMP ${order.id} · ${skuList}`.slice(0, 128),
+        metadata: {
+          orderId: order.id,
+          skus: skuList
+        },
+        receipt: {
+          customer: {
+            email: order.customer.email,
+            phone: String(order.customer.phone || "").replace(/[^\d+]/g, "")
+          },
+          items: [
+            ...order.items.map((item) => ({
+              description: `${item.sku} ${item.name}`.slice(0, 128),
+              quantity: String(item.qty),
+              amount: {
+                value: Number(item.price).toFixed(2),
+                currency: "RUB"
+              },
+              vat_code: 1,
+              payment_mode: "full_payment",
+              payment_subject: "commodity"
+            })),
+            ...(order.deliverySum > 0
+              ? [
+                  {
+                    description: "Доставка СДЭК",
+                    quantity: "1",
+                    amount: {
+                      value: Number(order.deliverySum).toFixed(2),
+                      currency: "RUB"
+                    },
+                    vat_code: 1,
+                    payment_mode: "full_payment",
+                    payment_subject: "service"
+                  }
+                ]
+              : [])
+          ]
+        }
+      }
+    });
+
+    if (!payment.ok) {
+      return res.status(payment.status).json({
+        message: payment.data?.description || payment.data?.message || "Ошибка ЮKassa",
+        raw: payment.data
+      });
+    }
+
+    const confirmationUrl = payment.data?.confirmation?.confirmation_url;
+    store.updateOrder(order.id, {
+      paymentId: payment.data.id,
+      paymentUrl: confirmationUrl || ""
+    });
+
+    res.json({
+      ok: true,
+      mode: "yookassa",
+      paymentId: payment.data.id,
+      confirmationUrl,
+      order: publicOrder(store.getOrder(order.id))
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/payments/demo/:orderId", async (req, res) => {
+  try {
+    if (yookassaReady && !CONFIG.paymentsDemo) {
+      return res.status(403).json({ message: "Демо-оплата отключена: ЮKassa активна" });
+    }
+    const order = await markOrderPaid(req.params.orderId, { source: "demo" });
+    res.json({ ok: true, order: publicOrder(order) });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.post("/api/payments/webhook", async (req, res) => {
+  try {
+    const event = req.body || {};
+    const payment = event.object || {};
+    const orderId = payment.metadata?.orderId;
+    if (event.event === "payment.succeeded" && orderId) {
+      await markOrderPaid(orderId, { paymentId: payment.id, source: "yookassa" });
+    }
+    if (event.event === "payment.canceled" && orderId) {
+      const order = store.getOrder(orderId);
+      if (order && order.paymentStatus !== "paid") {
+        store.updateOrder(orderId, {
+          paymentStatus: "canceled",
+          status: "cancelled",
+          cdek: {
+            ...order.cdek,
+            stage: "Оплата отменена",
+            history: [
+              ...(order.cdek?.history || []),
+              {
+                at: new Date().toISOString(),
+                title: "Оплата отменена",
+                detail: payment.id || ""
+              }
+            ]
+          }
+        });
+      }
+    }
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/api/payments/status/:orderId", async (req, res) => {
+  try {
+    let order = store.getOrder(req.params.orderId);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+
+    if (yookassaReady && order.paymentId && order.paymentStatus !== "paid") {
+      const payment = await yookassaRequest(`payments/${order.paymentId}`);
+      if (payment.ok && payment.data.status === "succeeded") {
+        order = await markOrderPaid(order.id, {
+          paymentId: payment.data.id,
+          source: "yookassa"
+        });
+      }
+    }
+
+    res.json({ ok: true, order: publicOrder(order) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ---------- Admin ---------- */
+
+app.get("/api/admin/orders", adminGuard, (_req, res) => {
+  const now = Date.now();
+  const orders = store.listOrders().map((order) => ({
+    ...order,
+    needsShip:
+      order.paymentStatus === "paid" &&
+      ["assembly", "pending_payment"].includes(order.status) &&
+      !order.cdek?.trackNumber,
+    overdue: Boolean(order.shipByAt && order.paymentStatus === "paid" && new Date(order.shipByAt).getTime() < now && order.status === "assembly")
+  }));
+  res.json({ ok: true, orders, shipSlaHours: CONFIG.shipSlaHours });
+});
+
+app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
+  try {
+    const order = store.getOrder(req.params.id);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+
+    const { status, adminNotes, createCdek, markPaid } = req.body || {};
+    let updated = order;
+
+    if (markPaid && order.paymentStatus !== "paid") {
+      updated = await markOrderPaid(order.id, { source: "admin" });
+    }
+
+    if (createCdek && updated.paymentStatus === "paid" && !updated.cdek?.uuid) {
+      try {
+        const cdek = await createCdekWaybill(updated);
+        updated = store.updateOrder(updated.id, {
+          cdek: {
+            ...updated.cdek,
+            uuid: cdek.uuid,
+            trackNumber: cdek.cdekNumber || "",
+            stage: cdek.cdekNumber
+              ? `Создан в СДЭК · № ${cdek.cdekNumber}`
+              : "Заявка создана в СДЭК",
+            history: [
+              ...(updated.cdek?.history || []),
+              {
+                at: new Date().toISOString(),
+                title: "Накладная создана вручную",
+                detail: cdek.cdekNumber || cdek.uuid
+              }
+            ]
+          }
+        });
+      } catch (error) {
+        return res.status(400).json({ message: "СДЭК: " + error.message, order: updated });
+      }
+    }
+
+    const patch = {};
+    if (typeof adminNotes === "string") patch.adminNotes = adminNotes;
+    if (status && ["assembly", "shipped", "arrived", "cancelled", "pending_payment"].includes(status)) {
+      patch.status = status;
+      if (status === "shipped") {
+        patch.cdek = {
+          ...updated.cdek,
+          stage: "Отправлен · сдан в СДЭК",
+          history: [
+            ...(updated.cdek?.history || []),
+            {
+              at: new Date().toISOString(),
+              title: "Отмечено админом: отправка",
+              detail: "Заказ сдан в доставку"
+            }
+          ]
+        };
+      }
+    }
+
+    if (Object.keys(patch).length) updated = store.updateOrder(updated.id, patch);
+    res.json({ ok: true, order: updated });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.use(express.static(ROOT));
 
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
   console.log(`NMP server http://127.0.0.1:${port}`);
   console.log(`CDEK from: ${CONFIG.fromCity}, ${CONFIG.fromAddress}`);
+  console.log(`Yandex Maps: ${CONFIG.yandexKey ? "on" : "off"}`);
+  console.log(`YooKassa: ${yookassaReady ? "on" : CONFIG.paymentsDemo ? "demo" : "off"}`);
+  console.log(`Admin: ${CONFIG.adminToken ? "/admin.html" : "token missing"}`);
 });

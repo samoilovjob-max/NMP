@@ -25,8 +25,8 @@
   const pvzSelected = document.getElementById("pvzSelected");
   const deliveryInfo = document.getElementById("deliveryInfo");
   const tariffCodeInput = document.getElementById("tariffCode");
+  const payBtn = document.getElementById("payBtn");
   let publicConfig = null;
-  let calcTimer = null;
 
   const user = Store.getUser();
   if (user) {
@@ -51,7 +51,7 @@
     const lines = cartLines();
     if (!lines.length) {
       summaryEl.innerHTML = `<h2>Корзина пуста</h2><p class="lead">Выберите изделие в каталоге.</p><a class="btn btn-primary" href="index.html#catalog">К изделиям</a>`;
-      form.querySelector("button[type=submit]").disabled = true;
+      payBtn.disabled = true;
       return;
     }
     const total = lines.reduce((s, l) => s + l.sum, 0);
@@ -66,6 +66,7 @@
             <img src="${line.product.image}" alt="" />
             <div>
               <strong>${line.product.name}</strong>
+              <span class="sku-label">Артикул ${line.product.sku}</span>
               <div class="qty-row">
                 <button type="button" data-qty-minus="${line.productId}">−</button>
                 <span>${line.qty}</span>
@@ -84,7 +85,12 @@
       <div class="summary-total"><span>Итого</span><strong>${window.NMP_formatPrice(total + delivery)}</strong></div>
       <p class="form-note">Отправка из ${publicConfig?.fromCity || "Петрозаводска"}, ${
       publicConfig?.fromAddress || "Лесной проспект 47"
-    }</p>`;
+    }</p>
+      <p class="form-note">${
+        publicConfig?.payments?.mode === "yookassa"
+          ? "Оплата через ЮKassa (redirect)"
+          : "Сейчас демо-оплата. После добавления ключей ЮKassa включится боевой режим."
+      }</p>`;
 
     summaryEl.querySelectorAll("[data-qty-minus]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -102,7 +108,7 @@
         renderSummary();
       });
     });
-    form.querySelector("button[type=submit]").disabled = false;
+    payBtn.disabled = false;
   };
 
   const calculateDelivery = async () => {
@@ -247,7 +253,9 @@
         }
       });
     } else {
-      window.NMP_toast("Карта доступна после добавления YANDEX_MAPS_API_KEY. Сейчас выберите ПВЗ из списка СДЭК ниже.");
+      window.NMP_toast(
+        "Карта доступна после YANDEX_MAPS_API_KEY в .env. Сейчас выберите ПВЗ из списка ниже."
+      );
       if (cityCodeInput.value) loadPvz(cityCodeInput.value);
       pvzList.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -273,97 +281,102 @@
     };
     Store.ensureUser(profile);
 
-    const goodsTotal = lines.reduce((s, l) => s + l.sum, 0);
-    const deliverySum = Number(deliveryInfo.dataset.sum || 0);
-    const total = goodsTotal + deliverySum;
-
-    const order = Store.createOrder({
-      ...profile,
-      items: lines.map((l) => ({
-        productId: l.productId,
-        name: l.product.name,
-        price: l.product.price,
-        qty: l.qty,
-        image: l.product.image
-      })),
-      total,
-      goodsTotal,
-      deliverySum,
-      city: profile.city,
-      cityCode: profile.cityCode,
-      pvzCode: pvzCode.value,
-      pvzAddress: pvzAddress.value,
-      tariffCode: Number(tariffCodeInput.value || 136),
-      comment: form.comment.value.trim()
-    });
-
-    // Демо-оплата (ЮKassa подключается отдельно через shopId + backend)
-    Store.updateOrder(order.id, { paymentStatus: "paid", paidAt: new Date().toISOString() });
+    payBtn.disabled = true;
+    payBtn.textContent = "Создаём заказ…";
 
     try {
-      const cdek = await api("/api/cdek/orders", {
+      const created = await api("/api/orders", {
         method: "POST",
         body: JSON.stringify({
-          number: order.id,
-          tariffCode: order.tariffCode || 136,
-          toCityCode: Number(profile.cityCode),
-          pvzCode: order.pvzCode,
-          pvzAddress: order.pvzAddress,
-          comment: order.comment,
-          recipient: {
-            name: `${profile.lastName} ${profile.firstName} ${profile.middleName || ""}`.trim(),
-            phone: profile.phone,
-            email: profile.email
-          },
-          items: order.items
+          ...profile,
+          pvzCode: pvzCode.value,
+          pvzAddress: pvzAddress.value,
+          tariffCode: Number(tariffCodeInput.value || 136),
+          deliverySum: Number(deliveryInfo.dataset.sum || 0),
+          comment: form.comment.value.trim(),
+          items: lines.map((l) => ({ productId: l.productId, qty: l.qty }))
         })
       });
 
-      Store.updateOrder(order.id, {
-        status: "assembly",
-        cdek: {
-          ...order.cdek,
-          trackNumber: cdek.cdekNumber || "",
-          uuid: cdek.uuid || "",
-          city: profile.city,
-          pvzCode: order.pvzCode,
-          pvzAddress: order.pvzAddress,
-          stage: cdek.cdekNumber
-            ? `Создан в СДЭК · № ${cdek.cdekNumber}`
-            : "Заявка создана в СДЭК, номер появится после обработки",
-          history: [
-            ...(order.cdek?.history || []),
-            {
-              at: new Date().toISOString(),
-              title: "Передано в СДЭК",
-              detail: cdek.cdekNumber || cdek.uuid || "Заявка принята"
-            }
-          ]
-        }
+      const order = created.order;
+      Store.createOrder({
+        id: order.id,
+        ...profile,
+        items: order.items,
+        total: order.total,
+        goodsTotal: order.goodsTotal,
+        deliverySum: order.deliverySum,
+        city: order.city,
+        cityCode: order.cityCode,
+        pvzCode: order.pvzCode,
+        pvzAddress: order.pvzAddress,
+        tariffCode: order.tariffCode,
+        comment: order.comment,
+        paymentStatus: order.paymentStatus,
+        status: order.status,
+        shipByAt: order.shipByAt,
+        cdek: order.cdek
       });
-      window.NMP_toast("Заказ оплачен и создан в СДЭК");
-    } catch (error) {
-      Store.updateOrder(order.id, {
-        cdek: {
-          ...order.cdek,
-          stage: "Оплата принята. Создание накладной СДЭК требует проверки данных: " + error.message
-        }
-      });
-      window.NMP_toast("Заказ сохранён. СДЭК: " + error.message);
-    }
 
-    Store.clearCart();
-    window.location.href = `account.html?order=${order.id}`;
+      payBtn.textContent = "Переход к оплате…";
+      const pay = await api("/api/payments/create", {
+        method: "POST",
+        body: JSON.stringify({ orderId: order.id })
+      });
+
+      Store.clearCart();
+
+      if (pay.mode === "demo" || !pay.confirmationUrl?.includes("yookassa")) {
+        // Демо: сразу подтверждаем оплату на сервере
+        if (pay.mode === "demo") {
+          const demo = await api(`/api/payments/demo/${encodeURIComponent(order.id)}`, {
+            method: "POST",
+            body: "{}"
+          });
+          Store.updateOrder(order.id, {
+            paymentStatus: demo.order.paymentStatus,
+            status: demo.order.status,
+            paidAt: demo.order.paidAt,
+            shipByAt: demo.order.shipByAt,
+            cdek: demo.order.cdek
+          });
+          window.NMP_toast("Демо-оплата прошла, заказ в сборке");
+          window.location.href = `account.html?order=${encodeURIComponent(order.id)}`;
+          return;
+        }
+      }
+
+      if (pay.confirmationUrl) {
+        window.location.href = pay.confirmationUrl;
+        return;
+      }
+
+      window.location.href = `account.html?order=${encodeURIComponent(order.id)}`;
+    } catch (error) {
+      window.NMP_toast(error.message || "Не удалось оформить заказ");
+      payBtn.disabled = false;
+      payBtn.textContent = "Оплатить через ЮKassa";
+    }
   });
 
   api("/api/config/public")
     .then((cfg) => {
       publicConfig = cfg;
       window.NMP_CONFIG.cdek = { ...window.NMP_CONFIG.cdek, ...cfg };
+      window.NMP_CONFIG.yookassa = {
+        ...window.NMP_CONFIG.yookassa,
+        shopId: cfg.payments?.shopId || "",
+        mode: cfg.payments?.mode || "demo"
+      };
+      if (cfg.payments?.mode === "yookassa") {
+        payBtn.textContent = "Оплатить через ЮKassa";
+      } else {
+        payBtn.textContent = "Оплатить (демо) и создать заказ";
+      }
     })
     .catch(() => {
       deliveryInfo.textContent =
-        "Сервер СДЭК не запущен. Выполните npm start и откройте сайт через http://localhost:3000";
+        "Сервер не запущен. Выполните npm start и откройте сайт через http://localhost:3000";
     })
     .finally(() => {
       renderSummary();

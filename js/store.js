@@ -69,23 +69,24 @@
       window.dispatchEvent(new CustomEvent("nmp:orders"));
     },
     createOrder(payload) {
-      const orders = this.getOrders();
+      const orders = this.getOrders().filter((o) => o.id !== payload.id);
       const order = {
-        id: uid("NMP"),
-        createdAt: new Date().toISOString(),
-        status: "assembly",
-        paymentStatus: "pending",
-        cdek: {
+        id: payload.id || uid("NMP"),
+        createdAt: payload.createdAt || new Date().toISOString(),
+        status: payload.status || "pending_payment",
+        paymentStatus: payload.paymentStatus || "pending",
+        shipByAt: payload.shipByAt || null,
+        cdek: payload.cdek || {
           trackNumber: "",
           city: payload.city,
           pvzCode: payload.pvzCode,
           pvzAddress: payload.pvzAddress,
-          stage: "Принят в обработку Northern Magical Place",
+          stage: "Ожидает оплату",
           history: [
             {
               at: new Date().toISOString(),
               title: "Заказ создан",
-              detail: "Заказ передан в сборку"
+              detail: "Ожидает оплату"
             }
           ]
         },
@@ -153,6 +154,7 @@
     statusLabel(status) {
       return (
         {
+          pending_payment: "Ожидает оплату",
           assembly: "Сборка",
           shipped: "Отправка товара",
           arrived: "Прибыл для получения",

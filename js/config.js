@@ -2,7 +2,7 @@ window.NMP_CONFIG = {
   apiBase: "", // same origin when using `npm start`
   yookassa: {
     shopId: "",
-    testMode: true
+    mode: "demo"
   },
   cdek: {
     // секреты только на сервере (.env). Здесь публичные настройки.
