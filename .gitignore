@@ -2,5 +2,7 @@ node_modules/
 .env
 .DS_Store
 server/data/
+images/uploads/*
+!images/uploads/.gitkeep
 *.log
 .vscode/

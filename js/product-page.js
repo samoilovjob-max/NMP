@@ -1,4 +1,6 @@
 (() => {
+  const boot = async () => {
+  if (window.NMP_cmsReady) await window.NMP_cmsReady;
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id") || params.get("slug") || "1";
   const product = window.NMP_getProduct(id);
@@ -203,4 +205,7 @@
     window.NMP_Store.addToCart(product.id);
     window.NMP_toast(`«${product.name}» добавлен в корзину`);
   });
+
+  };
+  void boot();
 })();

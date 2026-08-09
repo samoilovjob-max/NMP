@@ -1,18 +1,39 @@
 const path = require("path");
+const fs = require("fs");
 const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
-const { PRODUCTS, resolveOrderItems } = require("./catalog");
+const catalog = require("./catalog");
+const cms = require("./cms-store");
 const store = require("./orders-store");
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const ROOT = path.join(__dirname, "..");
+const UPLOAD_DIR = path.join(ROOT, "images", "uploads");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname || "").toLowerCase() || ".jpg";
+      const safe = ext.replace(/[^\.a-z0-9]/g, "") || ".jpg";
+      cb(null, `${Date.now()}-${crypto.randomBytes(4).toString("hex")}${safe}`);
+    }
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (/^image\/(jpeg|png|webp|gif|svg\+xml)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error("Можно загружать только изображения"));
+  }
+});
 
 const CONFIG = {
   account: process.env.CDEK_ACCOUNT,
@@ -363,7 +384,11 @@ app.get("/api/config/public", (_req, res) => {
 });
 
 app.get("/api/products", (_req, res) => {
-  res.json(PRODUCTS);
+  res.json(cms.getPublicCms().products);
+});
+
+app.get("/api/cms", (_req, res) => {
+  res.json(cms.getPublicCms());
 });
 
 /* ---------- CDEK ---------- */
@@ -586,7 +611,7 @@ app.post("/api/orders", async (req, res) => {
       return res.status(400).json({ message: "Заполните данные получателя и ПВЗ" });
     }
 
-    const items = resolveOrderItems(rawItems);
+    const items = catalog.resolveOrderItems(rawItems);
     const goodsTotal = items.reduce((sum, item) => sum + item.sum, 0);
     const delivery = Math.max(0, Number(deliverySum) || 0);
     const total = goodsTotal + delivery;
@@ -810,7 +835,89 @@ app.get("/api/payments/status/:orderId", async (req, res) => {
   }
 });
 
-/* ---------- Admin ---------- */
+/* ---------- Admin CMS ---------- */
+
+app.get("/api/admin/cms", adminGuard, (_req, res) => {
+  res.json({ ok: true, ...cms.getAdminCms() });
+});
+
+app.put("/api/admin/site", adminGuard, (req, res) => {
+  try {
+    const site = cms.saveSite(req.body || {});
+    res.json({ ok: true, site });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.post("/api/admin/products", adminGuard, (req, res) => {
+  try {
+    const product = cms.saveProduct(req.body || {}, { isNew: true });
+    res.json({ ok: true, product });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.put("/api/admin/products/:id", adminGuard, (req, res) => {
+  try {
+    const product = cms.saveProduct({ ...(req.body || {}), id: req.params.id }, { isNew: false });
+    res.json({ ok: true, product });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.delete("/api/admin/products/:id", adminGuard, (req, res) => {
+  try {
+    cms.deleteProduct(req.params.id);
+    res.json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+function collectionRoutes(name) {
+  app.post(`/api/admin/${name}`, adminGuard, (req, res) => {
+    try {
+      const item = cms.saveInCollection(name, req.body || {}, { isNew: true });
+      res.json({ ok: true, item });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  app.put(`/api/admin/${name}/:id`, adminGuard, (req, res) => {
+    try {
+      const item = cms.saveInCollection(name, { ...(req.body || {}), id: req.params.id }, { isNew: false });
+      res.json({ ok: true, item });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+  app.delete(`/api/admin/${name}/:id`, adminGuard, (req, res) => {
+    try {
+      cms.deleteInCollection(name, req.params.id);
+      res.json({ ok: true });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  });
+}
+
+collectionRoutes("news");
+collectionRoutes("reviews");
+collectionRoutes("promotions");
+
+app.post("/api/admin/upload", adminGuard, (req, res) => {
+  upload.single("file")(req, res, (err) => {
+    if (err) return res.status(400).json({ message: err.message || "Ошибка загрузки" });
+    if (!req.file) return res.status(400).json({ message: "Файл не получен" });
+    const url = `images/uploads/${req.file.filename}`;
+    res.json({ ok: true, url, path: url, filename: req.file.filename });
+  });
+});
+
+/* ---------- Admin orders ---------- */
 
 app.get("/api/admin/orders", adminGuard, (_req, res) => {
   const now = Date.now();
