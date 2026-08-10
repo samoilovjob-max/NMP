@@ -153,10 +153,6 @@
       const card = contacts.maxCard || "images/MAX_SS.png";
       maxLink.setAttribute("href", "#max-card");
       maxLink.setAttribute("data-max-card", card);
-      maxLink.addEventListener("click", (event) => {
-        event.preventDefault();
-        openMaxCard(card);
-      });
     }
   };
 
