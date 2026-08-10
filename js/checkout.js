@@ -158,23 +158,38 @@
 
   let latestCities = [];
 
+  const buildPvzItemContent = (item, { selected = false } = {}) => {
+    const title = document.createElement("strong");
+    title.className = "pvz-item-code";
+    title.textContent = selected
+      ? "Выбран ПВЗ · " + (item.code || "")
+      : item.code || "ПВЗ";
+
+    const addr = document.createElement("span");
+    addr.className = "pvz-item-addr";
+    addr.textContent = item.address || item.name || "";
+
+    const meta = document.createElement("span");
+    meta.className = "pvz-item-meta";
+    const bits = [];
+    if (item.work_time) bits.push(item.work_time);
+    if (item.type) bits.push(String(item.type));
+    meta.textContent = bits.join(" · ");
+    if (!meta.textContent) meta.hidden = true;
+
+    return [title, addr, meta];
+  };
+
   const renderSelectedPvz = (item) => {
     pvzList.replaceChildren();
     const selected = document.createElement("div");
     selected.className = "pvz-item active pvz-item-selected";
-    const title = document.createElement("strong");
-    title.textContent = "Выбран ПВЗ · " + (item.code || "");
-    const addr = document.createElement("span");
-    addr.textContent = item.address || item.name || "";
-    const time = document.createElement("span");
-    time.textContent = item.work_time || "";
-    selected.append(title, addr, time);
+    selected.append(...buildPvzItemContent(item, { selected: true }));
     pvzList.appendChild(selected);
 
     const changeBtn = document.createElement("button");
     changeBtn.type = "button";
-    changeBtn.className = "btn btn-ghost";
-    changeBtn.style.marginTop = "0.55rem";
+    changeBtn.className = "btn btn-ghost pvz-change-btn";
     changeBtn.textContent = "Изменить пункт выдачи";
     changeBtn.addEventListener("click", () => {
       pvzCollapsed = false;
@@ -228,15 +243,7 @@
       btn.type = "button";
       btn.className = "pvz-item";
       btn.dataset.code = String(item.code || "");
-
-      const title = document.createElement("strong");
-      title.textContent = item.code || "ПВЗ";
-      const addr = document.createElement("span");
-      addr.textContent = item.address || item.name || "";
-      const time = document.createElement("span");
-      time.textContent = item.work_time || "";
-
-      btn.append(title, addr, time);
+      btn.append(...buildPvzItemContent(item));
       btn.addEventListener("click", (event) => {
         event.preventDefault();
         selectPvz(item);

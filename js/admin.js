@@ -1,7 +1,15 @@
 (() => {
   const root = document.getElementById("adminRoot");
   const TOKEN_KEY = "nmp_admin_token";
-  let state = { tab: "products", cms: null, orders: null, editingProductId: null };
+  let state = {
+    tab: "products",
+    cms: null,
+    orders: null,
+    editingProductId: null,
+    orderFilter: "all",
+    orderQuery: "",
+    expandedOrders: {}
+  };
 
   const normalizeToken = (value) => {
     let token = String(value || "").trim();
@@ -104,10 +112,30 @@
     });
   };
 
+  const paymentLabel = (status) =>
+    ({
+      paid: "Оплачен",
+      pending: "Ждёт оплату",
+      waiting_for_capture: "Ждёт списание",
+      canceled: "Оплата отменена",
+      cancelled: "Оплата отменена"
+    })[status] || status || "—";
+
   const uploadFile = async (file) => {
     const body = new FormData();
     body.append("file", file);
     const data = await api("/api/admin/upload", { method: "POST", body });
+    if (data.optimized && data.width) {
+      const saved = Math.max(0, Number(data.bytesBefore || 0) - Number(data.bytesAfter || 0));
+      const kb = Math.round(saved / 1024);
+      window.NMP_toast(
+        kb > 0
+          ? `Фото оптимизировано (−${kb} КБ, ${data.width}×${data.height})`
+          : `Фото подготовлено (${data.width}×${data.height})`
+      );
+    } else {
+      window.NMP_toast("Файл загружен");
+    }
     return data.url;
   };
 
@@ -120,7 +148,6 @@
       if (!file) return;
       try {
         target.value = await uploadFile(file);
-        window.NMP_toast("Файл загружен");
       } catch (err) {
         window.NMP_toast(err.message || "Не удалось загрузить");
       }
@@ -608,7 +635,7 @@
     });
   };
 
-  /* ---------- Orders (existing) ---------- */
+  /* ---------- Orders ---------- */
   const patchOrder = async (id, body) => {
     await api(`/api/admin/orders/${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -617,91 +644,318 @@
     await load();
   };
 
+  const filterOrders = (orders) => {
+    const q = String(state.orderQuery || "")
+      .trim()
+      .toLowerCase();
+    return (orders || []).filter((order) => {
+      if (state.orderFilter === "ship") {
+        if (!(order.paymentStatus === "paid" && order.status === "assembly")) return false;
+      } else if (state.orderFilter === "overdue") {
+        if (!order.overdue) return false;
+      } else if (state.orderFilter === "paid") {
+        if (order.paymentStatus !== "paid") return false;
+      } else if (state.orderFilter === "pending") {
+        if (order.paymentStatus === "paid") return false;
+      } else if (state.orderFilter === "shipped") {
+        if (!["shipped", "arrived"].includes(order.status)) return false;
+      }
+
+      if (!q) return true;
+      const hay = [
+        order.id,
+        order.pvzAddress,
+        order.pvzCode,
+        order.city,
+        order.comment,
+        order.cdek?.trackNumber,
+        order.customer?.phone,
+        order.customer?.email,
+        order.customer?.lastName,
+        order.customer?.firstName,
+        ...(order.items || []).flatMap((i) => [i.sku, i.name])
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  };
+
+  const renderOrderItems = (order) => {
+    const items = order.items || [];
+    if (!items.length) return "<p>—</p>";
+    return `<div class="admin-order-items">${items
+      .map((item) => {
+        const img = item.image
+          ? `<img src="${esc(item.image)}" alt="" loading="lazy" />`
+          : `<span class="form-note">нет фото</span>`;
+        return `<div class="admin-order-item">
+          ${img}
+          <div>
+            <strong>${esc(item.name || "Товар")}</strong>
+            <div class="sku-label">${esc(item.sku || "—")} · ×${esc(item.qty || 1)}</div>
+            <div class="form-note">${money(item.price)} / шт</div>
+          </div>
+          <div class="sum">${money(item.sum ?? Number(item.price || 0) * Number(item.qty || 1))}</div>
+        </div>`;
+      })
+      .join("")}</div>`;
+  };
+
+  const renderOrderDetails = (order) => {
+    const history = order.cdek?.history || [];
+    const open = Boolean(state.expandedOrders[order.id]);
+    return `
+      <button class="btn btn-ghost" type="button" data-toggle-order="${esc(order.id)}">
+        ${open ? "Скрыть подробности" : "Подробнее по заказу"}
+      </button>
+      <div class="admin-order-details" ${open ? "" : "hidden"} data-order-details="${esc(order.id)}">
+        <div class="admin-grid">
+          <div>
+            <h4>Суммы</h4>
+            <div class="admin-money-row"><span>Товары</span><span>${money(order.goodsTotal)}</span></div>
+            <div class="admin-money-row"><span>Доставка</span><span>${money(order.deliverySum)}</span></div>
+            <div class="admin-money-row total"><span>Итого</span><span>${money(order.total)}</span></div>
+            <p class="form-note" style="margin-top:0.55rem">Оплата: ${esc(paymentLabel(order.paymentStatus))}${
+              order.paymentId ? ` · ID ${esc(order.paymentId)}` : ""
+            }</p>
+          </div>
+          <div>
+            <h4>Доставка</h4>
+            <div class="admin-order-meta">
+              <div><strong>Город:</strong> ${esc(order.city || order.customer?.city || "—")} ${
+                order.cityCode ? `(код ${esc(order.cityCode)})` : ""
+              }</div>
+              <div><strong>ПВЗ:</strong> ${esc(order.pvzAddress || "—")}</div>
+              <div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
+              <div><strong>Тариф СДЭК:</strong> ${esc(order.tariffCode || "—")}</div>
+              <div><strong>Комментарий клиента:</strong> ${esc(order.comment || "—")}</div>
+            </div>
+          </div>
+          <div>
+            <h4>СДЭК / трек</h4>
+            <div class="admin-order-meta">
+              <div><strong>UUID:</strong> ${esc(order.cdek?.uuid || "—")}</div>
+              <div><strong>Трек:</strong> ${esc(order.cdek?.trackNumber || "нет")}</div>
+              <div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>
+              <div><strong>Обновлён:</strong> ${when(order.updatedAt)}</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h4>История отгрузки</h4>
+          ${
+            history.length
+              ? `<ul class="admin-history">${history
+                  .map(
+                    (h) => `<li>
+                <strong>${esc(h.title || "Событие")}</strong>
+                <span>${when(h.at)}</span>
+                ${h.detail ? `<span>${esc(h.detail)}</span>` : ""}
+              </li>`
+                  )
+                  .join("")}</ul>`
+              : `<p class="form-note">Пока нет событий по отгрузке.</p>`
+          }
+        </div>
+      </div>`;
+  };
+
   const renderOrders = () => {
     const payload = state.orders || { orders: [] };
     const orders = payload.orders || [];
     const needShip = orders.filter((o) => o.paymentStatus === "paid" && o.status === "assembly");
     const overdue = orders.filter((o) => o.overdue);
+    const paid = orders.filter((o) => o.paymentStatus === "paid");
+    const pending = orders.filter((o) => o.paymentStatus !== "paid");
+    const visible = filterOrders(orders);
+
+    const filters = [
+      ["all", `Все (${orders.length})`],
+      ["ship", `К отгрузке (${needShip.length})`],
+      ["overdue", `Просрочено (${overdue.length})`],
+      ["paid", `Оплаченные (${paid.length})`],
+      ["pending", `Без оплаты (${pending.length})`],
+      ["shipped", "В пути / ПВЗ"]
+    ];
 
     root.innerHTML = shell(`
-      <p class="form-note">SLA отгрузки: ${payload.shipSlaHours || 48} ч · К отгрузке: ${needShip.length} · Просрочено: ${overdue.length}</p>
+      <div class="admin-orders-tools">
+        <p class="form-note" style="margin:0">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Панель показывает оплату, ПВЗ, трек и историю — удобно вести заказ от сборки до выдачи.</p>
+        <div class="admin-orders-stats">
+          <span class="admin-stat">Всего: <strong>${orders.length}</strong></span>
+          <span class="admin-stat">К отгрузке: <strong>${needShip.length}</strong></span>
+          <span class="admin-stat ${overdue.length ? "is-warn" : ""}">Просрочено: <strong>${overdue.length}</strong></span>
+          <span class="admin-stat">Оплачено: <strong>${paid.length}</strong></span>
+        </div>
+        <div class="admin-filter-row">
+          ${filters
+            .map(
+              ([id, label]) =>
+                `<button type="button" class="admin-filter ${
+                  state.orderFilter === id ? "active" : ""
+                }" data-order-filter="${id}">${label}</button>`
+            )
+            .join("")}
+        </div>
+        <input class="admin-search" type="search" id="orderSearch" placeholder="Поиск: № заказа, телефон, ФИО, трек, ПВЗ, SKU" value="${esc(
+          state.orderQuery
+        )}" />
+      </div>
       <div class="admin-list">
         ${
-          orders.length
-            ? orders
+          visible.length
+            ? visible
                 .map((order) => {
-                  const skus = (order.items || []).map((i) => `${i.sku}×${i.qty}`).join(", ");
-                  const names = (order.items || [])
-                    .map((i) => `${i.name} (${i.sku}) × ${i.qty}`)
-                    .join("<br>");
+                  const fio = [order.customer?.lastName, order.customer?.firstName, order.customer?.middleName]
+                    .filter(Boolean)
+                    .join(" ");
                   return `
               <article class="admin-order ${order.overdue ? "is-overdue" : ""} ${
                     order.paymentStatus === "paid" && order.status === "assembly" ? "is-ship" : ""
-                  }">
+                  }" data-order-card="${esc(order.id)}">
                 <header>
                   <div>
-                    <div class="badge">${statusLabel(order.status)}</div>
-                    <h3>${order.id}</h3>
-                    <p class="form-note">Создан: ${when(order.createdAt)} · Оплачен: ${when(order.paidAt)}</p>
+                    <div class="admin-order-badges">
+                      <span class="admin-pill status">${esc(statusLabel(order.status))}</span>
+                      <span class="admin-pill ${
+                        order.paymentStatus === "paid" ? "pay-paid" : "pay-pending"
+                      }">${esc(paymentLabel(order.paymentStatus))}</span>
+                      ${order.overdue ? `<span class="admin-pill warn">Просрочен SLA</span>` : ""}
+                      ${
+                        order.paymentStatus === "paid" && order.status === "assembly"
+                          ? `<span class="admin-pill status">Нужна отгрузка</span>`
+                          : ""
+                      }
+                    </div>
+                    <h3 style="margin:0.15rem 0">${esc(order.id)}</h3>
+                    <p class="form-note">Создан: ${when(order.createdAt)} · Оплачен: ${when(order.paidAt)} · Отправить до: ${when(
+                      order.shipByAt
+                    )}</p>
                   </div>
                   <div class="order-total">${money(order.total)}</div>
                 </header>
                 <div class="admin-grid">
                   <div>
                     <h4>Товары</h4>
-                    <p>${names || "—"}</p>
-                    <p class="sku-label">Артикулы: ${skus || "—"}</p>
+                    ${renderOrderItems(order)}
                   </div>
                   <div>
                     <h4>Клиент</h4>
-                    <p>${order.customer?.lastName || ""} ${order.customer?.firstName || ""} ${
-                      order.customer?.middleName || ""
-                    }</p>
-                    <p>${order.customer?.phone || ""}</p>
-                    <p>${order.customer?.email || ""}</p>
+                    <div class="admin-order-meta">
+                      <div><strong>${esc(fio || "—")}</strong></div>
+                      <div>
+                        ${esc(order.customer?.phone || "—")}
+                        ${
+                          order.customer?.phone
+                            ? `<button class="btn btn-ghost" type="button" data-copy="${esc(
+                                order.customer.phone
+                              )}" style="margin-left:0.35rem;padding:0.2rem 0.45rem">Копировать</button>`
+                            : ""
+                        }
+                      </div>
+                      <div>${esc(order.customer?.email || "—")}</div>
+                      <div>${esc(order.city || order.customer?.city || "")}</div>
+                    </div>
                   </div>
                   <div>
                     <h4>Отгрузка / СДЭК</h4>
-                    <p><strong>Отправить до:</strong> ${when(order.shipByAt)}</p>
-                    <p><strong>ПВЗ:</strong> ${order.pvzAddress || "—"}</p>
-                    <p><strong>Трек:</strong> ${order.cdek?.trackNumber || "нет"}</p>
-                    <p><strong>Этап:</strong> ${order.cdek?.stage || "—"}</p>
+                    <div class="admin-order-meta">
+                      <div><strong>ПВЗ:</strong> ${esc(order.pvzAddress || "—")}</div>
+                      <div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
+                      <div><strong>Трек:</strong> ${esc(order.cdek?.trackNumber || "нет")}</div>
+                      <div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>
+                    </div>
                   </div>
                 </div>
+                ${renderOrderDetails(order)}
                 <div class="field">
                   <label>Заметка админа</label>
-                  <textarea data-notes="${order.id}" rows="2">${order.adminNotes || ""}</textarea>
+                  <textarea data-notes="${esc(order.id)}" rows="2">${esc(order.adminNotes || "")}</textarea>
                 </div>
                 <div class="admin-actions">
-                  <button class="btn btn-ghost" type="button" data-save-notes="${order.id}">Сохранить заметку</button>
+                  <button class="btn btn-ghost" type="button" data-save-notes="${esc(order.id)}">Сохранить заметку</button>
                   ${
                     order.paymentStatus !== "paid"
-                      ? `<button class="btn btn-primary" type="button" data-mark-paid="${order.id}">Отметить оплаченным</button>`
+                      ? `<button class="btn btn-primary" type="button" data-mark-paid="${esc(
+                          order.id
+                        )}">Отметить оплаченным</button>`
                       : ""
                   }
                   ${
                     order.paymentStatus === "paid" && !order.cdek?.uuid
-                      ? `<button class="btn btn-primary" type="button" data-create-cdek="${order.id}">Создать накладную СДЭК</button>`
+                      ? `<button class="btn btn-primary" type="button" data-create-cdek="${esc(
+                          order.id
+                        )}">Создать накладную СДЭК</button>`
                       : ""
                   }
                   ${
                     order.status === "assembly"
-                      ? `<button class="btn btn-primary" type="button" data-ship="${order.id}">Отметить: сдан в СДЭК</button>`
+                      ? `<button class="btn btn-primary" type="button" data-ship="${esc(
+                          order.id
+                        )}">Отметить: сдан в СДЭК</button>`
                       : ""
                   }
                   ${
                     order.status === "shipped"
-                      ? `<button class="btn btn-ghost" type="button" data-arrived="${order.id}">Отметить: прибыл в ПВЗ</button>`
+                      ? `<button class="btn btn-ghost" type="button" data-arrived="${esc(
+                          order.id
+                        )}">Отметить: прибыл в ПВЗ</button>`
                       : ""
                   }
                 </div>
               </article>`;
                 })
                 .join("")
-            : `<p class="lead">Заказов пока нет.</p>`
+            : `<p class="lead">${orders.length ? "Нет заказов по текущему фильтру." : "Заказов пока нет."}</p>`
         }
       </div>`);
     bindShell();
+
+    root.querySelectorAll("[data-order-filter]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.orderFilter = btn.getAttribute("data-order-filter") || "all";
+        renderOrders();
+      });
+    });
+
+    const search = document.getElementById("orderSearch");
+    let searchTimer = 0;
+    search?.addEventListener("input", () => {
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(() => {
+        state.orderQuery = search.value || "";
+        renderOrders();
+        const again = document.getElementById("orderSearch");
+        if (again) {
+          again.focus();
+          const len = again.value.length;
+          again.setSelectionRange(len, len);
+        }
+      }, 220);
+    });
+
+    root.querySelectorAll("[data-toggle-order]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-toggle-order");
+        state.expandedOrders[id] = !state.expandedOrders[id];
+        renderOrders();
+      });
+    });
+
+    root.querySelectorAll("[data-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const text = btn.getAttribute("data-copy") || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          window.NMP_toast("Скопировано");
+        } catch {
+          window.NMP_toast(text);
+        }
+      });
+    });
+
     root.querySelectorAll("[data-save-notes]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const id = btn.getAttribute("data-save-notes");

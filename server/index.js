@@ -9,6 +9,7 @@ require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const catalog = require("./catalog");
 const cms = require("./cms-store");
 const store = require("./orders-store");
+const { optimizeUploadedImage } = require("./image-optimize");
 
 const app = express();
 app.use(cors());
@@ -917,11 +918,36 @@ collectionRoutes("reviews");
 collectionRoutes("promotions");
 
 app.post("/api/admin/upload", adminGuard, (req, res) => {
-  upload.single("file")(req, res, (err) => {
+  upload.single("file")(req, res, async (err) => {
     if (err) return res.status(400).json({ message: err.message || "Ошибка загрузки" });
     if (!req.file) return res.status(400).json({ message: "Файл не получен" });
-    const url = `images/uploads/${req.file.filename}`;
-    res.json({ ok: true, url, path: url, filename: req.file.filename });
+    try {
+      const absolute = path.join(UPLOAD_DIR, req.file.filename);
+      const optimized = await optimizeUploadedImage(absolute);
+      res.json({
+        ok: true,
+        url: optimized.url,
+        path: optimized.url,
+        filename: optimized.filename,
+        width: optimized.width,
+        height: optimized.height,
+        format: optimized.format,
+        bytesBefore: optimized.bytesBefore,
+        bytesAfter: optimized.bytesAfter,
+        optimized: true,
+        maxEdge: 1600
+      });
+    } catch (error) {
+      const url = `images/uploads/${req.file.filename}`;
+      res.json({
+        ok: true,
+        url,
+        path: url,
+        filename: req.file.filename,
+        optimized: false,
+        message: "Файл сохранён без оптимизации: " + (error.message || "ошибка")
+      });
+    }
   });
 });
 
