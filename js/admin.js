@@ -466,6 +466,7 @@
         <input name="image" id="newsImage" />
         <input type="file" id="newsImageFile" accept="image/*" />
       </div>
+      <div class="field"><label>ID товара для кнопки «Заказать»</label><input name="productId" placeholder="1" /></div>
       <div class="field"><label>Дата публикации</label><input name="publishedAt" type="datetime-local" /></div>
       <div class="field check-field"><label><input name="published" type="checkbox" checked /> Опубликовано</label></div>`,
       (form) => {
@@ -480,6 +481,7 @@
           excerpt: String(fd.get("excerpt") || "").trim(),
           body: String(fd.get("body") || "").trim(),
           image: String(fd.get("image") || "").trim(),
+          productId: String(fd.get("productId") || "").trim(),
           publishedAt: publishedAt || new Date().toISOString(),
           published: form.published.checked
         };

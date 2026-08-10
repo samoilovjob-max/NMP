@@ -1815,10 +1815,61 @@ h3 {
   object-fit: cover;
 }
 
-.news-card h3 {
-  margin: 0.2rem 0;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
+.news-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.max-card-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(8, 9, 8, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.max-card-overlay[hidden] {
+  display: none !important;
+}
+
+.max-card-dialog {
+  position: relative;
+  width: min(420px, 100%);
+  background: #f4f7fb;
+  color: #121417;
+  border-radius: 16px;
+  padding: 1.1rem 1.1rem 1.25rem;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+.max-card-dialog img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  display: block;
+}
+
+.max-card-dialog p {
+  margin: 0.85rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.max-card-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.55rem;
+  border: 0;
+  background: transparent;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #333;
 }
 
 .admin-tabs {

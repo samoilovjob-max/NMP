@@ -88,6 +88,12 @@
         const date = n.publishedAt
           ? new Date(n.publishedAt).toLocaleDateString("ru-RU")
           : "";
+        const orderHref = n.productId
+          ? `checkout.html?buy=${encodeURIComponent(n.productId)}`
+          : "index.html#catalog";
+        const moreHref = n.productId
+          ? `product.html?id=${encodeURIComponent(n.productId)}`
+          : "index.html#catalog";
         return `
         <article class="news-card reveal visible">
           ${n.image ? `<img src="${n.image}" alt="" />` : ""}
@@ -95,6 +101,10 @@
             ${date ? `<p class="form-note">${date}</p>` : ""}
             <h3>${n.title || ""}</h3>
             <p>${n.excerpt || n.body || ""}</p>
+            <div class="news-actions">
+              <a class="btn btn-primary" href="${orderHref}">Заказать</a>
+              <a class="btn btn-ghost" href="${moreHref}">Подробнее</a>
+            </div>
           </div>
         </article>`;
       })
@@ -138,6 +148,42 @@
     if (window.NMP_CONFIG) {
       window.NMP_CONFIG.contacts = { ...(window.NMP_CONFIG.contacts || {}), ...contacts };
     }
+    const maxLink = document.querySelector(".messenger-max, a[aria-label='Написать в MAX']");
+    if (maxLink) {
+      const card = contacts.maxCard || "images/MAX_SS.png";
+      maxLink.setAttribute("href", "#max-card");
+      maxLink.setAttribute("data-max-card", card);
+      maxLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        openMaxCard(card);
+      });
+    }
+  };
+
+  const openMaxCard = (src) => {
+    let overlay = document.getElementById("maxCardOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "maxCardOverlay";
+      overlay.className = "max-card-overlay";
+      overlay.innerHTML = `
+        <div class="max-card-dialog" role="dialog" aria-modal="true" aria-label="MAX Сергей Самойлов">
+          <button type="button" class="max-card-close" aria-label="Закрыть">×</button>
+          <img src="${src}" alt="QR-код MAX — Сергей Самойлов" />
+          <p>Отсканируйте код в приложении MAX, чтобы написать Сергею Самойлову</p>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay || e.target.classList.contains("max-card-close")) {
+          overlay.hidden = true;
+        }
+      });
+    } else {
+      overlay.querySelector("img").src = src;
+      overlay.hidden = false;
+      return;
+    }
+    overlay.hidden = false;
   };
 
   const boot = async () => {
@@ -164,4 +210,11 @@
   };
 
   window.NMP_cmsReady = boot();
+
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("[data-max-card], .messenger-max");
+    if (!link) return;
+    event.preventDefault();
+    openMaxCard(link.getAttribute("data-max-card") || window.NMP_CONFIG?.contacts?.maxCard || "images/MAX_SS.png");
+  });
 })();

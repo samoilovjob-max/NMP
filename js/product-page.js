@@ -146,28 +146,6 @@
       <p class="form-note">Доставка по России через СДЭК · Оплата через ЮKassa · После заказа откроется личный кабинет</p>
 
       ${
-        product.useCases?.length
-          ? `<section class="seo-block">
-              <h2>Когда выбирают ${product.name}</h2>
-              <ul class="spec-list">
-                ${product.useCases.map((item) => `<li>${item}</li>`).join("")}
-              </ul>
-            </section>`
-          : ""
-      }
-
-      ${
-        product.keywords?.length
-          ? `<section class="seo-block">
-              <h2>Ключевые сценарии и запросы</h2>
-              <p class="seo-keywords">${product.keywords
-                .map((word) => `<span>${word}</span>`)
-                .join("")}</p>
-            </section>`
-          : ""
-      }
-
-      ${
         product.faq?.length
           ? `<section class="seo-block">
               <h2>Частые вопросы</h2>
