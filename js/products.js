@@ -68,8 +68,8 @@ window.NMP_PRODUCTS = [
     "imageAlt": "Пайкула — костровая чаша-гриль для загородного отдыха",
     "gallery": [
       "images/product-2.png",
-      "images/product-21.jpg",
-      "images/product-22.jpg"
+      "images/product-21.png",
+      "images/product-22.png"
     ],
     "galleryAlts": [
       "Пайкула на террасе",
@@ -125,8 +125,8 @@ window.NMP_PRODUCTS = [
     "imageAlt": "Лесная Свеча — вертикальный костровой очаг с резными стенками",
     "gallery": [
       "images/product-3.jpg",
-      "images/product-31.jpg",
-      "images/product-32.jpg"
+      "images/product-31.png",
+      "images/product-32.png"
     ],
     "galleryAlts": [
       "Лесная Свеча у дома",
@@ -182,8 +182,8 @@ window.NMP_PRODUCTS = [
     "imageAlt": "Северный очаг — премиальная костровая чаша для загородного отдыха",
     "gallery": [
       "images/product-4.png",
-      "images/product-41.jpg",
-      "images/product-42.jpg"
+      "images/product-41.png",
+      "images/product-42.png"
     ],
     "galleryAlts": [
       "Северный очаг на патио",
