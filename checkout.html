@@ -118,9 +118,22 @@
             <div id="citySuggest" class="suggest-list"></div>
           </div>
 
+          <div class="field" id="pvzFilterField" hidden>
+            <label for="pvzQuery">Улица или адрес ПВЗ</label>
+            <input
+              id="pvzQuery"
+              name="pvzQuery"
+              type="search"
+              placeholder="Например: Ленина, Авиаторов, Поречная"
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+            <p class="form-note">Можно дописать улицу — список пунктов сузится по адресу</p>
+          </div>
+
           <div class="field">
             <label>Пункт выдачи СДЭК</label>
-            <p class="form-note">1) Выберите город из подсказки → 2) Нажмите пункт ПВЗ в списке</p>
+            <p class="form-note">1) Выберите город → 2) При желании укажите улицу → 3) Нажмите пункт ПВЗ в списке</p>
             <div id="pvzList" class="pvz-list" role="listbox" aria-label="Пункты выдачи">
               <p class="form-note">Список ПВЗ появится после выбора города</p>
             </div>
