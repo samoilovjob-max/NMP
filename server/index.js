@@ -47,6 +47,8 @@ const CONFIG = {
   yandexKey: process.env.YANDEX_MAPS_API_KEY || "",
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || "").replace(/\/$/, ""),
   adminToken: process.env.ADMIN_TOKEN || "",
+  adminUser: process.env.ADMIN_USER || "",
+  adminPassword: process.env.ADMIN_PASSWORD || "",
   shipSlaHours: Number(process.env.SHIP_SLA_HOURS || 48),
   yookassa: {
     shopId: process.env.YOOKASSA_SHOP_ID || "",
@@ -179,15 +181,49 @@ function normalizeAdminToken(raw) {
   return token;
 }
 
+function safeEqualText(a, b) {
+  const left = Buffer.from(String(a ?? ""), "utf8");
+  const right = Buffer.from(String(b ?? ""), "utf8");
+  const size = Math.max(left.length, right.length, 1);
+  const leftPad = Buffer.alloc(size);
+  const rightPad = Buffer.alloc(size);
+  left.copy(leftPad);
+  right.copy(rightPad);
+  return crypto.timingSafeEqual(leftPad, rightPad) && left.length === right.length;
+}
+
 function adminGuard(req, res, next) {
   const header = req.headers.authorization || "";
   const raw = header.startsWith("Bearer ") ? header.slice(7) : req.headers["x-admin-token"] || "";
   const token = normalizeAdminToken(raw);
-  if (!CONFIG.adminToken || token !== CONFIG.adminToken) {
-    return res.status(401).json({ message: "Неверный токен админки. Проверьте ADMIN_TOKEN в .env" });
+  if (!CONFIG.adminToken || !safeEqualText(token, CONFIG.adminToken)) {
+    return res.status(401).json({ message: "Сессия админки истекла или неверна. Войдите снова." });
   }
   next();
 }
+
+app.post("/api/admin/login", (req, res) => {
+  const login = String(req.body?.login || req.body?.username || "").trim();
+  const password = String(req.body?.password || "");
+
+  if (!CONFIG.adminUser || !CONFIG.adminPassword || !CONFIG.adminToken) {
+    return res.status(503).json({
+      message: "Админка не настроена: задайте ADMIN_USER, ADMIN_PASSWORD и ADMIN_TOKEN в .env"
+    });
+  }
+
+  const loginOk = safeEqualText(login, CONFIG.adminUser);
+  const passwordOk = safeEqualText(password, CONFIG.adminPassword);
+  if (!loginOk || !passwordOk) {
+    return res.status(401).json({ message: "Неверный логин или пароль" });
+  }
+
+  return res.json({
+    ok: true,
+    token: CONFIG.adminToken,
+    user: CONFIG.adminUser
+  });
+});
 
 function baseUrlFromReq(req) {
   if (CONFIG.publicBaseUrl) return CONFIG.publicBaseUrl;

@@ -168,27 +168,42 @@
     root.innerHTML = `
       <form class="admin-login" id="adminLogin">
         <h2>Вход в админку</h2>
-        <p class="form-note">Вставьте значение <code>ADMIN_TOKEN</code> из файла <code>.env</code> на сервере (только сам ключ, без <code>ADMIN_TOKEN=</code>).</p>
+        <p class="form-note">Введите логин и пароль администратора.</p>
         <div class="field">
-          <label for="adminToken">Токен доступа</label>
-          <input id="adminToken" name="token" type="text" required autocomplete="off" spellcheck="false" placeholder="вставьте токен сюда" />
+          <label for="adminLoginName">Логин</label>
+          <input id="adminLoginName" name="login" type="text" required autocomplete="username" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="adminPassword">Пароль</label>
+          <input id="adminPassword" name="password" type="password" required autocomplete="current-password" />
         </div>
         ${error ? `<p class="form-note" style="color:#c45c26">${esc(error)}</p>` : ""}
         <button class="btn btn-primary" type="submit">Войти</button>
       </form>`;
     document.getElementById("adminLogin").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const token = normalizeToken(event.target.token.value);
-      if (!token) {
-        renderLogin("Вставьте токен");
+      const login = String(event.target.login.value || "").trim();
+      const password = String(event.target.password.value || "");
+      if (!login || !password) {
+        renderLogin("Укажите логин и пароль");
         return;
       }
-      setToken(token);
       try {
+        const data = await fetch((window.NMP_CONFIG?.apiBase || "") + "/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ login, password })
+        }).then(async (res) => {
+          const payload = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(payload.message || "Не удалось войти");
+          return payload;
+        });
+        if (!data?.token) throw new Error("Сервер не вернул сессию");
+        setToken(data.token);
         await load();
       } catch (err) {
         sessionStorage.removeItem(TOKEN_KEY);
-        renderLogin(err.message || "Неверный токен");
+        renderLogin(err.message || "Неверный логин или пароль");
       }
     });
   };

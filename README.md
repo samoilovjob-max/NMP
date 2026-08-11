@@ -34,7 +34,7 @@ npm start
 
 Откройте: **http://localhost:3000/admin.html**
 
-Войдите токеном из `.env` → `ADMIN_TOKEN`.
+Войдите логином и паролем из `.env` → `ADMIN_USER` / `ADMIN_PASSWORD`.
 
 В админке видно:
 - какой товар / артикул куплен
