@@ -559,14 +559,20 @@ h3 {
 }
 
 .products {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: clamp(1.5rem, 3vw, 2.5rem);
+  --products-gap: clamp(1.5rem, 3vw, 2.5rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--products-gap);
 }
 
 .product {
   display: grid;
   gap: 1rem;
+  flex: 0 1 calc((100% - var(--products-gap)) / 2);
+  width: calc((100% - var(--products-gap)) / 2);
+  max-width: 34rem;
+  box-sizing: border-box;
 }
 
 .product-media {
@@ -1153,12 +1159,17 @@ h3 {
     grid-template-columns: 1fr;
   }
 
-  .products,
   .lifestyle-grid,
   .about-layout,
   .contact-grid,
   .footer-grid {
     grid-template-columns: 1fr;
+  }
+
+  .products > .product {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: none;
   }
 
   .life-item.life-wide figure {
@@ -1255,8 +1266,10 @@ h3 {
     height: 88px;
   }
 
-  .products {
-    grid-template-columns: 1fr;
+  .products > .product {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: none;
   }
 
   .features {
@@ -1475,7 +1488,9 @@ h3 {
 }
 
 .catalog-soon-divider {
-  grid-column: 1 / -1;
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: none;
   margin: 0.35rem 0 0.15rem;
   padding: 1.1rem 0 0.35rem;
   border-top: 1px solid rgba(232, 230, 225, 0.14);
@@ -2046,20 +2061,42 @@ h3 {
 }
 
 .news-grid {
-  display: grid;
-  gap: 1.25rem;
-}
-
-@media (min-width: 800px) {
-  .news-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  --news-gap: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--news-gap);
 }
 
 .news-card {
   display: grid;
   gap: 0.85rem;
   align-content: start;
+  flex: 0 1 100%;
+  width: 100%;
+  max-width: 36rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 800px) {
+  .news-card {
+    flex: 0 1 calc((100% - 2 * var(--news-gap)) / 3);
+    width: calc((100% - 2 * var(--news-gap)) / 3);
+    max-width: calc((100% - 2 * var(--news-gap)) / 3);
+  }
+
+  /* Одна или две новости — шире и по центру, без «пустой» сетки */
+  .news-grid:has(> .news-card:only-child) > .news-card {
+    flex-basis: min(100%, 32rem);
+    width: min(100%, 32rem);
+    max-width: 32rem;
+  }
+
+  .news-grid:has(> .news-card:nth-child(2):last-child) > .news-card {
+    flex-basis: calc((100% - var(--news-gap)) / 2);
+    width: calc((100% - var(--news-gap)) / 2);
+    max-width: min(28rem, calc((100% - var(--news-gap)) / 2));
+  }
 }
 
 .news-card img {
