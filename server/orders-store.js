@@ -38,8 +38,27 @@ function saveOrders(orders) {
   writeJson(ORDERS_FILE, orders.slice(0, 1000));
 }
 
+function normalizePhoneDigits(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  const withCountry =
+    digits.startsWith("8") && digits.length === 11 ? `7${digits.slice(1)}` : digits;
+  return withCountry.slice(-10);
+}
+
 function getOrder(id) {
-  return listOrders().find((order) => order.id === id);
+  const needle = String(id || "").trim();
+  if (!needle) return null;
+  const upper = needle.toUpperCase();
+  return listOrders().find((order) => String(order.id || "").toUpperCase() === upper) || null;
+}
+
+function findOrdersByPhone(phone) {
+  const needle = normalizePhoneDigits(phone);
+  if (needle.length < 10) return [];
+  return listOrders().filter(
+    (order) => normalizePhoneDigits(order.customer?.phone) === needle
+  );
 }
 
 function createOrder(payload) {
@@ -107,6 +126,8 @@ module.exports = {
   uid,
   listOrders,
   getOrder,
+  findOrdersByPhone,
+  normalizePhoneDigits,
   createOrder,
   updateOrder,
   deleteOrder,

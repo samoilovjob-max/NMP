@@ -19,15 +19,15 @@
   const lookupFormHtml = () => `
     <form class="account-lookup" id="orderLookupForm">
       <h3>Найти заказ</h3>
-      <p class="form-note">Введите номер заказа и телефон, указанный при оформлении.</p>
+      <p class="form-note">Достаточно одного поля: номер заказа <strong>или</strong> телефон из оформления. Можно указать оба — так надёжнее.</p>
       <div class="field-row">
         <div class="field">
           <label for="lookupOrderId">Номер заказа</label>
-          <input id="lookupOrderId" name="orderId" required autocomplete="off" />
+          <input id="lookupOrderId" name="orderId" autocomplete="off" placeholder="NMP-…" />
         </div>
         <div class="field">
           <label for="lookupPhone">Телефон</label>
-          <input id="lookupPhone" name="phone" type="tel" required placeholder="+7..." autocomplete="tel" />
+          <input id="lookupPhone" name="phone" type="tel" placeholder="+7..." autocomplete="tel" />
         </div>
       </div>
       <button class="btn btn-primary" type="submit">Найти заказ</button>
@@ -48,33 +48,44 @@
         typeof window.NMP_normalizePhone === "function"
           ? window.NMP_normalizePhone(phoneRaw)
           : phoneRaw;
-      if (!orderId || !phoneRaw) {
-        window.NMP_toast("Укажите номер заказа и телефон");
+      const phoneDigits = String(phone || phoneRaw || "").replace(/\D/g, "");
+      if (!orderId && phoneDigits.length < 10) {
+        window.NMP_toast("Укажите номер заказа или телефон");
         return;
       }
       try {
-        const qs = new URLSearchParams({
-          orderId,
-          phone: phone ? `+${phone}` : phoneRaw
-        });
+        const qs = new URLSearchParams();
+        if (orderId) qs.set("orderId", orderId);
+        if (phoneDigits.length >= 10) {
+          qs.set("phone", phone ? `+${phone}` : phoneRaw);
+        }
         const data = await api(`/api/orders/lookup?${qs.toString()}`);
-        if (!data.order) throw new Error("Заказ не найден");
-        Store.createOrder(data.order);
-        if (data.order.customer || data.order.phone) {
+        const found = Array.isArray(data.orders) && data.orders.length
+          ? data.orders
+          : data.order
+            ? [data.order]
+            : [];
+        if (!found.length) throw new Error("Заказ не найден");
+
+        found.forEach((order) => Store.createOrder(order));
+        const primary = found[0];
+        if (primary.customer || primary.phone) {
           Store.ensureUser?.({
-            lastName: data.order.customer?.lastName || data.order.lastName || "",
-            firstName: data.order.customer?.firstName || data.order.firstName || "",
-            middleName: data.order.customer?.middleName || data.order.middleName || "",
-            phone: data.order.customer?.phone || data.order.phone || phoneRaw,
-            email: data.order.customer?.email || data.order.email || "",
-            city: data.order.city || data.order.customer?.city || "",
-            cityCode: data.order.cityCode || data.order.customer?.cityCode || ""
+            lastName: primary.customer?.lastName || primary.lastName || "",
+            firstName: primary.customer?.firstName || primary.firstName || "",
+            middleName: primary.customer?.middleName || primary.middleName || "",
+            phone: primary.customer?.phone || primary.phone || phoneRaw,
+            email: primary.customer?.email || primary.email || "",
+            city: primary.city || primary.customer?.city || "",
+            cityCode: primary.cityCode || primary.customer?.cityCode || ""
           });
         }
-        window.NMP_toast("Заказ найден");
-        window.history.replaceState({}, "", `account.html?order=${encodeURIComponent(data.order.id)}`);
+        window.NMP_toast(
+          found.length > 1 ? `Найдено заказов: ${found.length}` : "Заказ найден"
+        );
+        window.history.replaceState({}, "", `account.html?order=${encodeURIComponent(primary.id)}`);
         await render();
-        document.getElementById(`order-${data.order.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById(`order-${primary.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (err) {
         window.NMP_toast(err.message || "Не удалось найти заказ");
       }

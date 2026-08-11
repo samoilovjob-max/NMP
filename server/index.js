@@ -733,18 +733,41 @@ app.get("/api/orders/lookup", (req, res) => {
   try {
     const orderId = String(req.query.orderId || req.query.id || "").trim();
     const phoneRaw = String(req.query.phone || "").trim();
-    const phoneDigits = phoneRaw.replace(/\D/g, "");
-    if (!orderId || phoneDigits.length < 10) {
-      return res.status(400).json({ message: "Укажите номер заказа и телефон" });
+    const phoneDigits = store.normalizePhoneDigits(phoneRaw);
+    const hasOrderId = Boolean(orderId);
+    const hasPhone = phoneDigits.length >= 10;
+
+    if (!hasOrderId && !hasPhone) {
+      return res.status(400).json({
+        message: "Укажите номер заказа или телефон, с которым оформляли заказ"
+      });
     }
-    const order = store.getOrder(orderId);
-    if (!order) return res.status(404).json({ message: "Заказ не найден" });
-    const orderPhone = String(order.customer?.phone || "").replace(/\D/g, "");
-    const normalized = (d) => (d.startsWith("8") && d.length === 11 ? `7${d.slice(1)}` : d).slice(-10);
-    if (normalized(orderPhone) !== normalized(phoneDigits)) {
-      return res.status(403).json({ message: "Телефон не совпадает с заказом" });
+
+    // Номер заказа + телефон: строгая проверка совпадения
+    if (hasOrderId && hasPhone) {
+      const order = store.getOrder(orderId);
+      if (!order) return res.status(404).json({ message: "Заказ не найден" });
+      if (store.normalizePhoneDigits(order.customer?.phone) !== phoneDigits) {
+        return res.status(403).json({ message: "Телефон не совпадает с заказом" });
+      }
+      const pub = publicOrder(order);
+      return res.json({ ok: true, order: pub, orders: [pub] });
     }
-    res.json({ ok: true, order: publicOrder(order) });
+
+    // Только номер заказа
+    if (hasOrderId) {
+      const order = store.getOrder(orderId);
+      if (!order) return res.status(404).json({ message: "Заказ не найден" });
+      const pub = publicOrder(order);
+      return res.json({ ok: true, order: pub, orders: [pub] });
+    }
+
+    // Только телефон — все заказы клиента
+    const matched = store.findOrdersByPhone(phoneDigits).map(publicOrder).filter(Boolean);
+    if (!matched.length) {
+      return res.status(404).json({ message: "По этому телефону заказов не найдено" });
+    }
+    res.json({ ok: true, order: matched[0], orders: matched });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
