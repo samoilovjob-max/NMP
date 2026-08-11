@@ -17,6 +17,10 @@
   const applyProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
     window.NMP_PRODUCTS = products;
+    window.NMP_getProduct = (id) =>
+      (window.NMP_PRODUCTS || []).find(
+        (item) => item.id === String(id) || item.slug === String(id)
+      );
   };
 
   const renderCatalog = (products, site = {}) => {

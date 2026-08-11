@@ -3,7 +3,13 @@
   if (window.NMP_cmsReady) await window.NMP_cmsReady;
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id") || params.get("slug") || "1";
-  const product = window.NMP_getProduct(id);
+  const getProduct =
+    window.NMP_getProduct ||
+    ((key) =>
+      (window.NMP_PRODUCTS || []).find(
+        (item) => item.id === String(key) || item.slug === String(key)
+      ));
+  const product = getProduct(id);
   const root = document.getElementById("productRoot");
   const siteUrl = "https://northmp.su";
 
