@@ -502,7 +502,7 @@ h3 {
 .features {
   background:
     linear-gradient(180deg, rgba(28, 30, 28, 0.78), rgba(28, 30, 28, 0.9)),
-    url("../images/mountain-river.png") center/cover fixed;
+    url("../images/mountain-river.webp") center/cover fixed;
 }
 
 .features-grid {

@@ -659,7 +659,7 @@ app.get("/api/config/public", (_req, res) => {
     fromCity: CONFIG.fromCity,
     fromCityCode: CONFIG.fromCityCode,
     fromAddress: CONFIG.fromAddress,
-    pickupAddress: "г. Петрозаводск, ул. Университетская 7/3",
+    pickupAddress: CONFIG.pickupAddress,
     deliveryMethods: ["cdek", "pickup", "local"],
     mapProvider: "openstreetmap",
     yandexMapsApiKey: "",
