@@ -31,6 +31,12 @@
       return this.getCart().reduce((sum, item) => sum + item.qty, 0);
     },
     addToCart(productId, qty = 1) {
+      const product = window.NMP_getProduct?.(productId);
+      if (product && product.availableForOrder === false) {
+        window.NMP_openAvailabilityNotify?.(product);
+        window.NMP_toast?.(`«${product.name}» пока нельзя добавить в корзину`);
+        return this.getCart();
+      }
       const cart = this.getCart();
       const existing = cart.find((item) => item.productId === String(productId));
       if (existing) existing.qty += qty;

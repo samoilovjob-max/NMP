@@ -5,6 +5,7 @@
     tab: "products",
     cms: null,
     orders: null,
+    leads: null,
     editingProductId: null,
     orderFilter: "all",
     orderQuery: "",
@@ -73,6 +74,7 @@
       ["news", "Новости"],
       ["reviews", "Отзывы"],
       ["site", "Тексты сайта"],
+      ["leads", "Заявки"],
       ["orders", "Заказы"]
     ];
     return `
@@ -209,6 +211,12 @@
           <div class="field"><label>Текст акции на товаре</label><input name="promoLabel" value="${esc(p.promoLabel || "")}" placeholder="−10%" /></div>
           <div class="field check-field"><label><input name="promoActive" type="checkbox" ${p.promoActive ? "checked" : ""}/> Акционная цена активна</label></div>
           <div class="field check-field"><label><input name="active" type="checkbox" ${p.active !== false ? "checked" : ""}/> Показывать на сайте</label></div>
+          <div class="field check-field"><label><input name="availableForOrder" type="checkbox" ${
+            p.availableForOrder !== false ? "checked" : ""
+          }/> Доступен к заказу</label></div>
+          <div class="field"><label>Текст, если заказ недоступен</label><input name="availabilityNote" value="${esc(
+            p.availabilityNote || ""
+          )}" placeholder="Скоро в продаже — оставьте контакты" /></div>
         </div>
         <div class="field"><label>H1 на странице товара</label><input name="h1" value="${esc(p.h1 || "")}" /></div>
         <div class="field"><label>Короткое описание</label><textarea name="short" rows="2">${esc(p.short || "")}</textarea></div>
@@ -265,6 +273,8 @@
       promoLabel: String(fd.get("promoLabel") || "").trim(),
       promoActive: form.promoActive.checked,
       active: form.active.checked,
+      availableForOrder: form.availableForOrder.checked,
+      availabilityNote: String(fd.get("availabilityNote") || "").trim(),
       h1: String(fd.get("h1") || "").trim(),
       short: String(fd.get("short") || "").trim(),
       description: String(fd.get("description") || "").trim(),
@@ -284,7 +294,7 @@
   const renderProducts = () => {
     const products = state.cms?.products || [];
     if (state.editingProductId === "__new__") {
-      root.innerHTML = shell(productForm({ active: true, sortOrder: products.length + 1, gallery: [], specs: [], faq: [] }));
+      root.innerHTML = shell(productForm({ active: true, availableForOrder: false, sortOrder: products.length + 1, gallery: [], specs: [], faq: [] }));
       bindShell();
       bindUploader("productImageFile", "productImage");
       document.getElementById("galleryFile")?.addEventListener("change", async (e) => {
@@ -364,7 +374,15 @@
           <article class="admin-card">
             <img src="${esc(p.image)}" alt="" />
             <div>
-              <div class="badge">${p.active === false ? "Скрыт" : p.promoActive ? "Акция" : "Активен"}</div>
+              <div class="badge">${
+                p.active === false
+                  ? "Скрыт"
+                  : p.availableForOrder === false
+                    ? "Скоро"
+                    : p.promoActive
+                      ? "Акция"
+                      : "К заказу"
+              }</div>
               <h3>${esc(p.name)}</h3>
               <p class="sku-label">${esc(p.sku)} · id ${esc(p.id)}</p>
               <p><strong>${money(p.promoActive && p.promoPrice ? p.promoPrice : p.price)}</strong>
@@ -1044,23 +1062,94 @@
     });
   };
 
+  const renderLeads = () => {
+    const list = state.leads || [];
+    const fresh = list.filter((l) => l.status === "new").length;
+    root.innerHTML = shell(`
+      <p class="form-note">Заявки «Сообщить о поступлении» с витрины. Новых: <strong>${fresh}</strong> · Всего: ${list.length}</p>
+      <div class="admin-list">
+        ${
+          list.length
+            ? list
+                .map((lead) => {
+                  return `
+              <article class="admin-order ${lead.status === "new" ? "is-ship" : ""}">
+                <header>
+                  <div>
+                    <div class="admin-order-badges">
+                      <span class="admin-pill status">${esc(
+                        lead.status === "done" ? "Обработана" : lead.status === "new" ? "Новая" : lead.status || "—"
+                      )}</span>
+                    </div>
+                    <h3 style="margin:0.15rem 0">${esc(lead.productName || lead.productId)}</h3>
+                    <p class="form-note">${when(lead.createdAt)} · ${esc(lead.productSku || "")} · ${esc(lead.id)}</p>
+                  </div>
+                </header>
+                <div class="admin-order-meta">
+                  <div><strong>Имя:</strong> ${esc(lead.name || "—")}</div>
+                  <div><strong>Телефон:</strong> ${esc(lead.phone || "—")}</div>
+                  <div><strong>E-mail:</strong> ${esc(lead.email || "—")}</div>
+                  <div><strong>Комментарий:</strong> ${esc(lead.comment || "—")}</div>
+                </div>
+                <div class="admin-actions">
+                  ${
+                    lead.status !== "done"
+                      ? `<button class="btn btn-primary" type="button" data-lead-done="${esc(
+                          lead.id
+                        )}">Отметить обработанной</button>`
+                      : `<button class="btn btn-ghost" type="button" data-lead-new="${esc(
+                          lead.id
+                        )}">Вернуть в новые</button>`
+                  }
+                </div>
+              </article>`;
+                })
+                .join("")
+            : `<p class="lead">Заявок пока нет.</p>`
+        }
+      </div>`);
+    bindShell();
+    root.querySelectorAll("[data-lead-done]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await api(`/api/admin/leads/${encodeURIComponent(btn.getAttribute("data-lead-done"))}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "done" })
+        });
+        window.NMP_toast("Заявка обработана");
+        await load();
+      });
+    });
+    root.querySelectorAll("[data-lead-new]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        await api(`/api/admin/leads/${encodeURIComponent(btn.getAttribute("data-lead-new"))}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: "new" })
+        });
+        await load();
+      });
+    });
+  };
+
   const render = () => {
     if (state.tab === "products") return renderProducts();
     if (state.tab === "news") return renderNews();
     if (state.tab === "reviews") return renderReviews();
     if (state.tab === "promotions") return renderPromotions();
     if (state.tab === "site") return renderSite();
+    if (state.tab === "leads") return renderLeads();
     return renderOrders();
   };
 
   const load = async () => {
     root.innerHTML = `<p class="form-note">Загружаем админку…</p>`;
-    const [cmsData, ordersData] = await Promise.all([
+    const [cmsData, ordersData, leadsData] = await Promise.all([
       api("/api/admin/cms"),
-      api("/api/admin/orders")
+      api("/api/admin/orders"),
+      api("/api/admin/leads")
     ]);
     state.cms = cmsData;
     state.orders = ordersData;
+    state.leads = leadsData.leads || [];
     render();
   };
 

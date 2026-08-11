@@ -65,12 +65,19 @@ function publicProduct(product) {
   if (!product) return null;
   const price = Number(product.price || 0);
   const payPrice = effectivePrice(product);
+  const availableForOrder = product.availableForOrder !== false;
   return {
     ...product,
     price: payPrice,
     basePrice: price,
     effectivePrice: payPrice,
-    hasPromo: Boolean(product.promoActive && payPrice < price)
+    hasPromo: Boolean(product.promoActive && payPrice < price),
+    availableForOrder,
+    availabilityNote:
+      String(product.availabilityNote || "").trim() ||
+      (availableForOrder
+        ? ""
+        : "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать.")
   };
 }
 
@@ -104,6 +111,10 @@ function saveProduct(input, { isNew = false } = {}) {
     promoActive: Boolean(input.promoActive),
     promoLabel: String(input.promoLabel || ""),
     active: input.active !== false,
+    availableForOrder: input.availableForOrder !== false,
+    availabilityNote: String(
+      input.availabilityNote != null ? input.availabilityNote : base.availabilityNote || ""
+    ).trim(),
     sortOrder: Number(input.sortOrder ?? base.sortOrder ?? products.length + 1),
     image: String(input.image || base.image || "images/product-1.png"),
     imageAlt: String(input.imageAlt || input.name || ""),
@@ -234,6 +245,9 @@ function resolveOrderItems(rawItems = []) {
     const product = getProduct(line.productId || line.id);
     if (!product || product.active === false) {
       throw new Error(`Неизвестный товар: ${line.productId || line.id}`);
+    }
+    if (product.availableForOrder === false) {
+      throw new Error(`«${product.name}» пока недоступен к заказу`);
     }
     const qty = Math.max(1, Number(line.qty || line.amount || 1));
     const price = effectivePrice(product);

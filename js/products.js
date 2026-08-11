@@ -54,7 +54,9 @@ window.NMP_PRODUCTS = [
     "sortOrder": 1,
     "promoPrice": null,
     "promoLabel": "",
-    "promoActive": false
+    "promoActive": false,
+    "availableForOrder": true,
+    "availabilityNote": ""
   },
   {
     "id": "2",
@@ -62,7 +64,7 @@ window.NMP_PRODUCTS = [
     "slug": "paikula",
     "name": "Пайкула",
     "h1": "Пайкула — костровая чаша с характером карельских скал",
-    "badge": "Дизайн",
+    "badge": "Скоро в продаже",
     "price": 21500,
     "image": "images/product-2.png",
     "imageAlt": "Пайкула — костровая чаша-гриль для загородного отдыха",
@@ -111,7 +113,9 @@ window.NMP_PRODUCTS = [
     "sortOrder": 2,
     "promoPrice": null,
     "promoLabel": "",
-    "promoActive": false
+    "promoActive": false,
+    "availableForOrder": false,
+    "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
   },
   {
     "id": "3",
@@ -119,7 +123,7 @@ window.NMP_PRODUCTS = [
     "slug": "lesnaya-svecha",
     "name": "Лесная Свеча",
     "h1": "Лесная Свеча — костровой очаг, который освещает сад как огромная свеча",
-    "badge": "Природа",
+    "badge": "Скоро в продаже",
     "price": 19900,
     "image": "images/product-3.jpg",
     "imageAlt": "Лесная Свеча — вертикальный костровой очаг с резными стенками",
@@ -168,15 +172,17 @@ window.NMP_PRODUCTS = [
     "sortOrder": 3,
     "promoPrice": null,
     "promoLabel": "",
-    "promoActive": false
+    "promoActive": false,
+    "availableForOrder": false,
+    "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
   },
   {
     "id": "4",
     "sku": "NMP-SO-04",
     "slug": "severnyy-ochag",
-    "name": "Северный очаг",
+    TMP_OCHAG
     "h1": "Северный очаг — тёплый центр премиального загородного отдыха",
-    "badge": "Арт-объект",
+    "badge": "Скоро в продаже",
     "price": 24900,
     "image": "images/product-4.png",
     "imageAlt": "Северный очаг — премиальная костровая чаша для загородного отдыха",
@@ -225,7 +231,9 @@ window.NMP_PRODUCTS = [
     "sortOrder": 4,
     "promoPrice": null,
     "promoLabel": "",
-    "promoActive": false
+    "promoActive": false,
+    "availableForOrder": false,
+    "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
   }
 ];
 

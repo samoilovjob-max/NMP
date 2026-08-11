@@ -2009,6 +2009,68 @@ h3 {
   color: #333;
 }
 
+.notify-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(8, 9, 8, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+}
+
+.notify-overlay[hidden] {
+  display: none !important;
+}
+
+.notify-dialog {
+  position: relative;
+  width: min(440px, 100%);
+  background: #171917;
+  color: var(--frost);
+  border: 1px solid rgba(232, 230, 225, 0.16);
+  padding: 1.25rem 1.2rem 1.35rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.notify-dialog h3 {
+  margin: 0 1.5rem 0 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+
+.notify-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.notify-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.65rem;
+  border: 0;
+  background: transparent;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--frost-dim);
+}
+
+.product-soon .product-meta {
+  align-items: stretch;
+}
+
+.product-soon-note {
+  margin: 0.35rem 0 0;
+}
+
+.product-meta .btn {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
 .admin-tabs {
   display: flex;
   flex-wrap: wrap;

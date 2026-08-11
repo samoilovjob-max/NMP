@@ -9,6 +9,7 @@ require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const catalog = require("./catalog");
 const cms = require("./cms-store");
 const store = require("./orders-store");
+const leads = require("./leads-store");
 const { optimizeUploadedImage } = require("./image-optimize");
 
 const app = express();
@@ -429,6 +430,33 @@ app.get("/api/products", (_req, res) => {
 
 app.get("/api/cms", (_req, res) => {
   res.json(cms.getPublicCms());
+});
+
+app.post("/api/availability-notify", (req, res) => {
+  try {
+    const body = req.body || {};
+    const product = cms.getProduct(body.productId);
+    if (!product || product.active === false) {
+      return res.status(404).json({ message: "Товар не найден" });
+    }
+    if (product.availableForOrder !== false) {
+      return res.status(400).json({
+        message: "Этот товар уже доступен к заказу — оформите покупку на сайте"
+      });
+    }
+    const lead = leads.addLead({
+      name: body.name,
+      phone: body.phone,
+      email: body.email,
+      comment: body.comment,
+      productId: product.id,
+      productName: product.name,
+      productSku: product.sku
+    });
+    res.json({ ok: true, lead: { id: lead.id, createdAt: lead.createdAt } });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 });
 
 /* ---------- CDEK ---------- */
@@ -1050,7 +1078,25 @@ app.post("/api/admin/upload", adminGuard, (req, res) => {
   });
 });
 
-/* ---------- Admin orders ---------- */
+/* ---------- Admin leads + orders ---------- */
+
+app.get("/api/admin/leads", adminGuard, (_req, res) => {
+  res.json({ ok: true, leads: leads.listLeads() });
+});
+
+app.patch("/api/admin/leads/:id", adminGuard, (req, res) => {
+  try {
+    const { status, adminNotes } = req.body || {};
+    const patch = {};
+    if (status) patch.status = String(status);
+    if (adminNotes != null) patch.adminNotes = String(adminNotes);
+    const item = leads.updateLead(req.params.id, patch);
+    if (!item) return res.status(404).json({ message: "Заявка не найдена" });
+    res.json({ ok: true, lead: item });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
 
 app.get("/api/admin/orders", adminGuard, (_req, res) => {
   const now = Date.now();

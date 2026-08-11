@@ -57,6 +57,8 @@
   upsertMeta("name", "twitter:image", absoluteImage);
   upsertLink("canonical", pageUrl);
 
+  const available = product.availableForOrder !== false;
+
   const productSchema = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -75,7 +77,9 @@
       url: pageUrl,
       priceCurrency: "RUB",
       price: String(product.price),
-      availability: "https://schema.org/InStock",
+      availability: available
+        ? "https://schema.org/InStock"
+        : "https://schema.org/PreOrder",
       itemCondition: "https://schema.org/NewCondition",
       seller: {
         "@type": "Organization",
@@ -114,6 +118,10 @@
   const gallery = product.gallery || [product.image];
   const galleryAlts = product.galleryAlts || [];
 
+  const priceLabel = product.hasPromo
+    ? `${window.NMP_formatPrice(product.basePrice || product.price)} → ${window.NMP_formatPrice(product.price)}`
+    : window.NMP_formatPrice(product.price);
+
   root.innerHTML = `
     <div class="product-gallery reveal visible">
       <div class="product-stage">
@@ -131,19 +139,29 @@
       </div>
     </div>
     <div class="product-info reveal visible">
-      <div class="badge">${product.badge}</div>
+      <div class="badge">${product.badge || (available ? "" : "Скоро в продаже")}</div>
       <h1>${product.h1 || product.name}</h1>
       <p class="sku-label">Артикул ${product.sku}</p>
-      <p class="price-lg">${window.NMP_formatPrice(product.price)}</p>
+      <p class="price-lg">${priceLabel}</p>
       <p class="lead">${product.description}</p>
       <ul class="spec-list">
         ${product.specs.map((item) => `<li>${item}</li>`).join("")}
       </ul>
       <div class="product-actions">
-        <a class="btn btn-primary" href="checkout.html?buy=${product.id}">Оформить заказ</a>
-        <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>
+        ${
+          available
+            ? `<a class="btn btn-primary" href="checkout.html?buy=${product.id}">Оформить заказ</a>
+        <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>`
+            : `<button class="btn btn-primary" type="button" data-notify-product="${product.id}" data-notify-name="${product.name}">Сообщить о поступлении</button>
+        <a class="btn btn-ghost" href="index.html#catalog">Смотреть каталог</a>`
+        }
       </div>
-      <p class="form-note">Доставка по России через СДЭК · Оплата через ЮKassa · После заказа откроется личный кабинет</p>
+      <p class="form-note">${
+        available
+          ? "Доставка СДЭК, самовывоз или адресная доставка по Петрозаводску · Оплата через ЮKassa"
+          : product.availabilityNote ||
+            "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
+      }</p>
 
       ${
         product.faq?.length
@@ -180,8 +198,16 @@
   });
 
   root.querySelector("[data-add-cart]")?.addEventListener("click", () => {
+    if (product.availableForOrder === false) {
+      window.NMP_openAvailabilityNotify?.(product);
+      return;
+    }
     window.NMP_Store.addToCart(product.id);
     window.NMP_toast(`«${product.name}» добавлен в корзину`);
+  });
+
+  root.querySelector("[data-notify-product]")?.addEventListener("click", () => {
+    window.NMP_openAvailabilityNotify?.(product);
   });
 
   };

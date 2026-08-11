@@ -55,10 +55,111 @@
     btn.addEventListener("click", (event) => {
       event.preventDefault();
       const id = btn.getAttribute("data-add-cart");
-      Store.addToCart(id);
       const product = window.NMP_getProduct?.(id);
+      if (product && product.availableForOrder === false) {
+        window.NMP_openAvailabilityNotify?.(product);
+        return;
+      }
+      Store.addToCart(id);
       showToast(`«${product?.name || "Товар"}» добавлен в корзину`);
     });
+  });
+
+  const openAvailabilityNotify = (product) => {
+    if (!product) return;
+    let overlay = document.getElementById("availabilityNotifyOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "availabilityNotifyOverlay";
+      overlay.className = "notify-overlay";
+      overlay.innerHTML = `
+        <div class="notify-dialog" role="dialog" aria-modal="true" aria-labelledby="notifyTitle">
+          <button type="button" class="notify-close" aria-label="Закрыть">×</button>
+          <h3 id="notifyTitle">Сообщить о поступлении</h3>
+          <p class="form-note" id="notifyLead"></p>
+          <form id="availabilityNotifyForm" class="notify-form">
+            <input type="hidden" name="productId" id="notifyProductId" />
+            <div class="field">
+              <label for="notifyName">Имя</label>
+              <input id="notifyName" name="name" type="text" autocomplete="name" />
+            </div>
+            <div class="field">
+              <label for="notifyPhone">Телефон</label>
+              <input id="notifyPhone" name="phone" type="tel" autocomplete="tel" placeholder="+7..." />
+            </div>
+            <div class="field">
+              <label for="notifyEmail">E-mail</label>
+              <input id="notifyEmail" name="email" type="email" autocomplete="email" />
+            </div>
+            <div class="field">
+              <label for="notifyComment">Комментарий</label>
+              <textarea id="notifyComment" name="comment" rows="2" placeholder="Необязательно"></textarea>
+            </div>
+            <p class="form-note">Укажите телефон или e-mail — напишем, когда модель появится в продаже.</p>
+            <button class="btn btn-primary" type="submit">Жду оповещение</button>
+          </form>
+        </div>`;
+      document.body.appendChild(overlay);
+      const close = () => {
+        overlay.hidden = true;
+        document.body.style.overflow = "";
+      };
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay || e.target.classList.contains("notify-close")) close();
+      });
+      overlay.querySelector("#availabilityNotifyForm").addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const fd = new FormData(ev.target);
+        const payload = {
+          productId: fd.get("productId"),
+          name: fd.get("name"),
+          phone: fd.get("phone"),
+          email: fd.get("email"),
+          comment: fd.get("comment")
+        };
+        try {
+          const res = await fetch((window.NMP_CONFIG?.apiBase || "") + "/api/availability-notify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.message || "Не удалось отправить заявку");
+          showToast("Готово! Сообщим, когда товар появится в продаже");
+          close();
+          ev.target.reset();
+        } catch (err) {
+          showToast(err.message || "Ошибка отправки");
+        }
+      });
+    }
+    overlay.querySelector("#notifyProductId").value = product.id;
+    overlay.querySelector("#notifyTitle").textContent = "Сообщить о поступлении";
+    overlay.querySelector("#notifyLead").textContent =
+      `«${product.name}» · ${product.availabilityNote || "Модель ещё готовится к продаже."}`;
+    overlay.hidden = false;
+    document.body.style.overflow = "hidden";
+  };
+  window.NMP_openAvailabilityNotify = openAvailabilityNotify;
+  window.NMP_isOrderable = (productOrId) => {
+    const product =
+      typeof productOrId === "object" && productOrId
+        ? productOrId
+        : window.NMP_getProduct?.(productOrId);
+    return Boolean(product && product.availableForOrder !== false);
+  };
+
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-notify-product]");
+    if (!btn) return;
+    event.preventDefault();
+    const id = btn.getAttribute("data-notify-product");
+    const product = window.NMP_getProduct?.(id) || {
+      id,
+      name: btn.getAttribute("data-notify-name") || "Товар",
+      availabilityNote: btn.getAttribute("data-notify-note") || ""
+    };
+    openAvailabilityNotify(product);
   });
 
   document.querySelectorAll("[data-go-cart]").forEach((btn) => {

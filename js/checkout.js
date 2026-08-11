@@ -2,7 +2,17 @@
   const Store = window.NMP_Store;
   const params = new URLSearchParams(window.location.search);
   const buyId = params.get("buy");
-  if (buyId) Store.addToCart(buyId, 1);
+  if (buyId) {
+    const product = window.NMP_getProduct?.(buyId);
+    if (product && product.availableForOrder === false) {
+      window.NMP_toast?.(`«${product.name}» пока недоступен к заказу`);
+      window.setTimeout(() => {
+        window.location.href = `product.html?id=${encodeURIComponent(product.id)}`;
+      }, 400);
+    } else {
+      Store.addToCart(buyId, 1);
+    }
+  }
 
   const api = (path, options) =>
     fetch((window.NMP_CONFIG?.apiBase || "") + path, {
@@ -115,6 +125,7 @@
     Store.getCart()
       .map((line) => {
         const product = window.NMP_getProduct(line.productId);
+        if (!product || product.availableForOrder === false) return null;
         return product ? { ...line, product, sum: product.price * line.qty } : null;
       })
       .filter(Boolean);

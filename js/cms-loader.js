@@ -8,6 +8,12 @@
 
   const stars = (n) => "★".repeat(Math.max(1, Math.min(5, Number(n) || 5)));
 
+  const escAttr = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;");
+
   const applyProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
     window.NMP_PRODUCTS = products;
@@ -23,12 +29,18 @@
 
     root.innerHTML = products
       .map((p) => {
+        const available = p.availableForOrder !== false;
         const priceLabel = p.hasPromo
           ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
-          : `<span class="price">от ${money(p.effectivePrice || p.price)}</span>`;
+          : `<span class="price">${available ? "от " : ""}${money(p.effectivePrice || p.price)}</span>`;
         const badge = p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
+        const action = available
+          ? `<a class="btn btn-primary" href="product.html?id=${encodeURIComponent(p.id)}">Подробнее</a>`
+          : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
+              p.id
+            )}" data-notify-name="${escAttr(p.name)}">Сообщить о поступлении</button>`;
         return `
-        <article class="product reveal visible" id="product-${p.id}">
+        <article class="product reveal visible ${available ? "" : "product-soon"}" id="product-${p.id}">
           <a class="product-media" href="product.html?id=${encodeURIComponent(p.id)}">
             <img src="${p.image}" alt="${p.imageAlt || p.name}" />
           </a>
@@ -39,8 +51,13 @@
             <p>${p.short || ""}</p>
             <div class="product-meta">
               ${priceLabel}
-              <a class="btn btn-primary" href="product.html?id=${encodeURIComponent(p.id)}">Подробнее</a>
+              ${action}
             </div>
+            ${
+              available
+                ? ""
+                : `<p class="form-note product-soon-note">Пока в подготовке — можно оставить заявку на оповещение</p>`
+            }
           </div>
         </article>`;
       })
@@ -88,12 +105,19 @@
         const date = n.publishedAt
           ? new Date(n.publishedAt).toLocaleDateString("ru-RU")
           : "";
+        const linked = n.productId ? window.NMP_getProduct?.(n.productId) : null;
+        const available = !n.productId || (linked ? linked.availableForOrder !== false : true);
         const orderHref = n.productId
           ? `checkout.html?buy=${encodeURIComponent(n.productId)}`
           : "index.html#catalog";
         const moreHref = n.productId
           ? `product.html?id=${encodeURIComponent(n.productId)}`
           : "index.html#catalog";
+        const primary = available
+          ? `<a class="btn btn-primary" href="${orderHref}">Заказать</a>`
+          : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
+              n.productId
+            )}" data-notify-name="${escAttr(linked?.name || n.title || "")}">Сообщить о поступлении</button>`;
         return `
         <article class="news-card reveal visible">
           ${n.image ? `<img src="${n.image}" alt="" />` : ""}
@@ -102,7 +126,7 @@
             <h3>${n.title || ""}</h3>
             <p>${n.excerpt || n.body || ""}</p>
             <div class="news-actions">
-              <a class="btn btn-primary" href="${orderHref}">Заказать</a>
+              ${primary}
               <a class="btn btn-ghost" href="${moreHref}">Подробнее</a>
             </div>
           </div>
@@ -160,6 +184,13 @@
       ig.hidden = false;
     } else if (ig && contacts.instagram === "") {
       ig.hidden = true;
+    }
+    const igText = document.querySelector(".contact-instagram-text");
+    if (igText && contacts.instagram) {
+      igText.setAttribute("href", contacts.instagram);
+      const handle = String(contacts.instagram).replace(/\/+$/, "").split("/").pop();
+      if (handle) igText.textContent = "@" + handle;
+      igText.closest("div")?.removeAttribute("hidden");
     }
     const tg = document.querySelector('.messenger-links a[title="Telegram"]');
     if (tg && contacts.telegram) tg.setAttribute("href", contacts.telegram);
