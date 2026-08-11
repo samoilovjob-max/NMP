@@ -236,8 +236,8 @@
           )}" placeholder="Скоро в продаже — оставьте контакты" /></div>
         </div>
         <div class="field"><label>H1 на странице товара</label><input name="h1" value="${esc(p.h1 || "")}" /></div>
-        <div class="field"><label>Короткое описание</label><textarea name="short" rows="2">${esc(p.short || "")}</textarea></div>
-        <div class="field"><label>Полное описание</label><textarea name="description" rows="5">${esc(p.description || "")}</textarea></div>
+        <div class="field"><label>Короткое описание</label><textarea name="short" rows="2" data-rich="product-short" data-rich-label="Карточка товара">${esc(p.short || "")}</textarea></div>
+        <div class="field"><label>Полное описание</label><textarea name="description" rows="5" data-rich="product-desc" data-rich-label="Страница товара">${esc(p.description || "")}</textarea></div>
         <div class="admin-form-grid">
           <div class="field">
             <label>Главное фото (URL)</label>
@@ -343,12 +343,14 @@
       });
       document.getElementById("productForm")?.addEventListener("submit", async (ev) => {
         ev.preventDefault();
+        window.NMP_refreshRichEditors?.(ev.target);
         const payload = readProductForm(ev.target);
         await api("/api/admin/products", { method: "POST", body: JSON.stringify(payload) });
         window.NMP_toast("Товар создан");
         state.editingProductId = null;
         await load();
       });
+      window.NMP_mountRichEditors?.(root);
       return;
     }
 
@@ -378,6 +380,7 @@
         });
         document.getElementById("productForm")?.addEventListener("submit", async (ev) => {
           ev.preventDefault();
+          window.NMP_refreshRichEditors?.(ev.target);
           const payload = readProductForm(ev.target);
           await api(`/api/admin/products/${encodeURIComponent(p.id)}`, {
             method: "PUT",
@@ -387,6 +390,7 @@
           state.editingProductId = null;
           await load();
         });
+        window.NMP_mountRichEditors?.(root);
         return;
       }
     }
@@ -463,7 +467,12 @@
               <article class="admin-card compact">
                 <div>
                   <h3>${esc(item.title || item.author || item.id)}</h3>
-                  <p class="form-note">${esc(item.excerpt || item.text || item.meta || "")}</p>
+                  <p class="form-note">${esc(
+                    String(item.excerpt || item.text || item.meta || "")
+                      .replace(/<[^>]+>/g, " ")
+                      .replace(/\s+/g, " ")
+                      .trim()
+                  )}</p>
                   <p class="form-note">${item.published === false || item.active === false ? "Скрыто" : "Опубликовано"}</p>
                 </div>
                 <div class="admin-actions">
@@ -497,7 +506,9 @@
         if (el.type === "checkbox") el.checked = Boolean(item[k]);
         else el.value = item[k] ?? "";
       });
+      window.NMP_refreshRichEditors?.(form);
     };
+    window.NMP_mountRichEditors?.(form);
     document.getElementById("resetCollection")?.addEventListener("click", () => fill({}));
     root.querySelectorAll("[data-edit-item]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -517,6 +528,7 @@
     });
     form.addEventListener("submit", async (ev) => {
       ev.preventDefault();
+      window.NMP_refreshRichEditors?.(form);
       const payload = toPayload(form);
       if (payload.id) {
         await api(`/api/admin/${key}/${encodeURIComponent(payload.id)}`, {
@@ -539,8 +551,8 @@
       "Новости",
       `
       <div class="field"><label>Заголовок</label><input name="title" required /></div>
-      <div class="field"><label>Краткий текст</label><textarea name="excerpt" rows="2"></textarea></div>
-      <div class="field"><label>Полный текст</label><textarea name="body" rows="4"></textarea></div>
+      <div class="field"><label>Краткий текст</label><textarea name="excerpt" rows="2" data-rich="news-excerpt" data-rich-label="Карточка новости"></textarea></div>
+      <div class="field"><label>Полный текст</label><textarea name="body" rows="4" data-rich="news-body" data-rich-label="Текст новости"></textarea></div>
       <div class="field">
         <label>Картинка</label>
         <input name="image" id="newsImage" />
@@ -1126,6 +1138,11 @@
                       </div>
                       <div>${esc(order.customer?.email || "—")}</div>
                       <div>${esc(order.city || order.customer?.city || "")}</div>
+                      <div><strong>Telegram:</strong> ${
+                        order.telegramLinked
+                          ? "✅ привязан"
+                          : "не привязан — клиент жмёт «Статус в Telegram» в кабинете"
+                      }</div>
                     </div>
                   </div>
                   <div>
@@ -1174,6 +1191,7 @@
                 <div class="admin-actions">
                   <button class="btn btn-ghost" type="button" data-save-notes="${esc(order.id)}">Сохранить заметку</button>
                   <button class="btn btn-ghost" type="button" data-sync-order="${esc(order.id)}">Обновить из ЮKassa / СДЭК</button>
+                  <button class="btn btn-ghost" type="button" data-notify-tg="${esc(order.id)}">Статус клиенту в Telegram</button>
                   <button class="btn btn-ghost" type="button" data-edit-order="${esc(order.id)}">${
                     state.editingOrderId === order.id ? "Скрыть редактирование" : "Редактировать"
                   }</button>
@@ -1382,6 +1400,24 @@
           window.NMP_toast(changes.length ? changes.join(" · ") : "Статусы обновлены");
         } catch (err) {
           window.NMP_toast(err.message || "Ошибка синхронизации");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+    root.querySelectorAll("[data-notify-tg]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-notify-tg");
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/orders/${encodeURIComponent(id)}/notify-telegram`, {
+            method: "POST",
+            body: JSON.stringify({})
+          });
+          window.NMP_toast("Статус отправлен клиенту в Telegram");
+          await load();
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось отправить в Telegram");
         } finally {
           btn.disabled = false;
         }

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { sanitizeRichHtml } = require("./rich-html");
 
 const DATA_DIR = path.join(__dirname, "data");
 const CMS_PATH = path.join(DATA_DIR, "cms.json");
@@ -122,8 +123,8 @@ function saveProduct(input, { isNew = false } = {}) {
       ? input.gallery.filter(Boolean)
       : base.gallery || [input.image || base.image].filter(Boolean),
     galleryAlts: Array.isArray(input.galleryAlts) ? input.galleryAlts : base.galleryAlts || [],
-    short: String(input.short || ""),
-    description: String(input.description || ""),
+    short: sanitizeRichHtml(input.short || ""),
+    description: sanitizeRichHtml(input.description || ""),
     badge: String(input.badge || ""),
     specs: Array.isArray(input.specs) ? input.specs.map(String).filter(Boolean) : base.specs || [],
     useCases: Array.isArray(input.useCases)
@@ -189,6 +190,10 @@ function saveInCollection(key, input, { isNew = false } = {}) {
   if (!isNew && idx < 0) throw new Error("Запись не найдена");
   const base = idx >= 0 ? list[idx] : {};
   const next = { ...base, ...input, id };
+  if (key === "news") {
+    if (next.excerpt != null) next.excerpt = sanitizeRichHtml(next.excerpt);
+    if (next.body != null) next.body = sanitizeRichHtml(next.body);
+  }
   if (idx >= 0) list[idx] = next;
   else list.push(next);
   cms[key] = list;

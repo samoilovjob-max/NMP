@@ -154,7 +154,7 @@
           ? `<p class="price-lg">${priceLabel}</p>`
           : `<p class="price-lg price-soon">Цена по запросу</p>`
       }
-      <p class="lead">${product.description}</p>
+      <div class="lead rich-text">${product.description || ""}</div>
       <ul class="spec-list">
         ${product.specs.map((item) => `<li>${item}</li>`).join("")}
       </ul>

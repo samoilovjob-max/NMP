@@ -38,7 +38,7 @@ function runBackup({ keep = 14 } = {}) {
   ensureDirs();
   const dir = path.join(BACKUP_DIR, stamp());
   fs.mkdirSync(dir, { recursive: true });
-  const files = ["cms.json", "shop-orders.json", "availability-leads.json", "orders.json"];
+  const files = ["cms.json", "shop-orders.json", "availability-leads.json", "orders.json", "telegram-clients.json"];
   const copied = files.map((name) => copyIfExists(name, dir)).filter(Boolean);
   pruneOldBackups(keep);
   return { ok: true, dir, files: copied.map((f) => path.basename(f)) };

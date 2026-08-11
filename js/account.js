@@ -157,6 +157,29 @@
     }
   };
 
+  const bindTelegramButtons = () => {
+    root.querySelectorAll("[data-tg-link]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const orderId = btn.getAttribute("data-tg-link");
+        btn.disabled = true;
+        try {
+          const data = await api(`/api/orders/${encodeURIComponent(orderId)}/telegram-link`);
+          if (!data.url) throw new Error("Ссылка недоступна");
+          window.open(data.url, "_blank", "noopener");
+          window.NMP_toast(
+            data.linked
+              ? "Бот уже привязан — можно проверить сообщения"
+              : "Откройте бота и нажмите Start — привяжем уведомления"
+          );
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось получить ссылку Telegram");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+  };
+
   const render = async () => {
     if (focusId && payDemo) {
       try {
@@ -347,6 +370,9 @@
                     ? `<button class="btn btn-primary" type="button" data-repay="${order.id}">Оплатить</button>`
                     : ""
                 }
+                <button class="btn btn-ghost tg-link-btn" type="button" data-tg-link="${order.id}">
+                  ${order.telegramLinked ? "Telegram подключён · открыть бота" : "Статус в Telegram"}
+                </button>
               </article>`;
                 })
                 .join("")
@@ -356,6 +382,7 @@
 
     bindLookupForm();
     bindRepayButtons();
+    bindTelegramButtons();
 
     document.getElementById("refreshTracking")?.addEventListener("click", () => {
       window.NMP_toast("Обновляем статусы…");

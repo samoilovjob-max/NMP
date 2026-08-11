@@ -14,6 +14,9 @@ const { optimizeUploadedImage } = require("./image-optimize");
 const orders1c = require("./orders-1c-export");
 const notify = require("./notify");
 const backup = require("./backup");
+const tgClients = require("./telegram-clients");
+
+notify.attachStore(store);
 
 const app = express();
 app.use(cors());
@@ -319,7 +322,27 @@ async function syncOrderFromProviders(orderId, { force = false } = {}) {
   }
 
   patch.lastSync = sync;
+  const beforeKey = [
+    order.status || "",
+    order.paymentStatus || "",
+    order.cdek?.stage || "",
+    order.cdek?.trackNumber || ""
+  ].join("|");
   next = store.updateOrder(orderId, patch);
+  const afterKey = [
+    next.status || "",
+    next.paymentStatus || "",
+    next.cdek?.stage || "",
+    next.cdek?.trackNumber || ""
+  ].join("|");
+  if (afterKey !== beforeKey || (sync.changes || []).length) {
+    notify
+      .notifyCustomerOrderMove(next, {
+        title: `📦 Заказ ${next.id}: обновление доставки`,
+        detail: (sync.changes || []).join("; ")
+      })
+      .catch(() => {});
+  }
   return { order: next, sync };
 }
 
@@ -344,6 +367,10 @@ function publicOrder(order) {
     tariffCode: order.tariffCode,
     comment: order.comment,
     cdek: order.cdek,
+    telegramLinked: Boolean(
+      order.customer?.telegramChatId ||
+        tgClients.resolveChatId({ orderId: order.id, phone: order.customer?.phone })
+    ),
     customer: {
       lastName: order.customer?.lastName,
       firstName: order.customer?.firstName,
@@ -597,7 +624,7 @@ async function markOrderPaid(orderId, { paymentId = "", source = "manual" } = {}
     };
   }
 
-  return store.updateOrder(orderId, {
+  const paid = store.updateOrder(orderId, {
     paymentStatus: "paid",
     paymentId: paymentId || order.paymentId || "",
     paidAt: paidAt.toISOString(),
@@ -605,6 +632,14 @@ async function markOrderPaid(orderId, { paymentId = "", source = "manual" } = {}
     status: "assembly",
     cdek: cdekPatch
   });
+  notify
+    .notifyCustomerOrderMove(paid, {
+      title: `✅ Заказ ${paid.id} оплачен`,
+      detail: "Начали сборку",
+      force: true
+    })
+    .catch(() => {});
+  return paid;
 }
 
 async function yookassaRequest(methodPath, { method = "GET", json, idempotenceKey } = {}) {
@@ -768,6 +803,55 @@ app.get("/api/orders/lookup", (req, res) => {
       return res.status(404).json({ message: "По этому телефону заказов не найдено" });
     }
     res.json({ ok: true, order: matched[0], orders: matched });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.get("/api/orders/:id/telegram-link", async (req, res) => {
+  try {
+    const order = store.getOrder(req.params.id);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    const url = await notify.deepLinkForOrder(order.id);
+    if (!url) {
+      return res.status(503).json({ message: "Telegram-бот не настроен" });
+    }
+    const linked = Boolean(
+      order.customer?.telegramChatId ||
+        tgClients.resolveChatId({ orderId: order.id, phone: order.customer?.phone })
+    );
+    res.json({
+      ok: true,
+      url,
+      linked,
+      bot: await notify.resolveBotUsername()
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/admin/orders/:id/notify-telegram", adminGuard, async (req, res) => {
+  try {
+    const order = store.getOrder(req.params.id);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    const result = await notify.notifyCustomerOrderMove(order, {
+      title: req.body?.title || `📦 Заказ ${order.id}: статус`,
+      detail: req.body?.detail || order.cdek?.stage || "",
+      force: true
+    });
+    if (result.skipped && result.reason === "client not linked") {
+      const url = await notify.deepLinkForOrder(order.id);
+      return res.status(409).json({
+        message:
+          "Клиент ещё не привязал Telegram. Отправьте ему ссылку из личного кабинета или попросите нажать Start у бота.",
+        url
+      });
+    }
+    if (!result.ok) {
+      return res.status(502).json({ message: result.error || result.reason || "Не удалось отправить" });
+    }
+    res.json({ ok: true, order: decorateAdminOrder(store.getOrder(order.id)) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -1554,8 +1638,14 @@ app.delete("/api/admin/orders/:id", adminGuard, (req, res) => {
 
 function decorateAdminOrder(order) {
   const now = Date.now();
+  const telegramChatId =
+    order.customer?.telegramChatId ||
+    tgClients.resolveChatId({ orderId: order.id, phone: order.customer?.phone }) ||
+    "";
   return {
     ...order,
+    telegramLinked: Boolean(telegramChatId),
+    telegramChatId: telegramChatId ? String(telegramChatId) : "",
     needsShip:
       order.paymentStatus === "paid" &&
       ["assembly", "pending_payment"].includes(order.status) &&
@@ -1729,6 +1819,15 @@ app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
     }
 
     if (Object.keys(patch).length) updated = store.updateOrder(updated.id, patch);
+    if (status) {
+      notify
+        .notifyCustomerOrderMove(updated, {
+          title: `📦 Заказ ${updated.id}: ${notify.statusLabel(updated)}`,
+          detail: updated.cdek?.stage || "",
+          force: true
+        })
+        .catch(() => {});
+    }
     res.json({ ok: true, order: decorateAdminOrder(updated) });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1745,6 +1844,8 @@ app.listen(port, () => {
   console.log(`Map: OpenStreetMap (Leaflet)`);
   console.log(`YooKassa: ${yookassaReady ? "on" : CONFIG.paymentsDemo ? "demo" : "off"}`);
   console.log(`Telegram notify: ${notify.isConfigured() ? "on" : "off"}`);
+  console.log(`Telegram bot: ${notify.isBotReady() ? "polling" : "off"}`);
   console.log(`Admin: ${CONFIG.adminToken ? "/admin.html" : "token missing"}`);
   backup.startBackupScheduler();
+  notify.startBotPolling();
 });

@@ -55,7 +55,7 @@
             ${badge ? `<div class="badge">${badge}</div>` : ""}
             <h3><a href="${href}">${p.name}</a></h3>
             <p class="sku-label">Артикул ${p.sku || ""}</p>
-            <p>${p.short || ""}</p>
+            <div class="rich-text">${p.short || ""}</div>
             <div class="product-meta">
               ${priceLabel}
               ${action}
@@ -173,7 +173,7 @@
           <div>
             ${date ? `<p class="form-note">${date}</p>` : ""}
             <h3>${n.title || ""}</h3>
-            <p>${n.excerpt || n.body || ""}</p>
+            <div class="rich-text">${n.excerpt || n.body || ""}</div>
             <div class="news-actions">
               ${primary}
               <a class="btn btn-ghost" href="${moreHref}">Подробнее</a>
