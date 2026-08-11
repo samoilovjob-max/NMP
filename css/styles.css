@@ -1875,8 +1875,21 @@ h3 {
   border-color: rgba(232, 230, 225, 0.18);
 }
 
-.admin-order-edit {
+.admin-export-1c {
   margin: 0.85rem 0 0.35rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(232, 230, 225, 0.14);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.admin-export-1c .admin-actions {
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.admin-export-1c .check-line {
+  gap: 0.45rem;
+  font-size: 0.9rem;
 }
 
 .admin-danger {

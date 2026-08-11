@@ -9,7 +9,9 @@
     editingOrderId: null,
     orderFilter: "all",
     orderQuery: "",
-    expandedOrders: {}
+    expandedOrders: {},
+    exportScope: "paid",
+    exportMark: true
   };
 
   const normalizeToken = (value) => {
@@ -704,6 +706,36 @@
     return data;
   };
 
+  const downloadOrdersFor1c = async (format) => {
+    const scope = state.exportScope || "paid";
+    const mark = state.exportMark ? "1" : "0";
+    const path = `/api/admin/orders/export?format=${encodeURIComponent(format)}&scope=${encodeURIComponent(
+      scope
+    )}&mark=${mark}`;
+    const res = await fetch((window.NMP_CONFIG?.apiBase || "") + path, {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || "Не удалось выгрузить заказы");
+    }
+    const blob = await res.blob();
+    const count = Number(res.headers.get("X-NMP-Export-Count") || 0);
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="?([^"]+)"?/i);
+    const filename = match?.[1] || `nmp-orders-1c.${format === "csv" ? "csv" : format === "json" ? "json" : "xml"}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    if (state.exportMark) await load();
+    return count;
+  };
+
   const deleteOrder = async (id) => {
     await api(`/api/admin/orders/${encodeURIComponent(id)}`, { method: "DELETE" });
     delete state.expandedOrders[id];
@@ -957,6 +989,37 @@
         <div class="admin-actions" style="margin:0.35rem 0 0.15rem">
           <button class="btn btn-primary" type="button" id="syncAllOrders">Синхронизировать статусы</button>
         </div>
+        <div class="admin-export-1c">
+          <h4 style="margin:0.6rem 0 0.35rem">Выгрузка в 1С</h4>
+          <p class="form-note" style="margin:0 0 0.55rem">CommerceML XML — стандартный обмен с 1С. CSV — для Excel / ручной загрузки. JSON — для HTTP-обработчиков.</p>
+          <div class="admin-filter-row" style="margin-bottom:0.45rem">
+            <label class="admin-filter ${state.exportScope === "paid" ? "active" : ""}">
+              <input type="radio" name="exportScope" value="paid" ${state.exportScope === "paid" ? "checked" : ""} hidden />
+              Оплаченные
+            </label>
+            <label class="admin-filter ${state.exportScope === "processing" ? "active" : ""}">
+              <input type="radio" name="exportScope" value="processing" ${state.exportScope === "processing" ? "checked" : ""} hidden />
+              В работе
+            </label>
+            <label class="admin-filter ${state.exportScope === "new" ? "active" : ""}">
+              <input type="radio" name="exportScope" value="new" ${state.exportScope === "new" ? "checked" : ""} hidden />
+              Ещё не выгруженные
+            </label>
+            <label class="admin-filter ${state.exportScope === "all" ? "active" : ""}">
+              <input type="radio" name="exportScope" value="all" ${state.exportScope === "all" ? "checked" : ""} hidden />
+              Все
+            </label>
+          </div>
+          <div class="admin-actions">
+            <button class="btn btn-primary" type="button" data-export-1c="commerceml">Скачать XML (CommerceML)</button>
+            <button class="btn btn-ghost" type="button" data-export-1c="csv">Скачать CSV</button>
+            <button class="btn btn-ghost" type="button" data-export-1c="json">Скачать JSON</button>
+            <label class="check-line" style="margin:0;align-items:center">
+              <input type="checkbox" id="exportMark1c" ${state.exportMark ? "checked" : ""} />
+              <span>Пометить как выгруженные в 1С</span>
+            </label>
+          </div>
+        </div>
         <div class="admin-filter-row">
           ${filters
             .map(
@@ -1146,6 +1209,32 @@
       } finally {
         if (btn) btn.disabled = false;
       }
+    });
+
+    root.querySelectorAll('input[name="exportScope"]').forEach((input) => {
+      input.closest("label")?.addEventListener("click", () => {
+        state.exportScope = input.value || "paid";
+        renderOrders();
+      });
+    });
+    document.getElementById("exportMark1c")?.addEventListener("change", (event) => {
+      state.exportMark = Boolean(event.target.checked);
+    });
+    root.querySelectorAll("[data-export-1c]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const format = btn.getAttribute("data-export-1c") || "commerceml";
+        btn.disabled = true;
+        try {
+          const count = await downloadOrdersFor1c(format);
+          window.NMP_toast(
+            count ? `Выгружено заказов: ${count}` : "Нет заказов для выбранного фильтра выгрузки"
+          );
+        } catch (err) {
+          window.NMP_toast(err.message || "Ошибка выгрузки");
+        } finally {
+          btn.disabled = false;
+        }
+      });
     });
 
     root.querySelectorAll("[data-order-filter]").forEach((btn) => {

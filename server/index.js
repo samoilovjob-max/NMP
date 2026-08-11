@@ -11,6 +11,7 @@ const cms = require("./cms-store");
 const store = require("./orders-store");
 const leads = require("./leads-store");
 const { optimizeUploadedImage } = require("./image-optimize");
+const orders1c = require("./orders-1c-export");
 
 const app = express();
 app.use(cors());
@@ -1327,6 +1328,50 @@ app.get("/api/admin/orders", adminGuard, (_req, res) => {
     )
   }));
   res.json({ ok: true, orders, shipSlaHours: CONFIG.shipSlaHours, yookassa: yookassaReady });
+});
+
+app.get("/api/admin/orders/export", adminGuard, (req, res) => {
+  try {
+    const format = String(req.query.format || "commerceml").toLowerCase();
+    const scope = String(req.query.scope || "paid").toLowerCase();
+    const markExported = String(req.query.mark || "") === "1" || String(req.query.markExported || "") === "1";
+    const ids = String(req.query.ids || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const selected = orders1c.filterOrdersForExport(store.listOrders(), { scope, ids });
+    const exported = orders1c.exportOrders(selected, format);
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const filename = `nmp-orders-1c-${scope}-${stamp}.${exported.extension}`;
+
+    if (markExported && selected.length) {
+      const at = new Date().toISOString();
+      selected.forEach((order) => {
+        store.updateOrder(order.id, {
+          exportedTo1cAt: at,
+          cdek: {
+            ...order.cdek,
+            history: [
+              ...(order.cdek?.history || []),
+              {
+                at,
+                title: "Выгружен в 1С",
+                detail: `Формат ${format} · файл ${filename}`
+              }
+            ].slice(-40)
+          }
+        });
+      });
+    }
+
+    res.setHeader("Content-Type", exported.contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("X-NMP-Export-Count", String(selected.length));
+    res.send(exported.body);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 app.post("/api/admin/orders/sync-all", adminGuard, async (req, res) => {
