@@ -142,7 +142,11 @@
       <div class="badge">${product.badge || (available ? "" : "Скоро в продаже")}</div>
       <h1>${product.h1 || product.name}</h1>
       <p class="sku-label">Артикул ${product.sku}</p>
-      <p class="price-lg">${priceLabel}</p>
+      ${
+        available
+          ? `<p class="price-lg">${priceLabel}</p>`
+          : `<p class="price-lg price-soon">Цена по запросу</p>`
+      }
       <p class="lead">${product.description}</p>
       <ul class="spec-list">
         ${product.specs.map((item) => `<li>${item}</li>`).join("")}

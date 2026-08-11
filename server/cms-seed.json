@@ -59,7 +59,8 @@
       "promoLabel": "",
       "promoActive": false,
       "availableForOrder": true,
-      "availabilityNote": ""
+      "availabilityNote": "",
+      "hidePrice": false
     },
     {
       "id": "2",
@@ -118,7 +119,8 @@
       "promoLabel": "",
       "promoActive": false,
       "availableForOrder": false,
-      "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
+      "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать.",
+      "hidePrice": true
     },
     {
       "id": "3",
@@ -177,7 +179,8 @@
       "promoLabel": "",
       "promoActive": false,
       "availableForOrder": false,
-      "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
+      "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать.",
+      "hidePrice": true
     },
     {
       "id": "4",
@@ -236,7 +239,8 @@
       "promoLabel": "",
       "promoActive": false,
       "availableForOrder": false,
-      "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
+      "availabilityNote": "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать.",
+      "hidePrice": true
     }
   ],
   "news": [
@@ -300,7 +304,7 @@
       "discountPercent": 0,
       "promoPrice": null,
       "image": "images/shore-lake.png",
-      "active": true,
+      "active": false,
       "startsAt": "",
       "endsAt": ""
     }
@@ -313,7 +317,7 @@
     "reviewsTitle": "Что говорят о наших очагах",
     "reviewsLead": "Впечатления владельцев Северного Кочевника, Пайкулы, Лесной Свечи и Северного очага.",
     "newsTitle": "Новости и обновления",
-    "newsLead": "Анонсы моделей и быстрый переход к заказу.",
+    "newsLead": "Анонсы моделей и новости Northern Magical Place.",
     "contacts": {
       "email": "info@northmp.su",
       "phone": "+7 (921) 011-03-02",

@@ -30,10 +30,12 @@
     root.innerHTML = products
       .map((p) => {
         const available = p.availableForOrder !== false;
-        const priceLabel = p.hasPromo
-          ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
-          : `<span class="price">${available ? "от " : ""}${money(p.effectivePrice || p.price)}</span>`;
-        const badge = p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
+        const priceLabel = !available
+          ? `<span class="price price-soon">Цена по запросу</span>`
+          : p.hasPromo
+            ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
+            : `<span class="price">от ${money(p.effectivePrice || p.price)}</span>`;
+        const badge = available && p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
         const action = available
           ? `<a class="btn btn-primary" href="product.html?id=${encodeURIComponent(p.id)}">Подробнее</a>`
           : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
@@ -138,26 +140,10 @@
   const renderPromos = (promotions) => {
     const root = document.getElementById("promoStrip");
     if (!root) return;
-    if (!promotions.length) {
-      root.hidden = true;
-      root.innerHTML = "";
-      return;
-    }
-    root.hidden = false;
-    root.innerHTML = `
-      <div class="container promo-strip-inner">
-        ${promotions
-          .map((p) => {
-            const link = p.productId ? `product.html?id=${encodeURIComponent(p.productId)}` : "#catalog";
-            return `
-            <a class="promo-card" href="${link}">
-              ${p.badge ? `<span class="badge">${p.badge}</span>` : ""}
-              <strong>${p.title || "Спецпредложение"}</strong>
-              <span>${p.text || ""}</span>
-            </a>`;
-          })
-          .join("")}
-      </div>`;
+    // Временно скрываем полосу акций под героем — слишком навязчиво на старте продаж.
+    root.hidden = true;
+    root.innerHTML = "";
+    return;
   };
 
   const applyHero = (site = {}) => {
