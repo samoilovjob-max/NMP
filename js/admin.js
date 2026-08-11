@@ -112,6 +112,13 @@
     });
   };
 
+  const deliveryMethodLabel = (method) =>
+    ({
+      cdek: "Доставка СДЭК",
+      pickup: "Самовывоз со склада",
+      local: "Адресная доставка по Петрозаводску"
+    })[method] || "Доставка СДЭК";
+
   const paymentLabel = (status) =>
     ({
       paid: "Оплачен",
@@ -715,6 +722,9 @@
           <div>
             <h4>Суммы</h4>
             <div class="admin-money-row"><span>Товары</span><span>${money(order.goodsTotal)}</span></div>
+            <div class="admin-money-row"><span>Получение</span><span>${esc(
+              deliveryMethodLabel(order.deliveryMethod)
+            )}</span></div>
             <div class="admin-money-row"><span>Доставка</span><span>${money(order.deliverySum)}</span></div>
             <div class="admin-money-row total"><span>Итого</span><span>${money(order.total)}</span></div>
             <p class="form-note" style="margin-top:0.55rem">Оплата: ${esc(paymentLabel(order.paymentStatus))}${
@@ -722,22 +732,31 @@
             }</p>
           </div>
           <div>
-            <h4>Доставка</h4>
+            <h4>Доставка / получение</h4>
             <div class="admin-order-meta">
+              <div><strong>Способ:</strong> ${esc(deliveryMethodLabel(order.deliveryMethod))}</div>
               <div><strong>Город:</strong> ${esc(order.city || order.customer?.city || "—")} ${
                 order.cityCode ? `(код ${esc(order.cityCode)})` : ""
               }</div>
-              <div><strong>ПВЗ:</strong> ${esc(order.pvzAddress || "—")}</div>
-              <div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
-              <div><strong>Тариф СДЭК:</strong> ${esc(order.tariffCode || "—")}</div>
+              <div><strong>Адрес / ПВЗ:</strong> ${esc(order.pvzAddress || "—")}</div>
+              ${
+                (order.deliveryMethod || "cdek") === "cdek"
+                  ? `<div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
+              <div><strong>Тариф СДЭК:</strong> ${esc(order.tariffCode || "—")}</div>`
+                  : ""
+              }
               <div><strong>Комментарий клиента:</strong> ${esc(order.comment || "—")}</div>
             </div>
           </div>
           <div>
-            <h4>СДЭК / трек</h4>
+            <h4>${(order.deliveryMethod || "cdek") === "cdek" ? "СДЭК / трек" : "Статус выдачи"}</h4>
             <div class="admin-order-meta">
-              <div><strong>UUID:</strong> ${esc(order.cdek?.uuid || "—")}</div>
-              <div><strong>Трек:</strong> ${esc(order.cdek?.trackNumber || "нет")}</div>
+              ${
+                (order.deliveryMethod || "cdek") === "cdek"
+                  ? `<div><strong>UUID:</strong> ${esc(order.cdek?.uuid || "—")}</div>
+              <div><strong>Трек:</strong> ${esc(order.cdek?.trackNumber || "нет")}</div>`
+                  : ""
+              }
               <div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>
               <div><strong>Обновлён:</strong> ${when(order.updatedAt)}</div>
             </div>
@@ -828,6 +847,13 @@
                           ? `<span class="admin-pill status">Нужна отгрузка</span>`
                           : ""
                       }
+                      ${
+                        (order.deliveryMethod || "cdek") !== "cdek"
+                          ? `<span class="admin-pill status">${esc(
+                              deliveryMethodLabel(order.deliveryMethod)
+                            )}</span>`
+                          : ""
+                      }
                     </div>
                     <h3 style="margin:0.15rem 0">${esc(order.id)}</h3>
                     <p class="form-note">Создан: ${when(order.createdAt)} · Оплачен: ${when(order.paidAt)} · Отправить до: ${when(
@@ -860,12 +886,24 @@
                     </div>
                   </div>
                   <div>
-                    <h4>Отгрузка / СДЭК</h4>
+                    <h4>Отгрузка / получение</h4>
                     <div class="admin-order-meta">
-                      <div><strong>ПВЗ:</strong> ${esc(order.pvzAddress || "—")}</div>
-                      <div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
+                      <div><strong>Способ:</strong> ${esc(deliveryMethodLabel(order.deliveryMethod))}</div>
+                      <div><strong>${
+                        order.deliveryMethod === "pickup"
+                          ? "Склад:"
+                          : order.deliveryMethod === "local"
+                            ? "Доставка:"
+                            : "ПВЗ:"
+                      }</strong> ${esc(order.pvzAddress || "—")}</div>
+                      ${
+                        (order.deliveryMethod || "cdek") === "cdek"
+                          ? `<div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
                       <div><strong>Трек:</strong> ${esc(order.cdek?.trackNumber || "нет")}</div>
-                      <div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>
+                      <div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>`
+                          : `<div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>
+                      <div class="form-note">СДЭК-накладная не нужна — согласуйте выдачу/доставку с клиентом.</div>`
+                      }
                     </div>
                   </div>
                 </div>
@@ -884,7 +922,9 @@
                       : ""
                   }
                   ${
-                    order.paymentStatus === "paid" && !order.cdek?.uuid
+                    order.paymentStatus === "paid" &&
+                    !order.cdek?.uuid &&
+                    (order.deliveryMethod || "cdek") === "cdek"
                       ? `<button class="btn btn-primary" type="button" data-create-cdek="${esc(
                           order.id
                         )}">Создать накладную СДЭК</button>`
@@ -894,14 +934,26 @@
                     order.status === "assembly"
                       ? `<button class="btn btn-primary" type="button" data-ship="${esc(
                           order.id
-                        )}">Отметить: сдан в СДЭК</button>`
+                        )}">${
+                          order.deliveryMethod === "pickup"
+                            ? "Отметить: готов к самовывозу"
+                            : order.deliveryMethod === "local"
+                              ? "Отметить: выехал к клиенту"
+                              : "Отметить: сдан в СДЭК"
+                        }</button>`
                       : ""
                   }
                   ${
                     order.status === "shipped"
                       ? `<button class="btn btn-ghost" type="button" data-arrived="${esc(
                           order.id
-                        )}">Отметить: прибыл в ПВЗ</button>`
+                        )}">${
+                          order.deliveryMethod === "pickup"
+                            ? "Отметить: выдан клиенту"
+                            : order.deliveryMethod === "local"
+                              ? "Отметить: доставлен"
+                              : "Отметить: прибыл в ПВЗ"
+                        }</button>`
                       : ""
                   }
                 </div>

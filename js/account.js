@@ -139,8 +139,18 @@
                 <div class="status-track">
                   <div class="step ${order.paymentStatus === "paid" || ["assembly", "shipped", "arrived"].includes(order.status) ? "done" : ""}">Оплата</div>
                   <div class="step ${["assembly", "shipped", "arrived"].includes(order.status) ? "done" : ""}">Сборка</div>
-                  <div class="step ${["shipped", "arrived"].includes(order.status) ? "done" : ""}">Отправка · СДЭК</div>
-                  <div class="step ${order.status === "arrived" ? "done" : ""}">Прибыл</div>
+                  <div class="step ${["shipped", "arrived"].includes(order.status) ? "done" : ""}">${
+                    order.deliveryMethod === "pickup"
+                      ? "К выдаче"
+                      : order.deliveryMethod === "local"
+                        ? "Доставка"
+                        : "Отправка · СДЭК"
+                  }</div>
+                  <div class="step ${order.status === "arrived" ? "done" : ""}">${
+                    order.deliveryMethod === "pickup" || order.deliveryMethod === "local"
+                      ? "Получен"
+                      : "Прибыл"
+                  }</div>
                 </div>
 
                 <div class="order-items">
@@ -160,10 +170,36 @@
                 </div>
 
                 <div class="cdek-box">
-                  <h4>Доставка и трекинг</h4>
+                  <h4>${
+                    order.deliveryMethod === "pickup"
+                      ? "Самовывоз"
+                      : order.deliveryMethod === "local"
+                        ? "Адресная доставка"
+                        : "Доставка и трекинг"
+                  }</h4>
+                  <p><strong>Способ:</strong> ${
+                    order.deliveryMethod === "pickup"
+                      ? "Самовывоз со склада"
+                      : order.deliveryMethod === "local"
+                        ? "Адресная доставка по Петрозаводску"
+                        : "СДЭК до ПВЗ"
+                  }</p>
                   <p><strong>Этап:</strong> ${order.cdek?.stage || "—"}</p>
-                  <p><strong>Трек-номер:</strong> ${order.cdek?.trackNumber || "ожидается после обработки заявки"}</p>
-                  <p><strong>ПВЗ:</strong> ${order.pvzAddress || order.cdek?.pvzAddress || "—"}</p>
+                  ${
+                    (order.deliveryMethod || "cdek") === "cdek"
+                      ? `<p><strong>Трек-номер:</strong> ${
+                          order.cdek?.trackNumber || "ожидается после обработки заявки"
+                        }</p>
+                  <p><strong>ПВЗ:</strong> ${order.pvzAddress || order.cdek?.pvzAddress || "—"}</p>`
+                      : `<p><strong>Адрес:</strong> ${order.pvzAddress || "—"}</p>
+                  ${
+                    order.deliveryMethod === "pickup"
+                      ? `<p class="form-note">Отгрузка по предварительной договорённости. Мы свяжемся с вами после оплаты.</p>`
+                      : `<p class="form-note">Доставка по городу — по предварительной договорённости. Комментарий: ${
+                          order.comment || "—"
+                        }</p>`
+                  }`
+                  }
                   ${
                     order.shipByAt
                       ? `<p><strong>План отгрузки:</strong> до ${new Date(order.shipByAt).toLocaleString("ru-RU")}</p>`

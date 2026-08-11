@@ -148,6 +148,7 @@ function publicOrder(order) {
     shipByAt: order.shipByAt,
     status: order.status,
     paymentStatus: order.paymentStatus,
+    deliveryMethod: order.deliveryMethod || "cdek",
     items: order.items,
     total: order.total,
     goodsTotal: order.goodsTotal,
@@ -195,6 +196,9 @@ function baseUrlFromReq(req) {
 }
 
 async function createCdekWaybill(order) {
+  if (order.deliveryMethod && order.deliveryMethod !== "cdek") {
+    throw new Error("Для самовывоза и городской доставки накладная СДЭК не создаётся");
+  }
   const phone = String(order.customer?.phone || "").replace(/[^\d]/g, "");
   const packagesItems = order.items.map((item, index) => ({
     name: `${item.sku} · ${item.name}`,
@@ -274,7 +278,12 @@ async function markOrderPaid(orderId, { paymentId = "", source = "manual" } = {}
 
   let cdekPatch = {
     ...order.cdek,
-    stage: "Оплачен · сборка на производстве",
+    stage:
+      order.deliveryMethod === "pickup"
+        ? "Оплачен · сборка · самовывоз по договорённости"
+        : order.deliveryMethod === "local"
+          ? "Оплачен · сборка · городская доставка по договорённости"
+          : "Оплачен · сборка на производстве",
     history: [
       ...(order.cdek?.history || []),
       {
@@ -285,34 +294,54 @@ async function markOrderPaid(orderId, { paymentId = "", source = "manual" } = {}
     ]
   };
 
-  try {
-    const cdek = await createCdekWaybill({ ...order, paidAt: paidAt.toISOString() });
+  if (!order.deliveryMethod || order.deliveryMethod === "cdek") {
+    try {
+      const cdek = await createCdekWaybill({ ...order, paidAt: paidAt.toISOString() });
+      cdekPatch = {
+        ...cdekPatch,
+        uuid: cdek.uuid || "",
+        trackNumber: cdek.cdekNumber || "",
+        stage: cdek.cdekNumber
+          ? `Создан в СДЭК · № ${cdek.cdekNumber}`
+          : "Заявка создана в СДЭК, номер появится после обработки",
+        history: [
+          ...cdekPatch.history,
+          {
+            at: new Date().toISOString(),
+            title: "Передано в СДЭК",
+            detail: cdek.cdekNumber || cdek.uuid || "Заявка принята"
+          }
+        ]
+      };
+    } catch (error) {
+      cdekPatch = {
+        ...cdekPatch,
+        stage: "Оплата принята. СДЭК: " + error.message,
+        history: [
+          ...cdekPatch.history,
+          {
+            at: new Date().toISOString(),
+            title: "Ошибка создания накладной СДЭК",
+            detail: error.message
+          }
+        ]
+      };
+    }
+  } else {
     cdekPatch = {
       ...cdekPatch,
-      uuid: cdek.uuid || "",
-      trackNumber: cdek.cdekNumber || "",
-      stage: cdek.cdekNumber
-        ? `Создан в СДЭК · № ${cdek.cdekNumber}`
-        : "Заявка создана в СДЭК, номер появится после обработки",
       history: [
         ...cdekPatch.history,
         {
           at: new Date().toISOString(),
-          title: "Передано в СДЭК",
-          detail: cdek.cdekNumber || cdek.uuid || "Заявка принята"
-        }
-      ]
-    };
-  } catch (error) {
-    cdekPatch = {
-      ...cdekPatch,
-      stage: "Оплата принята. СДЭК: " + error.message,
-      history: [
-        ...cdekPatch.history,
-        {
-          at: new Date().toISOString(),
-          title: "Ошибка создания накладной СДЭК",
-          detail: error.message
+          title:
+            order.deliveryMethod === "pickup"
+              ? "Самовывоз со склада"
+              : "Адресная доставка по Петрозаводску",
+          detail:
+            order.deliveryMethod === "pickup"
+              ? order.pvzAddress || "г. Петрозаводск, ул. Университетская 7/3"
+              : "Согласовать адрес и время с клиентом"
         }
       ]
     };
@@ -378,6 +407,8 @@ app.get("/api/config/public", (_req, res) => {
     fromCity: CONFIG.fromCity,
     fromCityCode: CONFIG.fromCityCode,
     fromAddress: CONFIG.fromAddress,
+    pickupAddress: "г. Петрозаводск, ул. Университетская 7/3",
+    deliveryMethods: ["cdek", "pickup", "local"],
     mapProvider: "openstreetmap",
     yandexMapsApiKey: "",
     servicePath: "/api/cdek/service",
@@ -608,6 +639,7 @@ app.post("/api/orders", async (req, res) => {
       email,
       city,
       cityCode,
+      deliveryMethod: rawMethod = "cdek",
       pvzCode,
       pvzAddress,
       tariffCode = 136,
@@ -616,27 +648,94 @@ app.post("/api/orders", async (req, res) => {
       items: rawItems = []
     } = body;
 
-    if (!lastName || !firstName || !phone || !email || !cityCode || !pvzCode || !pvzAddress) {
-      return res.status(400).json({ message: "Заполните данные получателя и ПВЗ" });
+    const deliveryMethod = ["cdek", "pickup", "local"].includes(String(rawMethod))
+      ? String(rawMethod)
+      : "cdek";
+
+    if (!lastName || !firstName || !phone || !email) {
+      return res.status(400).json({ message: "Заполните данные получателя" });
+    }
+
+    const PICKUP_ADDRESS = "г. Петрозаводск, ул. Университетская 7/3";
+    const LOCAL_LABEL = "Адресная доставка по г. Петрозаводску (по договорённости)";
+
+    let nextCity = city;
+    let nextCityCode = cityCode;
+    let nextPvzCode = pvzCode;
+    let nextPvzAddress = pvzAddress;
+    let nextTariff = Number(tariffCode) || 136;
+    let delivery = Math.max(0, Number(deliverySum) || 0);
+
+    if (deliveryMethod === "cdek") {
+      if (!cityCode || !pvzCode || !pvzAddress) {
+        return res.status(400).json({ message: "Заполните данные получателя и ПВЗ" });
+      }
+    } else if (deliveryMethod === "pickup") {
+      nextCity = nextCity || "Петрозаводск";
+      nextCityCode = nextCityCode || String(CONFIG.fromCityCode || 450);
+      nextPvzCode = "PICKUP";
+      nextPvzAddress = PICKUP_ADDRESS;
+      nextTariff = 0;
+      delivery = 0;
+    } else if (deliveryMethod === "local") {
+      if (!String(comment || "").trim()) {
+        return res.status(400).json({ message: "Укажите адрес доставки в комментарии к заказу" });
+      }
+      nextCity = nextCity || "Петрозаводск";
+      nextCityCode = nextCityCode || String(CONFIG.fromCityCode || 450);
+      nextPvzCode = "LOCAL";
+      nextPvzAddress = LOCAL_LABEL;
+      nextTariff = 0;
+      delivery = 0;
     }
 
     const items = catalog.resolveOrderItems(rawItems);
     const goodsTotal = items.reduce((sum, item) => sum + item.sum, 0);
-    const delivery = Math.max(0, Number(deliverySum) || 0);
     const total = goodsTotal + delivery;
 
     const order = store.createOrder({
-      customer: { lastName, firstName, middleName, phone, email, city, cityCode },
+      customer: {
+        lastName,
+        firstName,
+        middleName,
+        phone,
+        email,
+        city: nextCity,
+        cityCode: nextCityCode
+      },
       items,
       goodsTotal,
       deliverySum: delivery,
+      deliveryMethod,
       total,
-      city,
-      cityCode,
-      pvzCode,
-      pvzAddress,
-      tariffCode: Number(tariffCode) || 136,
-      comment
+      city: nextCity,
+      cityCode: nextCityCode,
+      pvzCode: nextPvzCode,
+      pvzAddress: nextPvzAddress,
+      tariffCode: nextTariff,
+      comment,
+      cdek: {
+        trackNumber: "",
+        uuid: "",
+        stage:
+          deliveryMethod === "pickup"
+            ? "Ожидает оплату · самовывоз"
+            : deliveryMethod === "local"
+              ? "Ожидает оплату · городская доставка"
+              : "Ожидает оплату",
+        history: [
+          {
+            at: new Date().toISOString(),
+            title: "Заказ создан",
+            detail:
+              deliveryMethod === "pickup"
+                ? `Самовывоз: ${PICKUP_ADDRESS}`
+                : deliveryMethod === "local"
+                  ? LOCAL_LABEL
+                  : "Доставка СДЭК · ожидает оплату"
+          }
+        ]
+      }
     });
 
     res.json({ ok: true, order: publicOrder(order) });
@@ -979,6 +1078,12 @@ app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
     }
 
     if (createCdek && updated.paymentStatus === "paid" && !updated.cdek?.uuid) {
+      if ((updated.deliveryMethod || "cdek") !== "cdek") {
+        return res.status(400).json({
+          message: "Для самовывоза и городской доставки накладная СДЭК не создаётся",
+          order: updated
+        });
+      }
       try {
         const cdek = await createCdekWaybill(updated);
         updated = store.updateOrder(updated.id, {

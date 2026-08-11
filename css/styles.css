@@ -1449,6 +1449,80 @@ h3 {
   margin-top: 0.4rem;
 }
 
+.delivery-methods {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.35rem 0 1.1rem;
+}
+
+.delivery-method {
+  display: block;
+  cursor: pointer;
+}
+
+.delivery-method input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.delivery-method-card {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--frost);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.delivery-method-card strong {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+
+.delivery-method-card span {
+  color: var(--frost-dim);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.delivery-method input:checked + .delivery-method-card {
+  border-color: rgba(196, 92, 38, 0.75);
+  background: rgba(196, 92, 38, 0.12);
+}
+
+.delivery-method input:focus-visible + .delivery-method-card {
+  outline: 2px solid rgba(196, 92, 38, 0.55);
+  outline-offset: 2px;
+}
+
+.pickup-info {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(232, 230, 225, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.pickup-info h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.pickup-info p {
+  margin: 0;
+  color: var(--frost-dim);
+  line-height: 1.5;
+}
+
+.pickup-info[hidden],
+#cdekDeliveryBlock[hidden] {
+  display: none !important;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

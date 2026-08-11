@@ -39,7 +39,7 @@
       <div class="container">
         <div class="eyebrow">Заказ</div>
         <h1>Оформление заказа</h1>
-        <p class="lead">Доставка через СДЭК · Оплата через ЮKassa · Статус заказа — в личном кабинете</p>
+        <p class="lead">СДЭК, самовывоз со склада или адресная доставка по Петрозаводску · Оплата через ЮKassa · Статус — в личном кабинете</p>
       </div>
     </section>
 
@@ -70,6 +70,46 @@
             <input id="email" name="email" type="email" required autocomplete="email" />
           </div>
 
+          <h2>Способ получения</h2>
+          <div class="delivery-methods" role="radiogroup" aria-label="Способ получения">
+            <label class="delivery-method">
+              <input type="radio" name="deliveryMethod" value="cdek" checked />
+              <span class="delivery-method-card">
+                <strong>Доставка СДЭК</strong>
+                <span>До пункта выдачи по всей России. Стоимость и срок — после выбора города и ПВЗ.</span>
+              </span>
+            </label>
+            <label class="delivery-method">
+              <input type="radio" name="deliveryMethod" value="pickup" />
+              <span class="delivery-method-card">
+                <strong>Самовывоз со склада</strong>
+                <span>г. Петрозаводск, ул. Университетская 7/3. Отгрузка по предварительной договорённости.</span>
+              </span>
+            </label>
+            <label class="delivery-method">
+              <input type="radio" name="deliveryMethod" value="local" />
+              <span class="delivery-method-card">
+                <strong>Адресная доставка по Петрозаводску</strong>
+                <span>По городу — по предварительной договорённости. Уточните адрес в комментарии к заказу.</span>
+              </span>
+            </label>
+          </div>
+
+          <div id="pickupInfo" class="pickup-info" hidden>
+            <h3>Самовывоз со склада</h3>
+            <p><strong>Адрес:</strong> г. Петрозаводск, ул. Университетская 7/3</p>
+            <p>Отгрузка товара осуществляется <strong>по предварительной договорённости</strong> после оплаты заказа. Мы свяжемся с вами по телефону или e-mail, чтобы согласовать дату и время.</p>
+            <p class="form-note">Также возможна адресная доставка по городу Петрозаводску — по предварительной договорённости (выберите соответствующий способ выше).</p>
+          </div>
+
+          <div id="localInfo" class="pickup-info" hidden>
+            <h3>Адресная доставка по Петрозаводску</h3>
+            <p>Доставка по городу Петрозаводску — <strong>по предварительной договорённости</strong> после оплаты.</p>
+            <p>Укажите желаемый адрес и удобное время в комментарии к заказу. Мы свяжемся с вами для согласования.</p>
+            <p class="form-note">Самовывоз со склада: г. Петрозаводск, ул. Университетская 7/3.</p>
+          </div>
+
+          <div id="cdekDeliveryBlock">
           <h2>Доставка СДЭК</h2>
           <div class="field">
             <label for="city">Город получения</label>
@@ -91,11 +131,12 @@
               <div id="pvzMap" class="pvz-map" aria-label="Карта пунктов выдачи СДЭК"></div>
               <p class="form-note map-attr">Карта: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
             </div>
-            <input type="hidden" id="pvzCode" name="pvzCode" required />
-            <input type="hidden" id="pvzAddress" name="pvzAddress" required />
+            <input type="hidden" id="pvzCode" name="pvzCode" />
+            <input type="hidden" id="pvzAddress" name="pvzAddress" />
             <input type="hidden" id="tariffCode" name="tariffCode" value="136" />
             <p class="form-note" id="pvzSelected">Пункт выдачи не выбран</p>
             <p class="form-note" id="deliveryInfo">Стоимость и сроки появятся после выбора города</p>
+          </div>
           </div>
 
           <div class="field">
@@ -109,7 +150,7 @@
           </label>
 
           <button class="btn btn-primary" type="submit" id="payBtn" disabled>Оплатить через ЮKassa</button>
-          <p class="form-note">После оплаты создаётся личный кабинет, где отображаются статусы: сборка → отправка (сдача в СДЭК) → прибыл для получения.</p>
+          <p class="form-note" id="checkoutStatusNote">После оплаты создаётся личный кабинет со статусами заказа.</p>
         </form>
 
         <aside class="checkout-summary" id="checkoutSummary"></aside>
