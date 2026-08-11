@@ -222,7 +222,7 @@
       root.innerHTML = `
         <div class="account-empty">
           <h2>Пока нет заказов</h2>
-          <p class="lead">Личный кабинет появится автоматически после оформления первого заказа.</p>
+          <p class="lead">Личный кабинет появится после оформления заказа. Здесь же статусы доставки и подключение уведомлений в Telegram.</p>
           ${lookupFormHtml()}
           <a class="btn btn-primary" href="index.html#catalog">Выбрать изделие</a>
         </div>`;
