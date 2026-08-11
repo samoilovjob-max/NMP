@@ -237,15 +237,14 @@
   let latestCities = [];
 
   const buildPvzItemContent = (item, { selected = false } = {}) => {
+    const inner = document.createElement("span");
+    inner.className = "pvz-item-inner";
+
     const title = document.createElement("strong");
     title.className = "pvz-item-code";
     title.textContent = selected
       ? "Выбран ПВЗ · " + (item.code || "")
       : item.code || "ПВЗ";
-
-    const addr = document.createElement("span");
-    addr.className = "pvz-item-addr";
-    addr.textContent = item.address || item.name || "";
 
     const meta = document.createElement("span");
     meta.className = "pvz-item-meta";
@@ -255,7 +254,14 @@
     meta.textContent = bits.join(" · ");
     if (!meta.textContent) meta.hidden = true;
 
-    return [title, addr, meta];
+    const addr = document.createElement("span");
+    addr.className = "pvz-item-addr";
+    addr.textContent = item.address || item.name || "";
+
+    // Single inner wrapper: WebKit mis-sizes <button> height when it has
+    // multiple block/grid children, so lines from adjacent PVZ items overlap.
+    inner.append(title, meta, addr);
+    return [inner];
   };
 
   const renderSelectedPvz = (item) => {
