@@ -135,11 +135,188 @@ async function cdekRequest(methodPath, { method = "GET", query, json } = {}) {
 
 function mapCdekStatus(code, name) {
   const n = `${code || ""} ${name || ""}`.toLowerCase();
-  if (/вручен|выдан|получен/.test(n)) return "arrived";
-  if (/прибыл|в пвз|на складе|ожидает/.test(n)) return "arrived";
-  if (/создан|принят|склад отправителя|принят на склад/.test(n)) return "assembly";
-  if (/в пути|отправлен|транзит|передан|доставляется/.test(n)) return "shipped";
+  if (/вручен|выдан получателю|получен получателем|delivered/.test(n)) return "arrived";
+  if (/прибыл|в пвз|на складе пвз|ожидает получателя|готов к выдаче|posted/.test(n)) return "arrived";
+  if (/в пути|отправлен|транзит|передан|доставляется|на пути|departed|accepted_at_transit/.test(n)) {
+    return "shipped";
+  }
+  if (/создан|принят|склад отправителя|принят на склад|created|received_at_shipment_warehouse/.test(n)) {
+    return "assembly";
+  }
   return null;
+}
+
+async function fetchCdekOrderEntity(order) {
+  const queries = [
+    order.cdek?.uuid ? { path: `orders/${order.cdek.uuid}` } : null,
+    order.cdek?.trackNumber ? { path: "orders", query: { cdek_number: order.cdek.trackNumber } } : null,
+    order.id ? { path: "orders", query: { im_number: order.id } } : null
+  ].filter(Boolean);
+
+  for (const q of queries) {
+    const result = await cdekRequest(q.path, q.query ? { query: q.query } : {});
+    if (result.ok && result.data?.entity) return result.data.entity;
+  }
+
+  const mapped = store.findCdekMap(order.id) || store.findCdekMap(order.cdek?.trackNumber || "");
+  if (mapped?.uuid) {
+    const result = await cdekRequest(`orders/${mapped.uuid}`);
+    if (result.ok && result.data?.entity) return result.data.entity;
+  }
+  return null;
+}
+
+async function syncOrderFromProviders(orderId, { force = false } = {}) {
+  let order = store.getOrder(orderId);
+  if (!order) throw new Error("Заказ не найден");
+
+  const sync = {
+    at: new Date().toISOString(),
+    payment: null,
+    cdek: null,
+    changes: []
+  };
+  let patch = {};
+  let next = order;
+
+  // --- YooKassa ---
+  if (yookassaReady && order.paymentId) {
+    try {
+      const payment = await yookassaRequest(`payments/${order.paymentId}`);
+      if (payment.ok && payment.data?.status) {
+        const payStatus = String(payment.data.status);
+        sync.payment = {
+          id: payment.data.id,
+          status: payStatus,
+          paid: Boolean(payment.data.paid),
+          amount: payment.data.amount || null
+        };
+
+        if (payStatus === "succeeded" && order.paymentStatus !== "paid") {
+          next = await markOrderPaid(order.id, {
+            paymentId: payment.data.id,
+            source: "yookassa"
+          });
+          sync.changes.push("Оплата подтверждена в ЮKassa");
+          order = next;
+        } else if (payStatus === "canceled" && order.paymentStatus !== "paid") {
+          patch.paymentStatus = "canceled";
+          patch.cdek = {
+            ...order.cdek,
+            stage: "Оплата отменена в ЮKassa",
+            history: [
+              ...(order.cdek?.history || []),
+              {
+                at: sync.at,
+                title: "Оплата отменена",
+                detail: `ЮKassa · ${payment.data.id}`
+              }
+            ]
+          };
+          sync.changes.push("Оплата отменена в ЮKassa");
+        } else if (payStatus === "succeeded") {
+          sync.changes.push("ЮKassa: оплата уже учтена");
+        } else {
+          sync.changes.push(`ЮKassa: статус «${payStatus}»`);
+        }
+      } else {
+        sync.payment = { error: payment.data?.description || `HTTP ${payment.status}` };
+      }
+    } catch (error) {
+      sync.payment = { error: error.message };
+    }
+  } else if (!order.paymentId) {
+    sync.payment = { skipped: "нет paymentId" };
+  } else {
+    sync.payment = { skipped: "ЮKassa не настроена" };
+  }
+
+  // Re-read after possible markOrderPaid
+  order = store.getOrder(orderId) || order;
+
+  // --- CDEK ---
+  const isCdek = (order.deliveryMethod || "cdek") === "cdek";
+  if (isCdek && (order.cdek?.uuid || order.cdek?.trackNumber || order.paymentStatus === "paid" || force)) {
+    try {
+      const entity = await fetchCdekOrderEntity(order);
+      if (entity) {
+        const statuses = entity.statuses || [];
+        const current = statuses[0] || {};
+        const mapped = mapCdekStatus(current.code, current.name);
+        const trackNumber = entity.cdek_number || order.cdek?.trackNumber || "";
+        const stageName = current.name || order.cdek?.stage || "СДЭК";
+        const city = current.city ? ` · ${current.city}` : "";
+
+        sync.cdek = {
+          uuid: entity.uuid || order.cdek?.uuid || "",
+          trackNumber,
+          code: current.code || "",
+          name: current.name || "",
+          date_time: current.date_time || "",
+          city: current.city || "",
+          mappedStatus: mapped
+        };
+
+        const cdekPatch = {
+          ...(patch.cdek || order.cdek || {}),
+          uuid: entity.uuid || order.cdek?.uuid || "",
+          trackNumber,
+          stage: `${stageName}${city}`,
+          lastExternalStatus: {
+            code: current.code || "",
+            name: current.name || "",
+            date_time: current.date_time || "",
+            city: current.city || ""
+          },
+          history: [...(patch.cdek?.history || order.cdek?.history || [])]
+        };
+
+        const lastHist = cdekPatch.history[cdekPatch.history.length - 1];
+        const histDetail = [current.name, current.city, trackNumber && `№ ${trackNumber}`]
+          .filter(Boolean)
+          .join(" · ");
+        if (!lastHist || lastHist.detail !== histDetail || lastHist.title !== "Синхронизация СДЭК") {
+          cdekPatch.history = [
+            ...cdekPatch.history,
+            {
+              at: sync.at,
+              title: "Синхронизация СДЭК",
+              detail: histDetail || entity.uuid
+            }
+          ].slice(-40);
+        }
+
+        patch.cdek = cdekPatch;
+
+        // Only advance status forward; never downgrade arrived → shipped etc.
+        const rank = { pending_payment: 0, assembly: 1, shipped: 2, arrived: 3, cancelled: -1 };
+        if (mapped && order.status !== "cancelled") {
+          const currentRank = rank[order.status] ?? 0;
+          const nextRank = rank[mapped] ?? 0;
+          if (nextRank > currentRank) {
+            patch.status = mapped;
+            sync.changes.push(`Статус заказа → ${mapped} (по СДЭК)`);
+          } else {
+            sync.changes.push(`СДЭК: ${stageName}${city}`);
+          }
+        } else {
+          sync.changes.push(`СДЭК: ${stageName}${city}`);
+        }
+      } else {
+        sync.cdek = { skipped: "заказ в СДЭК не найден" };
+      }
+    } catch (error) {
+      sync.cdek = { error: error.message };
+    }
+  } else if (!isCdek) {
+    sync.cdek = { skipped: "не СДЭК-доставка" };
+  } else {
+    sync.cdek = { skipped: "нет данных для запроса в СДЭК" };
+  }
+
+  patch.lastSync = sync;
+  next = store.updateOrder(orderId, patch);
+  return { order: next, sync };
 }
 
 function publicOrder(order) {
@@ -1142,18 +1319,179 @@ app.get("/api/admin/orders", adminGuard, (_req, res) => {
       order.paymentStatus === "paid" &&
       ["assembly", "pending_payment"].includes(order.status) &&
       !order.cdek?.trackNumber,
-    overdue: Boolean(order.shipByAt && order.paymentStatus === "paid" && new Date(order.shipByAt).getTime() < now && order.status === "assembly")
+    overdue: Boolean(
+      order.shipByAt &&
+        order.paymentStatus === "paid" &&
+        new Date(order.shipByAt).getTime() < now &&
+        order.status === "assembly"
+    )
   }));
-  res.json({ ok: true, orders, shipSlaHours: CONFIG.shipSlaHours });
+  res.json({ ok: true, orders, shipSlaHours: CONFIG.shipSlaHours, yookassa: yookassaReady });
 });
+
+app.post("/api/admin/orders/sync-all", adminGuard, async (req, res) => {
+  try {
+    const limit = Math.min(80, Math.max(1, Number(req.body?.limit || 40)));
+    const orders = store.listOrders().filter((order) => {
+      if (order.status === "cancelled") return false;
+      if (order.paymentStatus !== "paid" && order.paymentId) return true;
+      if (order.paymentStatus === "paid" && ["assembly", "shipped"].includes(order.status)) return true;
+      if ((order.deliveryMethod || "cdek") === "cdek" && (order.cdek?.uuid || order.cdek?.trackNumber)) {
+        return order.status !== "arrived";
+      }
+      return false;
+    });
+
+    const results = [];
+    for (const order of orders.slice(0, limit)) {
+      try {
+        const synced = await syncOrderFromProviders(order.id);
+        results.push({
+          id: order.id,
+          ok: true,
+          changes: synced.sync.changes,
+          status: synced.order.status,
+          paymentStatus: synced.order.paymentStatus,
+          stage: synced.order.cdek?.stage || ""
+        });
+      } catch (error) {
+        results.push({ id: order.id, ok: false, message: error.message });
+      }
+    }
+
+    res.json({
+      ok: true,
+      synced: results.length,
+      results,
+      orders: decorateAdminOrders(store.listOrders())
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/admin/orders/:id/sync", adminGuard, async (req, res) => {
+  try {
+    const synced = await syncOrderFromProviders(req.params.id, { force: true });
+    res.json({
+      ok: true,
+      order: decorateAdminOrder(synced.order),
+      sync: synced.sync
+    });
+  } catch (error) {
+    const status = /не найден/i.test(error.message) ? 404 : 500;
+    res.status(status).json({ message: error.message });
+  }
+});
+
+app.delete("/api/admin/orders/:id", adminGuard, (req, res) => {
+  try {
+    const order = store.getOrder(req.params.id);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    store.deleteOrder(req.params.id);
+    res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+function decorateAdminOrder(order) {
+  const now = Date.now();
+  return {
+    ...order,
+    needsShip:
+      order.paymentStatus === "paid" &&
+      ["assembly", "pending_payment"].includes(order.status) &&
+      !order.cdek?.trackNumber,
+    overdue: Boolean(
+      order.shipByAt &&
+        order.paymentStatus === "paid" &&
+        new Date(order.shipByAt).getTime() < now &&
+        order.status === "assembly"
+    )
+  };
+}
+
+function decorateAdminOrders(orders) {
+  return orders.map(decorateAdminOrder);
+}
+
+function applyOrderEdit(order, body = {}) {
+  const patch = {};
+  if (typeof body.adminNotes === "string") patch.adminNotes = body.adminNotes;
+  if (typeof body.comment === "string") patch.comment = body.comment;
+  if (typeof body.city === "string") patch.city = body.city.trim();
+  if (body.cityCode !== undefined && body.cityCode !== null && body.cityCode !== "") {
+    patch.cityCode = String(body.cityCode).trim();
+  }
+  if (typeof body.pvzCode === "string") patch.pvzCode = body.pvzCode.trim();
+  if (typeof body.pvzAddress === "string") patch.pvzAddress = body.pvzAddress.trim();
+  if (body.tariffCode !== undefined && body.tariffCode !== null && body.tariffCode !== "") {
+    patch.tariffCode = Number(body.tariffCode) || order.tariffCode;
+  }
+  if (["cdek", "pickup", "local"].includes(String(body.deliveryMethod || ""))) {
+    patch.deliveryMethod = String(body.deliveryMethod);
+  }
+  if (body.deliverySum !== undefined && body.deliverySum !== null && body.deliverySum !== "") {
+    patch.deliverySum = Math.max(0, Number(body.deliverySum) || 0);
+  }
+  if (body.goodsTotal !== undefined && body.goodsTotal !== null && body.goodsTotal !== "") {
+    patch.goodsTotal = Math.max(0, Number(body.goodsTotal) || 0);
+  }
+  if (body.total !== undefined && body.total !== null && body.total !== "") {
+    patch.total = Math.max(0, Number(body.total) || 0);
+  } else if (patch.goodsTotal !== undefined || patch.deliverySum !== undefined) {
+    const goods = patch.goodsTotal !== undefined ? patch.goodsTotal : Number(order.goodsTotal || 0);
+    const delivery =
+      patch.deliverySum !== undefined ? patch.deliverySum : Number(order.deliverySum || 0);
+    patch.total = goods + delivery;
+  }
+
+  if (body.customer && typeof body.customer === "object") {
+    patch.customer = {
+      ...order.customer,
+      lastName: String(body.customer.lastName ?? order.customer?.lastName ?? "").trim(),
+      firstName: String(body.customer.firstName ?? order.customer?.firstName ?? "").trim(),
+      middleName: String(body.customer.middleName ?? order.customer?.middleName ?? "").trim(),
+      phone: String(body.customer.phone ?? order.customer?.phone ?? "").trim(),
+      email: String(body.customer.email ?? order.customer?.email ?? "").trim(),
+      city: String(body.customer.city ?? order.customer?.city ?? patch.city ?? "").trim()
+    };
+  }
+
+  if (typeof body.trackNumber === "string") {
+    patch.cdek = {
+      ...order.cdek,
+      trackNumber: body.trackNumber.trim(),
+      stage: body.trackNumber.trim()
+        ? order.cdek?.stage || `Трек СДЭК · ${body.trackNumber.trim()}`
+        : order.cdek?.stage || ""
+    };
+  }
+
+  if (
+    body.paymentStatus &&
+    ["pending", "paid", "canceled", "cancelled", "waiting_for_capture"].includes(body.paymentStatus)
+  ) {
+    patch.paymentStatus = body.paymentStatus === "cancelled" ? "canceled" : body.paymentStatus;
+  }
+
+  return patch;
+}
 
 app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
   try {
     const order = store.getOrder(req.params.id);
     if (!order) return res.status(404).json({ message: "Заказ не найден" });
 
-    const { status, adminNotes, createCdek, markPaid } = req.body || {};
+    const body = req.body || {};
+    const { status, createCdek, markPaid, sync, edit } = body;
     let updated = order;
+
+    if (sync) {
+      const synced = await syncOrderFromProviders(order.id, { force: true });
+      return res.json({ ok: true, order: decorateAdminOrder(synced.order), sync: synced.sync });
+    }
 
     if (markPaid && order.paymentStatus !== "paid") {
       updated = await markOrderPaid(order.id, { source: "admin" });
@@ -1163,7 +1501,7 @@ app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
       if ((updated.deliveryMethod || "cdek") !== "cdek") {
         return res.status(400).json({
           message: "Для самовывоза и городской доставки накладная СДЭК не создаётся",
-          order: updated
+          order: decorateAdminOrder(updated)
         });
       }
       try {
@@ -1187,32 +1525,54 @@ app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
           }
         });
       } catch (error) {
-        return res.status(400).json({ message: "СДЭК: " + error.message, order: updated });
+        return res.status(400).json({ message: "СДЭК: " + error.message, order: decorateAdminOrder(updated) });
       }
     }
 
-    const patch = {};
-    if (typeof adminNotes === "string") patch.adminNotes = adminNotes;
+    const patch = edit ? applyOrderEdit(updated, body) : {};
+    if (!edit && typeof body.adminNotes === "string") patch.adminNotes = body.adminNotes;
+
     if (status && ["assembly", "shipped", "arrived", "cancelled", "pending_payment"].includes(status)) {
       patch.status = status;
+      const history = [...((patch.cdek || updated.cdek)?.history || [])];
       if (status === "shipped") {
+        history.push({
+          at: new Date().toISOString(),
+          title: "Отмечено админом: отправка",
+          detail: "Заказ сдан в доставку"
+        });
         patch.cdek = {
-          ...updated.cdek,
+          ...(patch.cdek || updated.cdek),
           stage: "Отправлен · сдан в СДЭК",
-          history: [
-            ...(updated.cdek?.history || []),
-            {
-              at: new Date().toISOString(),
-              title: "Отмечено админом: отправка",
-              detail: "Заказ сдан в доставку"
-            }
-          ]
+          history
+        };
+      } else if (status === "arrived") {
+        history.push({
+          at: new Date().toISOString(),
+          title: "Отмечено админом: прибыл / выдан",
+          detail: "Заказ доступен к вручению или выдан"
+        });
+        patch.cdek = {
+          ...(patch.cdek || updated.cdek),
+          stage: "Прибыл к вручению / выдан",
+          history
+        };
+      } else if (status === "cancelled") {
+        history.push({
+          at: new Date().toISOString(),
+          title: "Заказ отменён админом",
+          detail: body.cancelReason || "Отмена"
+        });
+        patch.cdek = {
+          ...(patch.cdek || updated.cdek),
+          stage: "Отменён",
+          history
         };
       }
     }
 
     if (Object.keys(patch).length) updated = store.updateOrder(updated.id, patch);
-    res.json({ ok: true, order: updated });
+    res.json({ ok: true, order: decorateAdminOrder(updated) });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

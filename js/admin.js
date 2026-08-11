@@ -6,7 +6,7 @@
     cms: null,
     orders: null,
     leads: null,
-    editingProductId: null,
+    editingOrderId: null,
     orderFilter: "all",
     orderQuery: "",
     expandedOrders: {}
@@ -686,6 +686,31 @@
     await load();
   };
 
+  const syncOrder = async (id) => {
+    const data = await api(`/api/admin/orders/${encodeURIComponent(id)}/sync`, {
+      method: "POST",
+      body: JSON.stringify({})
+    });
+    await load();
+    return data;
+  };
+
+  const syncAllOrders = async () => {
+    const data = await api("/api/admin/orders/sync-all", {
+      method: "POST",
+      body: JSON.stringify({ limit: 40 })
+    });
+    await load();
+    return data;
+  };
+
+  const deleteOrder = async (id) => {
+    await api(`/api/admin/orders/${encodeURIComponent(id)}`, { method: "DELETE" });
+    delete state.expandedOrders[id];
+    if (state.editingOrderId === id) state.editingOrderId = null;
+    await load();
+  };
+
   const filterOrders = (orders) => {
     const q = String(state.orderQuery || "")
       .trim()
@@ -701,6 +726,8 @@
         if (order.paymentStatus === "paid") return false;
       } else if (state.orderFilter === "shipped") {
         if (!["shipped", "arrived"].includes(order.status)) return false;
+      } else if (state.orderFilter === "cancelled") {
+        if (order.status !== "cancelled") return false;
       }
 
       if (!q) return true;
@@ -745,9 +772,71 @@
       .join("")}</div>`;
   };
 
+  const renderOrderEditForm = (order) => {
+    if (state.editingOrderId !== order.id) return "";
+    const c = order.customer || {};
+    return `
+      <form class="admin-form admin-order-edit" data-edit-order-form="${esc(order.id)}">
+        <h4>Редактирование заказа ${esc(order.id)}</h4>
+        <div class="admin-form-grid">
+          <div class="field"><label>Фамилия</label><input name="lastName" value="${esc(c.lastName || "")}" required /></div>
+          <div class="field"><label>Имя</label><input name="firstName" value="${esc(c.firstName || "")}" required /></div>
+          <div class="field"><label>Отчество</label><input name="middleName" value="${esc(c.middleName || "")}" /></div>
+          <div class="field"><label>Телефон</label><input name="phone" value="${esc(c.phone || "")}" required /></div>
+          <div class="field"><label>E-mail</label><input name="email" type="email" value="${esc(c.email || "")}" required /></div>
+          <div class="field"><label>Город</label><input name="city" value="${esc(order.city || c.city || "")}" /></div>
+          <div class="field"><label>Код города СДЭК</label><input name="cityCode" value="${esc(order.cityCode || "")}" /></div>
+          <div class="field">
+            <label>Способ получения</label>
+            <select name="deliveryMethod">
+              <option value="cdek" ${ (order.deliveryMethod || "cdek") === "cdek" ? "selected" : "" }>Доставка СДЭК</option>
+              <option value="pickup" ${ order.deliveryMethod === "pickup" ? "selected" : "" }>Самовывоз</option>
+              <option value="local" ${ order.deliveryMethod === "local" ? "selected" : "" }>Адресная по Петрозаводску</option>
+            </select>
+          </div>
+          <div class="field"><label>Код ПВЗ</label><input name="pvzCode" value="${esc(order.pvzCode || "")}" /></div>
+          <div class="field"><label>Адрес / ПВЗ</label><input name="pvzAddress" value="${esc(order.pvzAddress || "")}" /></div>
+          <div class="field"><label>Тариф СДЭК</label><input name="tariffCode" value="${esc(order.tariffCode || "")}" /></div>
+          <div class="field"><label>Трек СДЭК</label><input name="trackNumber" value="${esc(order.cdek?.trackNumber || "")}" /></div>
+          <div class="field"><label>Сумма товаров, ₽</label><input name="goodsTotal" type="number" min="0" step="1" value="${esc(order.goodsTotal ?? "")}" /></div>
+          <div class="field"><label>Доставка, ₽</label><input name="deliverySum" type="number" min="0" step="1" value="${esc(order.deliverySum ?? "")}" /></div>
+          <div class="field"><label>Итого, ₽</label><input name="total" type="number" min="0" step="1" value="${esc(order.total ?? "")}" /></div>
+          <div class="field">
+            <label>Статус заказа</label>
+            <select name="status">
+              ${["pending_payment", "assembly", "shipped", "arrived", "cancelled"]
+                .map(
+                  (s) =>
+                    `<option value="${s}" ${order.status === s ? "selected" : ""}>${esc(statusLabel(s))}</option>`
+                )
+                .join("")}
+            </select>
+          </div>
+          <div class="field">
+            <label>Статус оплаты</label>
+            <select name="paymentStatus">
+              ${["pending", "paid", "canceled", "waiting_for_capture"]
+                .map(
+                  (s) =>
+                    `<option value="${s}" ${order.paymentStatus === s ? "selected" : ""}>${esc(paymentLabel(s))}</option>`
+                )
+                .join("")}
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Комментарий клиента</label><textarea name="comment" rows="2">${esc(order.comment || "")}</textarea></div>
+        <div class="field"><label>Заметка админа</label><textarea name="adminNotes" rows="2">${esc(order.adminNotes || "")}</textarea></div>
+        <div class="admin-actions">
+          <button class="btn btn-primary" type="submit">Сохранить изменения</button>
+          <button class="btn btn-ghost" type="button" data-cancel-edit="${esc(order.id)}">Отмена</button>
+        </div>
+      </form>`;
+  };
+
   const renderOrderDetails = (order) => {
     const history = order.cdek?.history || [];
     const open = Boolean(state.expandedOrders[order.id]);
+    const sync = order.lastSync;
     return `
       <button class="btn btn-ghost" type="button" data-toggle-order="${esc(order.id)}">
         ${open ? "Скрыть подробности" : "Подробнее по заказу"}
@@ -784,7 +873,7 @@
             </div>
           </div>
           <div>
-            <h4>${(order.deliveryMethod || "cdek") === "cdek" ? "СДЭК / трек" : "Статус выдачи"}</h4>
+            <h4>${(order.deliveryMethod || "cdek") === "cdek" ? "СДЭК / ЮKassa" : "Статус выдачи"}</h4>
             <div class="admin-order-meta">
               ${
                 (order.deliveryMethod || "cdek") === "cdek"
@@ -794,6 +883,23 @@
               }
               <div><strong>Этап:</strong> ${esc(order.cdek?.stage || "—")}</div>
               <div><strong>Обновлён:</strong> ${when(order.updatedAt)}</div>
+              <div><strong>Синхронизация:</strong> ${when(sync?.at)}</div>
+              ${
+                sync?.payment?.status
+                  ? `<div><strong>ЮKassa:</strong> ${esc(sync.payment.status)}</div>`
+                  : sync?.payment?.error
+                    ? `<div><strong>ЮKassa:</strong> ${esc(sync.payment.error)}</div>`
+                    : ""
+              }
+              ${
+                sync?.cdek?.name
+                  ? `<div><strong>СДЭК сейчас:</strong> ${esc(sync.cdek.name)}${
+                      sync.cdek.city ? ` · ${esc(sync.cdek.city)}` : ""
+                    }</div>`
+                  : sync?.cdek?.error
+                    ? `<div><strong>СДЭК:</strong> ${esc(sync.cdek.error)}</div>`
+                    : ""
+              }
             </div>
           </div>
         </div>
@@ -802,6 +908,8 @@
           ${
             history.length
               ? `<ul class="admin-history">${history
+                  .slice()
+                  .reverse()
                   .map(
                     (h) => `<li>
                 <strong>${esc(h.title || "Событие")}</strong>
@@ -822,7 +930,8 @@
     const needShip = orders.filter((o) => o.paymentStatus === "paid" && o.status === "assembly");
     const overdue = orders.filter((o) => o.overdue);
     const paid = orders.filter((o) => o.paymentStatus === "paid");
-    const pending = orders.filter((o) => o.paymentStatus !== "paid");
+    const pending = orders.filter((o) => o.paymentStatus !== "paid" && o.status !== "cancelled");
+    const arrived = orders.filter((o) => o.status === "arrived");
     const visible = filterOrders(orders);
 
     const filters = [
@@ -831,17 +940,22 @@
       ["overdue", `Просрочено (${overdue.length})`],
       ["paid", `Оплаченные (${paid.length})`],
       ["pending", `Без оплаты (${pending.length})`],
-      ["shipped", "В пути / ПВЗ"]
+      ["shipped", "В пути / ПВЗ"],
+      ["cancelled", "Отменённые"]
     ];
 
     root.innerHTML = shell(`
       <div class="admin-orders-tools">
-        <p class="form-note" style="margin:0">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Панель показывает оплату, ПВЗ, трек и историю — удобно вести заказ от сборки до выдачи.</p>
+        <p class="form-note" style="margin:0">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Кнопка «Синхронизировать статусы» подтягивает оплату из ЮKassa и трек/этап из СДЭК.</p>
         <div class="admin-orders-stats">
           <span class="admin-stat">Всего: <strong>${orders.length}</strong></span>
           <span class="admin-stat">К отгрузке: <strong>${needShip.length}</strong></span>
           <span class="admin-stat ${overdue.length ? "is-warn" : ""}">Просрочено: <strong>${overdue.length}</strong></span>
           <span class="admin-stat">Оплачено: <strong>${paid.length}</strong></span>
+          <span class="admin-stat">В ПВЗ / выдано: <strong>${arrived.length}</strong></span>
+        </div>
+        <div class="admin-actions" style="margin:0.35rem 0 0.15rem">
+          <button class="btn btn-primary" type="button" id="syncAllOrders">Синхронизировать статусы</button>
         </div>
         <div class="admin-filter-row">
           ${filters
@@ -868,7 +982,7 @@
                   return `
               <article class="admin-order ${order.overdue ? "is-overdue" : ""} ${
                     order.paymentStatus === "paid" && order.status === "assembly" ? "is-ship" : ""
-                  }" data-order-card="${esc(order.id)}">
+                  } ${order.status === "cancelled" ? "is-cancelled" : ""}" data-order-card="${esc(order.id)}">
                 <header>
                   <div>
                     <div class="admin-order-badges">
@@ -883,6 +997,11 @@
                           : ""
                       }
                       ${
+                        order.status === "arrived"
+                          ? `<span class="admin-pill pay-paid">К вручению / выдан</span>`
+                          : ""
+                      }
+                      ${
                         (order.deliveryMethod || "cdek") !== "cdek"
                           ? `<span class="admin-pill status">${esc(
                               deliveryMethodLabel(order.deliveryMethod)
@@ -893,7 +1012,7 @@
                     <h3 style="margin:0.15rem 0">${esc(order.id)}</h3>
                     <p class="form-note">Создан: ${when(order.createdAt)} · Оплачен: ${when(order.paidAt)} · Отправить до: ${when(
                       order.shipByAt
-                    )}</p>
+                    )}${order.lastSync?.at ? ` · Синхр.: ${when(order.lastSync.at)}` : ""}</p>
                   </div>
                   <div class="order-total">${money(order.total)}</div>
                 </header>
@@ -943,12 +1062,17 @@
                   </div>
                 </div>
                 ${renderOrderDetails(order)}
+                ${renderOrderEditForm(order)}
                 <div class="field">
                   <label>Заметка админа</label>
                   <textarea data-notes="${esc(order.id)}" rows="2">${esc(order.adminNotes || "")}</textarea>
                 </div>
                 <div class="admin-actions">
                   <button class="btn btn-ghost" type="button" data-save-notes="${esc(order.id)}">Сохранить заметку</button>
+                  <button class="btn btn-ghost" type="button" data-sync-order="${esc(order.id)}">Обновить из ЮKassa / СДЭК</button>
+                  <button class="btn btn-ghost" type="button" data-edit-order="${esc(order.id)}">${
+                    state.editingOrderId === order.id ? "Скрыть редактирование" : "Редактировать"
+                  }</button>
                   ${
                     order.paymentStatus !== "paid"
                       ? `<button class="btn btn-primary" type="button" data-mark-paid="${esc(
@@ -991,6 +1115,16 @@
                         }</button>`
                       : ""
                   }
+                  ${
+                    order.status !== "cancelled"
+                      ? `<button class="btn btn-ghost" type="button" data-cancel-order="${esc(
+                          order.id
+                        )}">Отменить заказ</button>`
+                      : ""
+                  }
+                  <button class="btn btn-ghost admin-danger" type="button" data-delete-order="${esc(
+                    order.id
+                  )}">Удалить</button>
                 </div>
               </article>`;
                 })
@@ -999,6 +1133,20 @@
         }
       </div>`);
     bindShell();
+
+    document.getElementById("syncAllOrders")?.addEventListener("click", async () => {
+      const btn = document.getElementById("syncAllOrders");
+      if (btn) btn.disabled = true;
+      try {
+        const data = await syncAllOrders();
+        const changed = (data.results || []).filter((r) => r.ok && (r.changes || []).length).length;
+        window.NMP_toast(`Синхронизировано: ${data.synced || 0} · с изменениями: ${changed}`);
+      } catch (err) {
+        window.NMP_toast(err.message || "Ошибка синхронизации");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
 
     root.querySelectorAll("[data-order-filter]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1073,6 +1221,93 @@
       btn.addEventListener("click", async () => {
         await patchOrder(btn.getAttribute("data-arrived"), { status: "arrived" });
         window.NMP_toast("Статус: прибыл");
+      });
+    });
+    root.querySelectorAll("[data-cancel-order]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!window.confirm("Отменить заказ?")) return;
+        await patchOrder(btn.getAttribute("data-cancel-order"), { status: "cancelled" });
+        window.NMP_toast("Заказ отменён");
+      });
+    });
+    root.querySelectorAll("[data-delete-order]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-delete-order");
+        if (!window.confirm(`Удалить заказ ${id} безвозвратно?`)) return;
+        try {
+          await deleteOrder(id);
+          window.NMP_toast("Заказ удалён");
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось удалить");
+        }
+      });
+    });
+    root.querySelectorAll("[data-sync-order]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-sync-order");
+        btn.disabled = true;
+        try {
+          const data = await syncOrder(id);
+          const changes = data.sync?.changes || [];
+          window.NMP_toast(changes.length ? changes.join(" · ") : "Статусы обновлены");
+        } catch (err) {
+          window.NMP_toast(err.message || "Ошибка синхронизации");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
+    root.querySelectorAll("[data-edit-order]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-edit-order");
+        state.editingOrderId = state.editingOrderId === id ? null : id;
+        state.expandedOrders[id] = true;
+        renderOrders();
+      });
+    });
+    root.querySelectorAll("[data-cancel-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.editingOrderId = null;
+        renderOrders();
+      });
+    });
+    root.querySelectorAll("[data-edit-order-form]").forEach((form) => {
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const id = form.getAttribute("data-edit-order-form");
+        const fd = new FormData(form);
+        const payload = {
+          edit: true,
+          customer: {
+            lastName: fd.get("lastName"),
+            firstName: fd.get("firstName"),
+            middleName: fd.get("middleName"),
+            phone: fd.get("phone"),
+            email: fd.get("email"),
+            city: fd.get("city")
+          },
+          city: fd.get("city"),
+          cityCode: fd.get("cityCode"),
+          deliveryMethod: fd.get("deliveryMethod"),
+          pvzCode: fd.get("pvzCode"),
+          pvzAddress: fd.get("pvzAddress"),
+          tariffCode: fd.get("tariffCode"),
+          trackNumber: fd.get("trackNumber"),
+          goodsTotal: fd.get("goodsTotal"),
+          deliverySum: fd.get("deliverySum"),
+          total: fd.get("total"),
+          status: fd.get("status"),
+          paymentStatus: fd.get("paymentStatus"),
+          comment: fd.get("comment"),
+          adminNotes: fd.get("adminNotes")
+        };
+        try {
+          await patchOrder(id, payload);
+          state.editingOrderId = null;
+          window.NMP_toast("Заказ сохранён");
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось сохранить");
+        }
       });
     });
   };

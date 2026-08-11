@@ -82,6 +82,15 @@ function updateOrder(id, patch) {
   return orders[index];
 }
 
+function deleteOrder(id) {
+  const orders = listOrders();
+  const index = orders.findIndex((order) => order.id === id);
+  if (index < 0) return false;
+  orders.splice(index, 1);
+  saveOrders(orders);
+  return true;
+}
+
 function rememberCdekMap(record) {
   const rows = readJson(CDEK_MAP_FILE, []);
   rows.unshift(record);
@@ -100,6 +109,7 @@ module.exports = {
   getOrder,
   createOrder,
   updateOrder,
+  deleteOrder,
   rememberCdekMap,
   findCdekMap
 };
