@@ -18,6 +18,7 @@
   window.NMP_toast = showToast;
 
   const refreshCartBadge = () => {
+    if (!Store?.cartCount) return;
     document.querySelectorAll("[data-cart-count]").forEach((el) => {
       el.textContent = String(Store.cartCount());
     });
@@ -27,33 +28,46 @@
   const nav = document.getElementById("nav");
   const menuToggle = document.getElementById("menuToggle");
 
+  const setMenuOpen = (open) => {
+    if (!nav || !menuToggle) return;
+    nav.classList.toggle("open", open);
+    menuToggle.classList.toggle("open", open);
+    menuToggle.setAttribute("aria-expanded", String(open));
+    document.body.style.overflow = open ? "hidden" : "";
+    header?.classList.toggle("menu-open", open);
+  };
+
   const onScroll = () => {
     if (!header) return;
+    // Keep scrolled chrome while the mobile menu is open so the toggle
+    // styling stays stable; never rely on backdrop-filter for the bar.
+    if (nav?.classList.contains("open")) return;
     header.classList.toggle("scrolled", window.scrollY > 16);
   };
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
   if (menuToggle && nav) {
-    menuToggle.addEventListener("click", () => {
-      const open = nav.classList.toggle("open");
-      menuToggle.classList.toggle("open", open);
-      menuToggle.setAttribute("aria-expanded", String(open));
-      document.body.style.overflow = open ? "hidden" : "";
+    menuToggle.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setMenuOpen(!nav.classList.contains("open"));
     });
     nav.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => {
-        nav.classList.remove("open");
-        menuToggle.classList.remove("open");
-        menuToggle.setAttribute("aria-expanded", "false");
-        document.body.style.overflow = "";
-      });
+      link.addEventListener("click", () => setMenuOpen(false));
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    });
+    window.addEventListener("resize", () => {
+      if (window.matchMedia("(min-width: 901px)").matches) setMenuOpen(false);
     });
   }
 
   document.querySelectorAll("[data-add-cart]").forEach((btn) => {
     btn.addEventListener("click", (event) => {
       event.preventDefault();
+      if (!Store?.addToCart) return;
       const id = btn.getAttribute("data-add-cart");
       const product = window.NMP_getProduct?.(id);
       if (product && product.availableForOrder === false) {

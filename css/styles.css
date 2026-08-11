@@ -144,8 +144,10 @@ h3 {
 }
 
 .site-header.scrolled {
-  background: rgba(28, 30, 28, 0.88);
-  backdrop-filter: blur(14px);
+  /* Solid fill only — backdrop-filter on the header creates a containing
+     block for position:fixed children, so the mobile .nav overlay collapses
+     to the header height and looks like the hamburger “doesn’t open”. */
+  background: rgba(18, 19, 18, 0.96);
   border-bottom-color: var(--line);
 }
 
@@ -1164,8 +1166,12 @@ h3 {
   }
 
   .site-header {
-    background: rgba(12, 13, 12, 0.94);
+    background: rgba(12, 13, 12, 0.96);
     border-bottom-color: rgba(243, 241, 236, 0.12);
+  }
+
+  .site-header.menu-open {
+    z-index: 300;
   }
 
   .menu-toggle {
