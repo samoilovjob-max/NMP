@@ -14,6 +14,11 @@
       .replace(/"/g, "&quot;")
       .replace(/</g, "&lt;");
 
+  const productHref = (p) =>
+    typeof window.NMP_productHref === "function"
+      ? window.NMP_productHref(p)
+      : `product.html?id=${encodeURIComponent(p?.id || "")}`;
+
   const applyProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
     window.NMP_PRODUCTS = products;
@@ -23,36 +28,32 @@
       );
   };
 
-  const renderCatalog = (products, site = {}) => {
-    const root = document.getElementById("catalogProducts");
-    if (!root) return;
-    const title = document.querySelector("#catalog .section-head h2");
-    const lead = document.querySelector("#catalog .section-head .lead");
-    if (title && site.catalogTitle) title.textContent = site.catalogTitle;
-    if (lead && site.catalogLead) lead.textContent = site.catalogLead;
-
-    root.innerHTML = products
-      .map((p) => {
-        const available = p.availableForOrder !== false;
-        const priceLabel = !available
-          ? `<span class="price price-soon">Цена по запросу</span>`
-          : p.hasPromo
-            ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
-            : `<span class="price">от ${money(p.effectivePrice || p.price)}</span>`;
-        const badge = available && p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
-        const action = available
-          ? `<a class="btn btn-primary" href="product.html?id=${encodeURIComponent(p.id)}">Подробнее</a>`
-          : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
-              p.id
-            )}" data-notify-name="${escAttr(p.name)}">Сообщить о поступлении</button>`;
-        return `
+  const renderProductCard = (p, { available, imageLoading, fetchPriority }) => {
+    const href = productHref(p);
+    const priceLabel = !available
+      ? `<span class="price price-soon">Цена по запросу</span>`
+      : p.hasPromo
+        ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
+        : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
+    const badge = available && p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
+    const action = available
+      ? `<div class="product-meta-actions">
+              <a class="btn btn-primary" href="${href}">Подробнее</a>
+              <button class="btn btn-ghost" type="button" data-add-cart="${escAttr(p.id)}">В корзину</button>
+            </div>`
+      : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
+          p.id
+        )}" data-notify-name="${escAttr(p.name)}">Сообщить о поступлении</button>`;
+    const loadingAttr = imageLoading === "eager" ? 'loading="eager"' : 'loading="lazy"';
+    const priorityAttr = fetchPriority ? ` fetchpriority="${fetchPriority}"` : "";
+    return `
         <article class="product reveal visible ${available ? "" : "product-soon"}" id="product-${p.id}">
-          <a class="product-media" href="product.html?id=${encodeURIComponent(p.id)}">
-            <img src="${p.image}" alt="${p.imageAlt || p.name}" />
+          <a class="product-media" href="${href}">
+            <img src="${p.image}" alt="${p.imageAlt || p.name}" ${loadingAttr}${priorityAttr} />
           </a>
           <div class="product-body">
             ${badge ? `<div class="badge">${badge}</div>` : ""}
-            <h3><a href="product.html?id=${encodeURIComponent(p.id)}">${p.name}</a></h3>
+            <h3><a href="${href}">${p.name}</a></h3>
             <p class="sku-label">Артикул ${p.sku || ""}</p>
             <p>${p.short || ""}</p>
             <div class="product-meta">
@@ -66,18 +67,60 @@
             }
           </div>
         </article>`;
+  };
+
+  const renderCatalog = (products, site = {}) => {
+    const root = document.getElementById("catalogProducts");
+    if (!root) return;
+    const title = document.querySelector("#catalog .section-head h2");
+    const lead = document.querySelector("#catalog .section-head .lead");
+    if (title && site.catalogTitle) title.textContent = site.catalogTitle;
+    if (lead && site.catalogLead) lead.textContent = site.catalogLead;
+
+    const list = Array.isArray(products) ? products : [];
+    const available = list.filter((p) => p.availableForOrder !== false);
+    const soon = list.filter((p) => p.availableForOrder === false);
+
+    const parts = available.map((p, index) =>
+      renderProductCard(p, {
+        available: true,
+        imageLoading: index < 2 ? "eager" : "lazy",
+        fetchPriority: index < 2 ? "high" : undefined
       })
-      .join("");
+    );
+
+    if (soon.length) {
+      parts.push(`
+        <div class="catalog-soon-divider reveal visible">
+          <h3>Скоро в продаже</h3>
+          <p class="form-note">Модели в подготовке — оставьте заявку</p>
+        </div>`);
+      soon.forEach((p) => {
+        parts.push(
+          renderProductCard(p, {
+            available: false,
+            imageLoading: "lazy"
+          })
+        );
+      });
+    }
+
+    root.innerHTML = parts.join("");
   };
 
   const renderReviews = (reviews, site = {}) => {
+    const section = document.getElementById("reviews");
     const root = document.getElementById("reviewsGrid");
     if (!root) return;
     const title = document.querySelector("#reviews .section-head h2");
     const lead = document.querySelector("#reviews .section-head .lead");
     if (title && site.reviewsTitle) title.textContent = site.reviewsTitle;
     if (lead && site.reviewsLead) lead.textContent = site.reviewsLead;
-    if (!reviews.length) return;
+    if (!reviews.length) {
+      if (section) section.hidden = true;
+      return;
+    }
+    if (section) section.hidden = false;
     root.innerHTML = reviews
       .map(
         (r) => `
@@ -117,7 +160,7 @@
           ? `checkout.html?buy=${encodeURIComponent(n.productId)}`
           : "index.html#catalog";
         const moreHref = n.productId
-          ? `product.html?id=${encodeURIComponent(n.productId)}`
+          ? productHref(linked || { id: n.productId })
           : "index.html#catalog";
         const primary = available
           ? `<a class="btn btn-primary" href="${orderHref}">Заказать</a>`
@@ -126,7 +169,7 @@
             )}" data-notify-name="${escAttr(linked?.name || n.title || "")}">Сообщить о поступлении</button>`;
         return `
         <article class="news-card reveal visible">
-          ${n.image ? `<img src="${n.image}" alt="" />` : ""}
+          ${n.image ? `<img src="${n.image}" alt="" loading="lazy" />` : ""}
           <div>
             ${date ? `<p class="form-note">${date}</p>` : ""}
             <h3>${n.title || ""}</h3>

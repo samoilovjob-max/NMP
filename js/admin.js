@@ -256,8 +256,15 @@
         <div class="field"><label>Характеристики (каждая с новой строки)</label><textarea name="specs" rows="4">${esc(arrayToLines(p.specs || []))}</textarea></div>
         <div class="field"><label>Сценарии применения</label><textarea name="useCases" rows="3">${esc(arrayToLines(p.useCases || []))}</textarea></div>
         <div class="field"><label>Ключевые слова</label><textarea name="keywords" rows="2">${esc(arrayToLines(p.keywords || []))}</textarea></div>
-        <div class="field"><label>SEO title</label><input name="seoTitle" value="${esc(p.seoTitle || "")}" /></div>
+          <div class="field"><label>SEO title</label><input name="seoTitle" value="${esc(p.seoTitle || "")}" /></div>
         <div class="field"><label>SEO description</label><textarea name="seoDescription" rows="2">${esc(p.seoDescription || "")}</textarea></div>
+        <div class="admin-form-grid">
+          <div class="field"><label>Вес упаковки, г</label><input name="packageWeight" type="number" min="0" step="1" value="${esc(p.packageWeight ?? "")}" placeholder="8000" /></div>
+          <div class="field"><label>Длина, см</label><input name="packageLength" type="number" min="0" step="1" value="${esc(p.packageLength ?? "")}" placeholder="60" /></div>
+          <div class="field"><label>Ширина, см</label><input name="packageWidth" type="number" min="0" step="1" value="${esc(p.packageWidth ?? "")}" placeholder="40" /></div>
+          <div class="field"><label>Высота, см</label><input name="packageHeight" type="number" min="0" step="1" value="${esc(p.packageHeight ?? "")}" placeholder="10" /></div>
+        </div>
+        <p class="form-note">Габариты идут в расчёт СДЭК. Если пусто — берутся значения по умолчанию из .env (PACKAGE_*).</p>
         <div class="field">
           <label>FAQ (формат: вопрос || ответ — каждая пара с новой строки)</label>
           <textarea name="faq" rows="4">${esc(
@@ -304,6 +311,10 @@
       keywords: linesToArray(fd.get("keywords")),
       seoTitle: String(fd.get("seoTitle") || "").trim(),
       seoDescription: String(fd.get("seoDescription") || "").trim(),
+      packageWeight: fd.get("packageWeight") === "" ? null : Number(fd.get("packageWeight")),
+      packageLength: fd.get("packageLength") === "" ? null : Number(fd.get("packageLength")),
+      packageWidth: fd.get("packageWidth") === "" ? null : Number(fd.get("packageWidth")),
+      packageHeight: fd.get("packageHeight") === "" ? null : Number(fd.get("packageHeight")),
       faq
     };
   };
@@ -894,7 +905,22 @@
               <div><strong>Город:</strong> ${esc(order.city || order.customer?.city || "—")} ${
                 order.cityCode ? `(код ${esc(order.cityCode)})` : ""
               }</div>
-              <div><strong>Адрес / ПВЗ:</strong> ${esc(order.pvzAddress || "—")}</div>
+              <div><strong>Адрес / ПВЗ:</strong> ${esc(
+                order.deliveryMethod === "local"
+                  ? order.localAddress || order.pvzAddress || order.comment || "—"
+                  : order.pvzAddress || "—"
+              )}</div>
+              ${
+                order.deliveryMethod === "pickup"
+                  ? `<p class="form-note">Склад самовывоза: Университетская 7/3</p>`
+                  : (order.deliveryMethod || "cdek") === "cdek"
+                    ? `<p class="form-note">Отправка СДЭК со склада: Лесной пр. 47 (Петрозаводск)</p>`
+                    : order.deliveryMethod === "local"
+                      ? `<p class="form-note">Адрес доставки: ${esc(
+                          order.localAddress || order.comment || order.pvzAddress || "—"
+                        )}</p>`
+                      : ""
+              }
               ${
                 (order.deliveryMethod || "cdek") === "cdek"
                   ? `<div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>
@@ -1112,7 +1138,22 @@
                           : order.deliveryMethod === "local"
                             ? "Доставка:"
                             : "ПВЗ:"
-                      }</strong> ${esc(order.pvzAddress || "—")}</div>
+                      }</strong> ${esc(
+                        order.deliveryMethod === "local"
+                          ? order.localAddress || order.pvzAddress || order.comment || "—"
+                          : order.pvzAddress || "—"
+                      )}</div>
+                      ${
+                        order.deliveryMethod === "pickup"
+                          ? `<p class="form-note">Склад самовывоза: Университетская 7/3</p>`
+                          : (order.deliveryMethod || "cdek") === "cdek"
+                            ? `<p class="form-note">Отправка СДЭК со склада: Лесной пр. 47 (Петрозаводск)</p>`
+                            : order.deliveryMethod === "local"
+                              ? `<p class="form-note">Адрес: ${esc(
+                                  order.localAddress || order.comment || order.pvzAddress || "—"
+                                )}</p>`
+                              : ""
+                      }
                       ${
                         (order.deliveryMethod || "cdek") === "cdek"
                           ? `<div><strong>Код ПВЗ:</strong> ${esc(order.pvzCode || "—")}</div>

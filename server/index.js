@@ -12,6 +12,8 @@ const store = require("./orders-store");
 const leads = require("./leads-store");
 const { optimizeUploadedImage } = require("./image-optimize");
 const orders1c = require("./orders-1c-export");
+const notify = require("./notify");
+const backup = require("./backup");
 
 const app = express();
 app.use(cors());
@@ -66,7 +68,8 @@ const CONFIG = {
     length: Number(process.env.PACKAGE_LENGTH || 60),
     width: Number(process.env.PACKAGE_WIDTH || 40),
     height: Number(process.env.PACKAGE_HEIGHT || 10)
-  }
+  },
+  pickupAddress: process.env.PICKUP_ADDRESS || "г. Петрозаводск, ул. Университетская 7/3"
 };
 
 const yookassaReady = Boolean(CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
@@ -410,19 +413,51 @@ function baseUrlFromReq(req) {
   return `${proto}://${host}`;
 }
 
+function packageForOrder(order) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  let weight = 0;
+  let maxL = 0;
+  let maxW = 0;
+  let maxH = 0;
+  items.forEach((item) => {
+    const product = cms.getProduct(item.productId) || cms.getProduct(item.sku);
+    const qty = Math.max(1, Number(item.qty || 1));
+    const w = Number(product?.packageWeight || CONFIG.package.weight);
+    const l = Number(product?.packageLength || CONFIG.package.length);
+    const wi = Number(product?.packageWidth || CONFIG.package.width);
+    const h = Number(product?.packageHeight || CONFIG.package.height);
+    weight += w * qty;
+    maxL = Math.max(maxL, l);
+    maxW = Math.max(maxW, wi);
+    maxH = Math.max(maxH, h);
+  });
+  if (!weight) weight = CONFIG.package.weight;
+  return {
+    weight: Math.max(100, Math.round(weight)),
+    length: Math.max(1, Math.round(maxL || CONFIG.package.length)),
+    width: Math.max(1, Math.round(maxW || CONFIG.package.width)),
+    height: Math.max(1, Math.round(maxH || CONFIG.package.height))
+  };
+}
+
 async function createCdekWaybill(order) {
   if (order.deliveryMethod && order.deliveryMethod !== "cdek") {
     throw new Error("Для самовывоза и городской доставки накладная СДЭК не создаётся");
   }
+  const pack = packageForOrder(order);
   const phone = String(order.customer?.phone || "").replace(/[^\d]/g, "");
-  const packagesItems = order.items.map((item, index) => ({
-    name: `${item.sku} · ${item.name}`,
-    ware_key: String(item.sku || item.productId || index + 1),
-    payment: { value: 0 },
-    cost: Number(item.price || 0),
-    weight: Math.max(100, Math.round(CONFIG.package.weight / Math.max(order.items.length, 1))),
-    amount: Number(item.qty || 1)
-  }));
+  const packagesItems = order.items.map((item, index) => {
+    const product = cms.getProduct(item.productId) || cms.getProduct(item.sku);
+    const itemWeight = Number(product?.packageWeight || CONFIG.package.weight);
+    return {
+      name: `${item.sku} · ${item.name}`,
+      ware_key: String(item.sku || item.productId || index + 1),
+      payment: { value: 0 },
+      cost: Number(item.price || 0),
+      weight: Math.max(100, Math.round(itemWeight)),
+      amount: Number(item.qty || 1)
+    };
+  });
 
   const payload = {
     type: 1,
@@ -444,10 +479,10 @@ async function createCdekWaybill(order) {
     packages: [
       {
         number: "1",
-        weight: CONFIG.package.weight,
-        length: CONFIG.package.length,
-        width: CONFIG.package.width,
-        height: CONFIG.package.height,
+        weight: pack.weight,
+        length: pack.length,
+        width: pack.width,
+        height: pack.height,
         items: packagesItems
       }
     ]
@@ -605,11 +640,13 @@ app.get("/api/health", async (_req, res) => {
         code: CONFIG.fromCityCode,
         address: CONFIG.fromAddress
       },
+      pickupAddress: CONFIG.pickupAddress,
       mapProvider: "openstreetmap",
       yandexMaps: false,
       yookassa: yookassaReady,
       yookassaNeedsShopId: yookassaSecretOnly,
       paymentsDemo: CONFIG.paymentsDemo && !yookassaReady,
+      telegramNotify: notify.isConfigured(),
       admin: Boolean(CONFIG.adminToken)
     });
   } catch (error) {
@@ -665,11 +702,51 @@ app.post("/api/availability-notify", (req, res) => {
       comment: body.comment,
       productId: product.id,
       productName: product.name,
-      productSku: product.sku
+      productSku: product.sku,
+      type: "availability"
     });
+    notify.notifyNewLead(lead).catch(() => {});
     res.json({ ok: true, lead: { id: lead.id, createdAt: lead.createdAt } });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+app.post("/api/contact", (req, res) => {
+  try {
+    const body = req.body || {};
+    const lead = leads.addLead({
+      type: "contact",
+      name: body.name,
+      phone: body.phone,
+      email: body.email,
+      comment: body.message || body.comment
+    });
+    notify.notifyNewLead(lead).catch(() => {});
+    res.json({ ok: true, id: lead.id });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+app.get("/api/orders/lookup", (req, res) => {
+  try {
+    const orderId = String(req.query.orderId || req.query.id || "").trim();
+    const phoneRaw = String(req.query.phone || "").trim();
+    const phoneDigits = phoneRaw.replace(/\D/g, "");
+    if (!orderId || phoneDigits.length < 10) {
+      return res.status(400).json({ message: "Укажите номер заказа и телефон" });
+    }
+    const order = store.getOrder(orderId);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    const orderPhone = String(order.customer?.phone || "").replace(/\D/g, "");
+    const normalized = (d) => (d.startsWith("8") && d.length === 11 ? `7${d.slice(1)}` : d).slice(-10);
+    if (normalized(orderPhone) !== normalized(phoneDigits)) {
+      return res.status(403).json({ message: "Телефон не совпадает с заказом" });
+    }
+    res.json({ ok: true, order: publicOrder(order) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -748,10 +825,16 @@ app.get("/api/cdek/pvz", async (req, res) => {
 
 app.post("/api/cdek/calculate", async (req, res) => {
   try {
-    const { toCityCode, toPvzCode, tariffCode } = req.body || {};
+    const { toCityCode, toPvzCode, tariffCode, items: rawItems = [] } = req.body || {};
     if (!toCityCode && !toPvzCode) {
       return res.status(400).json({ message: "toCityCode or toPvzCode required" });
     }
+
+    const pack = packageForOrder({
+      items: Array.isArray(rawItems) && rawItems.length
+        ? rawItems
+        : [{ productId: "1", qty: 1 }]
+    });
 
     const json = {
       type: 1,
@@ -762,10 +845,10 @@ app.post("/api/cdek/calculate", async (req, res) => {
       to_location: toCityCode ? { code: Number(toCityCode) } : undefined,
       packages: [
         {
-          weight: CONFIG.package.weight,
-          length: CONFIG.package.length,
-          width: CONFIG.package.width,
-          height: CONFIG.package.height
+          weight: pack.weight,
+          length: pack.length,
+          width: pack.width,
+          height: pack.height
         }
       ]
     };
@@ -898,8 +981,9 @@ app.post("/api/orders", async (req, res) => {
       return res.status(400).json({ message: "Заполните данные получателя" });
     }
 
-    const PICKUP_ADDRESS = "г. Петрозаводск, ул. Университетская 7/3";
+    const PICKUP_ADDRESS = CONFIG.pickupAddress;
     const LOCAL_LABEL = "Адресная доставка по г. Петрозаводску (по договорённости)";
+    const localAddress = String(body.localAddress || "").trim();
 
     let nextCity = city;
     let nextCityCode = cityCode;
@@ -920,13 +1004,13 @@ app.post("/api/orders", async (req, res) => {
       nextTariff = 0;
       delivery = 0;
     } else if (deliveryMethod === "local") {
-      if (!String(comment || "").trim()) {
-        return res.status(400).json({ message: "Укажите адрес доставки в комментарии к заказу" });
+      if (!localAddress && !String(comment || "").trim()) {
+        return res.status(400).json({ message: "Укажите адрес доставки по Петрозаводску" });
       }
       nextCity = nextCity || "Петрозаводск";
       nextCityCode = nextCityCode || String(CONFIG.fromCityCode || 450);
       nextPvzCode = "LOCAL";
-      nextPvzAddress = LOCAL_LABEL;
+      nextPvzAddress = localAddress || String(comment || "").trim() || LOCAL_LABEL;
       nextTariff = 0;
       delivery = 0;
     }
@@ -955,7 +1039,11 @@ app.post("/api/orders", async (req, res) => {
       pvzCode: nextPvzCode,
       pvzAddress: nextPvzAddress,
       tariffCode: nextTariff,
-      comment,
+      comment:
+        deliveryMethod === "local" && localAddress
+          ? [localAddress, comment].filter(Boolean).join(" · ")
+          : comment,
+      localAddress: deliveryMethod === "local" ? localAddress || nextPvzAddress : "",
       cdek: {
         trackNumber: "",
         uuid: "",
@@ -973,13 +1061,14 @@ app.post("/api/orders", async (req, res) => {
               deliveryMethod === "pickup"
                 ? `Самовывоз: ${PICKUP_ADDRESS}`
                 : deliveryMethod === "local"
-                  ? LOCAL_LABEL
+                  ? `Адрес: ${localAddress || comment || LOCAL_LABEL}`
                   : "Доставка СДЭК · ожидает оплату"
           }
         ]
       }
     });
 
+    notify.notifyNewOrder(order).catch(() => {});
     res.json({ ok: true, order: publicOrder(order) });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -1629,7 +1718,10 @@ const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
   console.log(`NMP server http://127.0.0.1:${port}`);
   console.log(`CDEK from: ${CONFIG.fromCity}, ${CONFIG.fromAddress}`);
+  console.log(`Pickup: ${CONFIG.pickupAddress}`);
   console.log(`Map: OpenStreetMap (Leaflet)`);
   console.log(`YooKassa: ${yookassaReady ? "on" : CONFIG.paymentsDemo ? "demo" : "off"}`);
+  console.log(`Telegram notify: ${notify.isConfigured() ? "on" : "off"}`);
   console.log(`Admin: ${CONFIG.adminToken ? "/admin.html" : "token missing"}`);
+  backup.startBackupScheduler();
 });

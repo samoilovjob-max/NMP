@@ -134,7 +134,11 @@ function saveProduct(input, { isNew = false } = {}) {
       : base.keywords || [],
     faq: Array.isArray(input.faq) ? input.faq : base.faq || [],
     seoTitle: String(input.seoTitle || input.h1 || input.name || ""),
-    seoDescription: String(input.seoDescription || input.short || "")
+    seoDescription: String(input.seoDescription || input.short || ""),
+    packageWeight: Math.max(0, Number(input.packageWeight ?? base.packageWeight ?? 0)) || null,
+    packageLength: Math.max(0, Number(input.packageLength ?? base.packageLength ?? 0)) || null,
+    packageWidth: Math.max(0, Number(input.packageWidth ?? base.packageWidth ?? 0)) || null,
+    packageHeight: Math.max(0, Number(input.packageHeight ?? base.packageHeight ?? 0)) || null
   };
 
   if (existingIdx >= 0) products[existingIdx] = next;

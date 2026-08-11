@@ -42,7 +42,7 @@
     return;
   }
 
-  const pageUrl = `${siteUrl}/product.html?id=${encodeURIComponent(product.id)}`;
+  const pageUrl = `${siteUrl}/product.html?slug=${encodeURIComponent(product.slug || product.id)}`;
   const absoluteImage = product.image.startsWith("http")
     ? product.image
     : `${siteUrl}/${product.image.replace(/^\//, "")}`;
@@ -123,6 +123,7 @@
 
   const gallery = product.gallery || [product.image];
   const galleryAlts = product.galleryAlts || [];
+  const useCases = Array.isArray(product.useCases) ? product.useCases : [];
 
   const priceLabel = product.hasPromo
     ? `${window.NMP_formatPrice(product.basePrice || product.price)} → ${window.NMP_formatPrice(product.price)}`
@@ -139,7 +140,7 @@
             (src, index) =>
               `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}" data-alt="${
                 galleryAlts[index] || product.imageAlt || product.name
-              }"><img src="${src}" alt="${galleryAlts[index] || product.name}" /></button>`
+              }"><img src="${src}" alt="${galleryAlts[index] || product.name}" loading="lazy" /></button>`
           )
           .join("")}
       </div>
@@ -157,15 +158,27 @@
       <ul class="spec-list">
         ${product.specs.map((item) => `<li>${item}</li>`).join("")}
       </ul>
+      ${
+        useCases.length
+          ? `<section class="seo-block product-usecases"><h2>Где применять</h2><ul class="spec-list">${useCases
+              .map((item) => `<li>${item}</li>`)
+              .join("")}</ul></section>`
+          : ""
+      }
       <div class="product-actions">
         ${
           available
-            ? `<a class="btn btn-primary" href="checkout.html?buy=${product.id}">Оформить заказ</a>
+            ? `<a class="btn btn-primary" href="checkout.html?buy=${encodeURIComponent(product.id)}">Купить</a>
         <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>`
             : `<button class="btn btn-primary" type="button" data-notify-product="${product.id}" data-notify-name="${product.name}">Сообщить о поступлении</button>
         <a class="btn btn-ghost" href="index.html#catalog">Смотреть каталог</a>`
         }
       </div>
+      <ul class="trust-list">
+        <li>Оплата через ЮKassa</li>
+        <li>Сборка 1–2 дня · отгрузка до 48 ч</li>
+        <li>СДЭК по России · самовывоз в Петрозаводске</li>
+      </ul>
       <p class="form-note">${
         available
           ? "Доставка СДЭК, самовывоз или адресная доставка по Петрозаводску · Оплата через ЮKassa"

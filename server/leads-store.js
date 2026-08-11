@@ -24,6 +24,7 @@ function listLeads() {
 }
 
 function addLead(input = {}) {
+  const type = String(input.type || "availability").trim() || "availability";
   const name = String(input.name || "").trim();
   const phone = String(input.phone || "").trim();
   const email = String(input.email || "").trim();
@@ -32,16 +33,22 @@ function addLead(input = {}) {
   const productSku = String(input.productSku || "").trim();
   const comment = String(input.comment || "").trim();
 
-  if (!productId) throw new Error("Не указан товар");
-  if (!phone && !email) throw new Error("Укажите телефон или e-mail");
+  if (type === "contact") {
+    if (!comment && !name) throw new Error("Напишите сообщение");
+    if (!phone && !email) throw new Error("Укажите телефон или e-mail");
+  } else {
+    if (!productId) throw new Error("Не указан товар");
+    if (!phone && !email) throw new Error("Укажите телефон или e-mail");
+  }
 
   const lead = {
     id:
-      "LEAD-" +
+      (type === "contact" ? "MSG-" : "LEAD-") +
       Math.random().toString(36).slice(2, 7).toUpperCase() +
       Date.now().toString(36).slice(-4).toUpperCase(),
     createdAt: new Date().toISOString(),
     status: "new",
+    type,
     name,
     phone,
     email,

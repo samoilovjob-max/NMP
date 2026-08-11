@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
   <title>Оформление заказа — Northern Magical Place</title>
   <link rel="icon" href="images/logo-mark.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -58,7 +59,7 @@
             </div>
           </div>
           <div class="field">
-            <label for="middleName">Отчество</label>
+            <label for="middleName">Отчество (необязательно)</label>
             <input id="middleName" name="middleName" autocomplete="additional-name" />
           </div>
           <div class="field">
@@ -90,7 +91,7 @@
               <input type="radio" name="deliveryMethod" value="local" />
               <span class="delivery-method-card">
                 <strong>Адресная доставка по Петрозаводску</strong>
-                <span>По городу — по предварительной договорённости. Уточните адрес в комментарии к заказу.</span>
+                <span>По городу — по предварительной договорённости. Адрес укажите в поле ниже.</span>
               </span>
             </label>
           </div>
@@ -105,7 +106,11 @@
           <div id="localInfo" class="pickup-info" hidden>
             <h3>Адресная доставка по Петрозаводску</h3>
             <p>Доставка по городу Петрозаводску — <strong>по предварительной договорённости</strong> после оплаты.</p>
-            <p>Укажите желаемый адрес и удобное время в комментарии к заказу. Мы свяжемся с вами для согласования.</p>
+            <p>Укажите адрес доставки в поле ниже. Мы свяжемся с вами для согласования времени.</p>
+            <div class="field" style="margin:0.35rem 0 0">
+              <label for="localAddress">Адрес доставки по Петрозаводску</label>
+              <input id="localAddress" name="localAddress" type="text" autocomplete="street-address" placeholder="Улица, дом, квартира" />
+            </div>
             <p class="form-note">Самовывоз со склада: г. Петрозаводск, ул. Университетская 7/3.</p>
           </div>
 
@@ -154,7 +159,7 @@
 
           <div class="field">
             <label for="comment">Комментарий к заказу</label>
-            <textarea id="comment" name="comment" rows="3" placeholder="Необязательно"></textarea>
+            <textarea id="comment" name="comment" rows="3" placeholder="Необязательно (для СДЭК и самовывоза)"></textarea>
           </div>
 
           <label class="check-line">
@@ -182,6 +187,7 @@
   <script src="js/config.js"></script>
   <script src="js/products.js"></script>
   <script src="js/cms-loader.js"></script>
+  <script src="js/nmp-utils.js"></script>
   <script src="js/store.js"></script>
   <script src="js/main.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>

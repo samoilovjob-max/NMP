@@ -64,19 +64,19 @@
     });
   }
 
-  document.querySelectorAll("[data-add-cart]").forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.preventDefault();
-      if (!Store?.addToCart) return;
-      const id = btn.getAttribute("data-add-cart");
-      const product = window.NMP_getProduct?.(id);
-      if (product && product.availableForOrder === false) {
-        window.NMP_openAvailabilityNotify?.(product);
-        return;
-      }
-      Store.addToCart(id);
-      showToast(`«${product?.name || "Товар"}» добавлен в корзину`);
-    });
+  document.addEventListener("click", (event) => {
+    const btn = event.target.closest("[data-add-cart]");
+    if (!btn) return;
+    event.preventDefault();
+    if (!Store?.addToCart) return;
+    const id = btn.getAttribute("data-add-cart");
+    const product = window.NMP_getProduct?.(id);
+    if (product && product.availableForOrder === false) {
+      window.NMP_openAvailabilityNotify?.(product);
+      return;
+    }
+    Store.addToCart(id);
+    showToast(`«${product?.name || "Товар"}» добавлен в корзину`);
   });
 
   const openAvailabilityNotify = (product) => {
@@ -183,20 +183,51 @@
   });
 
   document.querySelectorAll(".faq-item button").forEach((btn) => {
+    if (!btn.hasAttribute("aria-expanded")) btn.setAttribute("aria-expanded", "false");
     btn.addEventListener("click", () => {
       const item = btn.parentElement;
       const open = item.classList.contains("open");
-      document.querySelectorAll(".faq-item").forEach((el) => el.classList.remove("open"));
-      if (!open) item.classList.add("open");
+      document.querySelectorAll(".faq-item").forEach((el) => {
+        el.classList.remove("open");
+        el.querySelector("button")?.setAttribute("aria-expanded", "false");
+      });
+      if (!open) {
+        item.classList.add("open");
+        btn.setAttribute("aria-expanded", "true");
+      } else {
+        btn.setAttribute("aria-expanded", "false");
+      }
     });
   });
 
   const contactForm = document.getElementById("contactForm");
   if (contactForm) {
-    contactForm.addEventListener("submit", (event) => {
+    const contactPhone = contactForm.querySelector("#phone");
+    if (contactPhone && typeof window.NMP_bindPhoneMask === "function") {
+      window.NMP_bindPhoneMask(contactPhone);
+    }
+    contactForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      showToast("Сообщение отправлено. Мы свяжемся с вами.");
-      contactForm.reset();
+      const fd = new FormData(contactForm);
+      const payload = {
+        name: String(fd.get("name") || "").trim(),
+        phone: String(fd.get("phone") || "").trim(),
+        email: String(fd.get("email") || "").trim(),
+        message: String(fd.get("message") || "").trim()
+      };
+      try {
+        const res = await fetch((window.NMP_CONFIG?.apiBase || "") + "/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Не удалось отправить сообщение");
+        showToast("Сообщение отправлено. Мы свяжемся с вами.");
+        contactForm.reset();
+      } catch (err) {
+        showToast(err.message || "Ошибка отправки");
+      }
     });
   }
 

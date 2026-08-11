@@ -7,7 +7,11 @@
     if (product && product.availableForOrder === false) {
       window.NMP_toast?.(`«${product.name}» пока недоступен к заказу`);
       window.setTimeout(() => {
-        window.location.href = `product.html?id=${encodeURIComponent(product.id)}`;
+        const href =
+          typeof window.NMP_productHref === "function"
+            ? window.NMP_productHref(product)
+            : `product.html?id=${encodeURIComponent(product.id)}`;
+        window.location.href = href;
       }, 400);
     } else {
       Store.addToCart(buyId, 1);
@@ -44,6 +48,7 @@
   const cdekBlock = document.getElementById("cdekDeliveryBlock");
   const pickupInfo = document.getElementById("pickupInfo");
   const localInfo = document.getElementById("localInfo");
+  const localAddressInput = document.getElementById("localAddress");
   const statusNote = document.getElementById("checkoutStatusNote");
   let publicConfig = null;
   let pvzMap = null;
@@ -55,6 +60,9 @@
   const PICKUP_ADDRESS = "г. Петрозаводск, ул. Университетская 7/3";
   const LOCAL_LABEL = "Адресная доставка по г. Петрозаводску (по договорённости)";
 
+  if (typeof window.NMP_bindPhoneMask === "function") {
+    window.NMP_bindPhoneMask(document.getElementById("phone"));
+  }
   const getDeliveryMethod = () =>
     form.querySelector('input[name="deliveryMethod"]:checked')?.value || "cdek";
 
@@ -102,15 +110,18 @@
   const syncDeliveryMethod = () => {
     const method = getDeliveryMethod();
     const isCdek = method === "cdek";
+    const isLocal = method === "local";
     if (cdekBlock) cdekBlock.hidden = !isCdek;
     if (pickupInfo) pickupInfo.hidden = method !== "pickup";
-    if (localInfo) localInfo.hidden = method !== "local";
+    if (localInfo) localInfo.hidden = !isLocal;
 
     if (cityInput) cityInput.required = isCdek;
     if (cityCodeInput) cityCodeInput.required = isCdek;
+    if (localAddressInput) localAddressInput.required = isLocal;
 
     if (method === "pickup") {
       if (deliveryInfo) {
+        deliveryInfo.classList.remove("delivery-quote");
         deliveryInfo.dataset.sum = "0";
         deliveryInfo.textContent = "Самовывоз · доставка 0 ₽ · отгрузка по договорённости";
       }
@@ -120,6 +131,7 @@
       }
     } else if (method === "local") {
       if (deliveryInfo) {
+        deliveryInfo.classList.remove("delivery-quote");
         deliveryInfo.dataset.sum = "0";
         deliveryInfo.textContent = "Адресная доставка по Петрозаводску · по договорённости · 0 ₽ в заказе";
       }
@@ -133,12 +145,22 @@
     }
 
     renderSummary();
+    syncPayButton();
   };
 
   const syncPayButton = () => {
     const hasCart = cartLines().length > 0;
     const agreed = Boolean(agreeBox?.checked);
-    payBtn.disabled = !(hasCart && agreed);
+    const method = getDeliveryMethod();
+    let deliveryOk = false;
+    if (method === "pickup") {
+      deliveryOk = true;
+    } else if (method === "local") {
+      deliveryOk = Boolean(localAddressInput?.value.trim());
+    } else if (method === "cdek") {
+      deliveryOk = Boolean(cityCodeInput?.value && pvzCode?.value);
+    }
+    payBtn.disabled = !(hasCart && agreed && deliveryOk);
   };
 
   const user = Store.getUser();
@@ -207,7 +229,7 @@
         method === "pickup"
           ? `<p class="form-note">Самовывоз: ${PICKUP_ADDRESS}. Отгрузка по предварительной договорённости.</p>`
           : method === "local"
-            ? `<p class="form-note">${LOCAL_LABEL}. Укажите адрес в комментарии.</p>`
+            ? `<p class="form-note">${LOCAL_LABEL}. Адрес укажите в поле «Адрес доставки по Петрозаводску».</p>`
             : `<p class="form-note">Отправка из ${publicConfig?.fromCity || "Петрозаводска"}, ${
                 publicConfig?.fromAddress || "Лесной проспект 47"
               }</p>`
@@ -241,26 +263,35 @@
     if (getDeliveryMethod() !== "cdek") return;
     if (!cityCodeInput.value) return;
     try {
+      const items = cartLines().map((l) => ({ productId: l.productId, qty: l.qty }));
       const data = await api("/api/cdek/calculate", {
         method: "POST",
         body: JSON.stringify({
           toCityCode: Number(cityCodeInput.value),
           toPvzCode: pvzCode.value || undefined,
-          tariffCode: tariffCodeInput.value ? Number(tariffCodeInput.value) : undefined
+          tariffCode: tariffCodeInput.value ? Number(tariffCodeInput.value) : undefined,
+          items
         })
       });
       if (data.tariff) {
         tariffCodeInput.value = data.tariff.code || 136;
-        deliveryInfo.dataset.sum = String(data.tariff.delivery_sum || 0);
+        const deliverySum = Number(data.tariff.delivery_sum || 0);
+        deliveryInfo.dataset.sum = String(deliverySum);
+        const goodsTotal = cartLines().reduce((s, l) => s + l.sum, 0);
+        const payTotal = goodsTotal + deliverySum;
+        deliveryInfo.classList.add("delivery-quote");
         deliveryInfo.textContent = `Тариф: ${data.tariff.name || "СДЭК"} · ${window.NMP_formatPrice(
-          data.tariff.delivery_sum || 0
-        )} · ${data.tariff.period_min || "?"}–${data.tariff.period_max || "?"} дн.`;
+          deliverySum
+        )} · ${data.tariff.period_min || "?"}–${data.tariff.period_max || "?"} дн. · К оплате с доставкой: ${window.NMP_formatPrice(payTotal)}`;
       } else {
+        deliveryInfo.classList.remove("delivery-quote");
         deliveryInfo.textContent = "Не удалось рассчитать тариф для этого города";
         deliveryInfo.dataset.sum = "0";
       }
       renderSummary();
+      syncPayButton();
     } catch (error) {
+      deliveryInfo.classList.remove("delivery-quote");
       deliveryInfo.textContent = "Расчёт СДЭК временно недоступен: " + error.message;
     }
   };
@@ -328,6 +359,7 @@
     setPvzExtrasVisible(false);
     renderSelectedPvz(item);
     calculateDelivery();
+    syncPayButton();
     window.NMP_toast?.("ПВЗ выбран: " + item.code);
   };
 
@@ -446,9 +478,22 @@
     setPvzExtrasVisible(false);
     loadPvz(cityCodeInput.value, { showMap: false });
     calculateDelivery();
+    syncPayButton();
   };
 
   agreeBox?.addEventListener("change", () => {
+    syncPayButton();
+  });
+
+  localAddressInput?.addEventListener("input", () => {
+    syncPayButton();
+  });
+
+  cityCodeInput?.addEventListener("input", () => {
+    syncPayButton();
+  });
+
+  pvzCode?.addEventListener("input", () => {
     syncPayButton();
   });
 
@@ -503,6 +548,7 @@
   cityInput.addEventListener("input", () => {
     window.clearTimeout(suggestTimer);
     cityCodeInput.value = "";
+    syncPayButton();
     suggestTimer = window.setTimeout(async () => {
       const q = cityInput.value.trim();
       if (q.length < 2) {
@@ -579,24 +625,31 @@
       nextTariff = 0;
       nextDeliverySum = 0;
     } else if (method === "local") {
+      const localAddress = localAddressInput?.value.trim() || "";
+      if (!localAddress) {
+        window.NMP_toast("Укажите адрес доставки по Петрозаводску");
+        localAddressInput?.focus();
+        return;
+      }
       city = PICKUP_CITY;
       cityCode = String(publicConfig?.fromCityCode || cityCode || "450");
       nextPvzCode = "LOCAL";
-      nextPvzAddress = LOCAL_LABEL;
+      nextPvzAddress = localAddress;
       nextTariff = 0;
       nextDeliverySum = 0;
-      if (!form.comment.value.trim()) {
-        window.NMP_toast("Укажите адрес доставки в комментарии к заказу");
-        form.comment.focus();
-        return;
-      }
     }
+
+    const rawPhone = form.phone.value.trim();
+    const phone =
+      typeof window.NMP_normalizePhone === "function"
+        ? window.NMP_normalizePhone(rawPhone)
+        : rawPhone;
 
     const profile = {
       lastName: form.lastName.value.trim(),
       firstName: form.firstName.value.trim(),
       middleName: form.middleName.value.trim(),
-      phone: form.phone.value.trim(),
+      phone: phone ? `+${phone}` : rawPhone,
       email: form.email.value.trim(),
       city,
       cityCode
@@ -614,6 +667,7 @@
           deliveryMethod: method,
           pvzCode: nextPvzCode,
           pvzAddress: nextPvzAddress,
+          localAddress: method === "local" ? localAddressInput?.value.trim() || "" : "",
           tariffCode: nextTariff,
           deliverySum: nextDeliverySum,
           comment: form.comment.value.trim(),
@@ -634,6 +688,7 @@
         cityCode: order.cityCode,
         pvzCode: order.pvzCode,
         pvzAddress: order.pvzAddress,
+        localAddress: order.localAddress || "",
         tariffCode: order.tariffCode,
         comment: order.comment,
         paymentStatus: order.paymentStatus,
@@ -687,7 +742,10 @@
   });
 
   form.querySelectorAll('input[name="deliveryMethod"]').forEach((input) => {
-    input.addEventListener("change", () => syncDeliveryMethod());
+    input.addEventListener("change", () => {
+      syncDeliveryMethod();
+      syncPayButton();
+    });
   });
 
   api("/api/config/public")

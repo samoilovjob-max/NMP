@@ -2,7 +2,7 @@
 
 Премиальный сайт карельских костровых систем Flat-Pack + заказ через СДЭК / ЮKassa.
 
-Сайт: [http://northmp.su/](http://northmp.su/)
+Сайт: [https://northmp.su/](https://northmp.su/)
 
 **Админка CMS:** [`/admin.html`](admin.html) — товары, цены, фото, новости, отзывы, акции, тексты, заказы.  
 **Инструкция:** [`docs/UPRAVLENIE-SAJTOM.md`](docs/UPRAVLENIE-SAJTOM.md)
