@@ -180,7 +180,7 @@ window.NMP_PRODUCTS = [
     "id": "4",
     "sku": "NMP-SO-04",
     "slug": "severnyy-ochag",
-    TMP_OCHAG
+    "name": "Северный очаг",
     "h1": "Северный очаг — тёплый центр премиального загородного отдыха",
     "badge": "Скоро в продаже",
     "price": 24900,
