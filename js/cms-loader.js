@@ -154,6 +154,17 @@
       maxLink.setAttribute("href", "#max-card");
       maxLink.setAttribute("data-max-card", card);
     }
+    const ig = document.querySelector(".messenger-instagram");
+    if (ig && contacts.instagram) {
+      ig.setAttribute("href", contacts.instagram);
+      ig.hidden = false;
+    } else if (ig && contacts.instagram === "") {
+      ig.hidden = true;
+    }
+    const tg = document.querySelector('.messenger-links a[title="Telegram"]');
+    if (tg && contacts.telegram) tg.setAttribute("href", contacts.telegram);
+    const wa = document.querySelector('.messenger-links a[title="WhatsApp"]');
+    if (wa && contacts.whatsapp) wa.setAttribute("href", contacts.whatsapp);
   };
 
   const openMaxCard = (src) => {

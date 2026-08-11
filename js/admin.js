@@ -610,6 +610,7 @@
           <div class="field"><label>Telegram URL</label><input name="telegram" value="${esc(c.telegram || "")}" /></div>
           <div class="field"><label>WhatsApp URL</label><input name="whatsapp" value="${esc(c.whatsapp || "")}" /></div>
           <div class="field"><label>MAX URL</label><input name="max" value="${esc(c.max || "")}" /></div>
+          <div class="field"><label>Instagram URL</label><input name="instagram" value="${esc(c.instagram || "")}" placeholder="https://www.instagram.com/..." /></div>
         </div>
         <button class="btn btn-primary" type="submit">Сохранить тексты</button>
       </form>`);
@@ -633,7 +634,8 @@
             phone: fd.get("phone"),
             telegram: fd.get("telegram"),
             whatsapp: fd.get("whatsapp"),
-            max: fd.get("max")
+            max: fd.get("max"),
+            instagram: fd.get("instagram")
           }
         })
       });

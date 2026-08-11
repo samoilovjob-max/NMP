@@ -128,7 +128,7 @@
 
 - H1 и подзаголовок героя;
 - заголовки каталога, новостей, отзывов;
-- e-mail, телефон, ссылки Telegram / WhatsApp / MAX.
+- e-mail, телефон, ссылки Telegram / WhatsApp / MAX / Instagram.
 
 ---
 
