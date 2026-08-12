@@ -719,6 +719,9 @@
             shipByAt: demo.order.shipByAt,
             cdek: demo.order.cdek
           });
+          window.NMP_analytics?.ready?.then(() => {
+            window.NMP_analytics.trackPurchase(demo.order || order);
+          });
           window.NMP_toast("Демо-оплата прошла, заказ в сборке");
           window.location.href = `account.html?order=${encodeURIComponent(order.id)}`;
           return;
@@ -770,6 +773,20 @@
     .finally(() => {
       syncDeliveryMethod();
       syncPayButton();
+      const lines = cartLines();
+      if (lines.length) {
+        const goodsTotal = lines.reduce(
+          (sum, line) => sum + Number(line.price || 0) * Number(line.qty || 1),
+          0
+        );
+        window.NMP_analytics?.ready?.then(() => {
+          window.NMP_analytics.trackBeginCheckout({
+            items: lines,
+            total: goodsTotal,
+            goodsTotal
+          });
+        });
+      }
       if (getDeliveryMethod() === "cdek" && cityCodeInput.value) {
         loadPvz(cityCodeInput.value, { showMap: false });
         calculateDelivery();

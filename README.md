@@ -75,6 +75,20 @@ PUBLIC_BASE_URL=https://northmp.su
 
 Если ключей ЮKassa нет — временно включите `PAYMENTS_DEMO=true` для локальных тестов без оплаты.
 
+## Яндекс.Метрика и Google Analytics
+
+1. Создайте счётчик в [Яндекс.Метрике](https://metrika.yandex.ru/) и ресурс GA4 в [Google Analytics](https://analytics.google.com/).
+2. В `.env`:
+
+```env
+YANDEX_METRICA_ID=12345678
+GA_MEASUREMENT_ID=G-XXXXXXXXXX
+ANALYTICS_REQUIRE_CONSENT=true
+```
+
+3. Перезапустите сервер (`npm start`). На витрине (кроме `/admin.html`) появится баннер согласия на cookies; после «Принять» загрузятся счётчики.
+4. E-commerce события: просмотр товара, начало checkout, покупка (демо и возврат с оплаты).
+
 ## Что уже подключено
 
 - Поиск города / ПВЗ / расчёт тарифа СДЭК
@@ -84,6 +98,7 @@ PUBLIC_BASE_URL=https://northmp.su
 - Серверное хранение заказов + админка
 - Артикулы в каталоге, заказе и СДЭК
 - ЮKassa redirect (shopId + secret на сервере)
+- Яндекс.Метрика + Google Analytics (через `.env`, с баннером согласия)
 
 ## Безопасность
 

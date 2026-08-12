@@ -255,6 +255,13 @@
       })
     );
 
+    const focusOrder = focusId ? orders.find((order) => order.id === focusId) : null;
+    if (focusOrder?.paymentStatus === "paid" && (paymentReturn || payDemo)) {
+      window.NMP_analytics?.ready?.then(() => {
+        window.NMP_analytics.trackPurchase(focusOrder);
+      });
+    }
+
     if (!user && !orders.length) {
       root.innerHTML = `
         <div class="account-empty">

@@ -298,6 +298,10 @@
     window.NMP_openAvailabilityNotify?.(product);
   });
 
+  window.NMP_analytics?.ready?.then(() => {
+    window.NMP_analytics.trackViewItem(product);
+  });
+
   };
   void boot();
 })();

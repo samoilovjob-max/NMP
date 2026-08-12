@@ -70,9 +70,9 @@ app.use((req, res, next) => {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
-      "script-src 'self' 'unsafe-inline' https://unpkg.com https://yookassa.ru https://*.yookassa.ru",
+      "script-src 'self' 'unsafe-inline' https://unpkg.com https://yookassa.ru https://*.yookassa.ru https://mc.yandex.ru https://www.googletagmanager.com",
       "connect-src 'self' https: wss:",
-      "frame-src 'self' https://yoomoney.ru https://*.yoomoney.ru https://yookassa.ru https://*.yookassa.ru"
+      "frame-src 'self' https://yoomoney.ru https://*.yoomoney.ru https://yookassa.ru https://*.yookassa.ru https://mc.yandex.ru https://mc.yandex.com"
     ].join("; ")
   );
   next();
@@ -130,7 +130,11 @@ const CONFIG = {
     width: Number(process.env.PACKAGE_WIDTH || 40),
     height: Number(process.env.PACKAGE_HEIGHT || 10)
   },
-  pickupAddress: process.env.PICKUP_ADDRESS || "г. Петрозаводск, ул. Университетская 7/3"
+  pickupAddress: process.env.PICKUP_ADDRESS || "г. Петрозаводск, ул. Университетская 7/3",
+  yandexMetricaId: String(process.env.YANDEX_METRICA_ID || "").replace(/\D/g, ""),
+  gaMeasurementId: String(process.env.GA_MEASUREMENT_ID || "").trim(),
+  analyticsRequireConsent:
+    String(process.env.ANALYTICS_REQUIRE_CONSENT || "true").toLowerCase() !== "false"
 };
 
 const yookassaReady = Boolean(CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
@@ -810,7 +814,13 @@ app.get("/api/config/public", (_req, res) => {
       demo: CONFIG.paymentsDemo && !yookassaReady,
       needsShopId: yookassaSecretOnly
     },
-    shipSlaHours: CONFIG.shipSlaHours
+    shipSlaHours: CONFIG.shipSlaHours,
+    analytics: {
+      enabled: Boolean(CONFIG.yandexMetricaId || CONFIG.gaMeasurementId),
+      yandexMetricaId: CONFIG.yandexMetricaId || "",
+      gaMeasurementId: CONFIG.gaMeasurementId || "",
+      requireConsent: CONFIG.analyticsRequireConsent
+    }
   });
 });
 
@@ -2095,6 +2105,13 @@ app.listen(port, () => {
   console.log(`Telegram notify: ${notify.isConfigured() ? "on" : "off"}`);
   console.log(`Telegram bot: ${notify.isBotReady() ? "polling" : "off"}`);
   console.log(`Admin: ${CONFIG.adminToken ? "/admin.html" : "token missing"}`);
+  console.log(
+    `Analytics: ${
+      CONFIG.yandexMetricaId || CONFIG.gaMeasurementId
+        ? `YM=${CONFIG.yandexMetricaId || "off"} GA=${CONFIG.gaMeasurementId || "off"}`
+        : "off"
+    }`
+  );
   backup.startBackupScheduler();
   notify.startBotPolling();
 });
