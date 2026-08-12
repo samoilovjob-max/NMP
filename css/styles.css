@@ -2601,6 +2601,7 @@ h3 {
 
 .rich-emoji {
   position: relative;
+  z-index: 2;
 }
 
 .rich-emoji-toggle[aria-expanded="true"] {
@@ -2611,18 +2612,19 @@ h3 {
 .rich-emoji-panel {
   display: none;
   position: absolute;
-  z-index: 40;
-  top: calc(100% + 0.4rem);
+  z-index: 50;
+  top: calc(100% + 0.45rem);
   left: 0;
-  width: min(22rem, 86vw);
-  max-height: 18.5rem;
+  width: min(20.5rem, 90vw);
+  box-sizing: border-box;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.55rem;
+  gap: 0.45rem;
+  padding: 0.6rem;
   background: #151715;
   border: 1px solid rgba(232, 230, 225, 0.22);
-  border-radius: 0.7rem;
+  border-radius: 0.75rem;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
 }
 
 .rich-emoji-panel.is-open {
@@ -2631,20 +2633,25 @@ h3 {
 
 .rich-emoji-tabs {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 0.2rem;
-  overflow-x: auto;
-  padding-bottom: 0.2rem;
+  align-items: center;
+  overflow: visible;
+  padding: 0 0 0.45rem;
   border-bottom: 1px solid rgba(232, 230, 225, 0.12);
 }
 
 .rich-emoji-tab {
   flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  display: inline-grid;
+  place-items: center;
   border: 0;
   background: transparent;
   color: var(--frost);
   border-radius: 0.4rem;
-  padding: 0.3rem 0.4rem;
+  padding: 0;
   cursor: pointer;
   font-size: 1.05rem;
   line-height: 1;
@@ -2658,30 +2665,52 @@ h3 {
 }
 
 .rich-emoji-cat-title {
+  flex: 0 0 auto;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--frost-dim);
-  padding: 0 0.15rem;
+  padding: 0 0.1rem;
+  line-height: 1.2;
 }
 
 .rich-emoji-grid {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  gap: 0.15rem;
+  gap: 0.1rem;
+  overflow-x: hidden;
   overflow-y: auto;
-  max-height: 13.5rem;
-  padding-right: 0.15rem;
+  max-height: 14rem;
+  padding: 0.1rem 0.15rem 0.15rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 230, 225, 0.28) transparent;
+}
+
+.rich-emoji-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rich-emoji-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.rich-emoji-grid::-webkit-scrollbar-thumb {
+  background: rgba(232, 230, 225, 0.28);
+  border-radius: 999px;
 }
 
 .rich-emoji-item {
   border: 0;
   background: transparent;
-  border-radius: 0.35rem;
-  padding: 0.28rem 0;
+  border-radius: 0.4rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
   cursor: pointer;
-  font-size: 1.25rem;
+  font-size: 1.28rem;
   line-height: 1;
+  min-width: 0;
 }
 
 .rich-emoji-item:hover {
