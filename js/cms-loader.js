@@ -133,7 +133,25 @@
     root.innerHTML = parts.join("");
   };
 
-  const renderReviews = (reviews, site = {}) => {
+  const reviewsForSale = (reviews, products = []) => {
+    const list = Array.isArray(products) ? products : [];
+    const availableIds = new Set(
+      list.filter((p) => p.availableForOrder !== false).map((p) => String(p.id))
+    );
+    const unavailableNames = list
+      .filter((p) => p.availableForOrder === false)
+      .map((p) => String(p.name || "").trim().toLowerCase())
+      .filter(Boolean);
+    return (reviews || []).filter((review) => {
+      const pid = String(review.productId || "").trim();
+      if (pid) return availableIds.has(pid);
+      const meta = String(review.meta || "").toLowerCase();
+      if (!meta || !unavailableNames.length) return true;
+      return !unavailableNames.some((name) => meta.includes(name));
+    });
+  };
+
+  const renderReviews = (reviews, site = {}, products = []) => {
     const section = document.getElementById("reviews");
     const root = document.getElementById("reviewsGrid");
     if (!root) return;
@@ -141,6 +159,7 @@
     const lead = document.querySelector("#reviews .section-head .lead");
     if (title && site.reviewsTitle) title.textContent = site.reviewsTitle;
     if (lead && site.reviewsLead) lead.textContent = site.reviewsLead;
+    reviews = reviewsForSale(reviews, products);
     if (!reviews.length) {
       if (section) section.hidden = true;
       return;
@@ -297,7 +316,7 @@
       applyHero(data.site || {});
       applyContacts(data.site?.contacts || {});
       renderCatalog(data.products || [], data.site || {});
-      renderReviews(data.reviews || [], data.site || {});
+      renderReviews(data.reviews || [], data.site || {}, data.products || []);
       renderNews(data.news || [], data.site || {});
       renderPromos(data.promotions || []);
       window.NMP_CMS = data;

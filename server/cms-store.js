@@ -224,13 +224,35 @@ function saveSite(patch) {
   return cms.site;
 }
 
+function resolveReviewProduct(review, products = listProducts()) {
+  const pid = String(review?.productId || "").trim();
+  if (pid) return products.find((p) => String(p.id) === pid) || null;
+  const hay = String(review?.meta || "").toLowerCase();
+  if (!hay) return null;
+  return (
+    products.find((p) => {
+      const name = String(p.name || "").trim().toLowerCase();
+      return name && hay.includes(name);
+    }) || null
+  );
+}
+
+function publicReviews() {
+  const products = listProducts();
+  return listCollection("reviews", { publishedOnly: true }).filter((review) => {
+    const product = resolveReviewProduct(review, products);
+    if (!product) return true;
+    return product.active !== false && product.availableForOrder !== false;
+  });
+}
+
 function getPublicCms() {
   const cms = readCms();
   return {
     updatedAt: cms.updatedAt,
     products: listProducts({ activeOnly: true }).map(publicProduct),
     news: listCollection("news", { publishedOnly: true }),
-    reviews: listCollection("reviews", { publishedOnly: true }),
+    reviews: publicReviews(),
     promotions: listCollection("promotions", { publishedOnly: true }),
     site: cms.site || {}
   };
@@ -290,6 +312,8 @@ module.exports = {
   saveSite,
   getPublicCms,
   getAdminCms,
+  resolveReviewProduct,
+  publicReviews,
   resolveOrderItems,
   CMS_PATH
 };

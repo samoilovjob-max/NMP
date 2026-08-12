@@ -11,7 +11,9 @@
     orderQuery: "",
     expandedOrders: {},
     exportScope: "paid",
-    exportMark: true
+    exportMark: true,
+    selectedOrderIds: new Set(),
+    selectedLeadIds: new Set()
   };
 
   const normalizeToken = (value) => {
@@ -604,8 +606,14 @@
           <h3>${title}</h3>
           <div class="admin-table">
             ${items
-              .map(
-                (item) => `
+              .map((item) => {
+                const product =
+                  key === "reviews" && item.productId
+                    ? (state.cms?.products || []).find((p) => String(p.id) === String(item.productId))
+                    : null;
+                const hiddenOnSite =
+                  product && (product.availableForOrder === false || product.active === false);
+                return `
               <article class="admin-card compact">
                 <div>
                   <h3>${esc(item.title || item.author || item.id)}</h3>
@@ -615,14 +623,16 @@
                       .replace(/\s+/g, " ")
                       .trim()
                   )}</p>
-                  <p class="form-note">${item.published === false || item.active === false ? "Скрыто" : "Опубликовано"}</p>
+                  <p class="form-note">${item.published === false || item.active === false ? "Скрыто" : "Опубликовано"}${
+                    product ? ` · ${esc(product.name)}` : ""
+                  }${hiddenOnSite ? " · не показывается на сайте (товар не в продаже)" : ""}</p>
                 </div>
                 <div class="admin-actions">
                   <button class="btn btn-ghost" type="button" data-edit-item="${esc(item.id)}">Изменить</button>
                   <button class="btn btn-ghost" type="button" data-del-item="${esc(item.id)}">Удалить</button>
                 </div>
-              </article>`
-              )
+              </article>`;
+              })
               .join("") || "<p class='form-note'>Пока пусто</p>"}
           </div>
         </div>
@@ -723,13 +733,28 @@
       }
     );
 
-  const renderReviews = () =>
-    renderCollection(
+  const renderReviews = () => {
+    const products = state.cms?.products || [];
+    const productOptions = [
+      `<option value="">Без привязки к товару</option>`,
+      ...products.map(
+        (p) =>
+          `<option value="${esc(p.id)}">${esc(p.name)}${
+            p.availableForOrder === false ? " (не в продаже)" : ""
+          }</option>`
+      )
+    ].join("");
+    return renderCollection(
       "reviews",
       "Отзывы",
       `
       <div class="field"><label>Автор</label><input name="author" required /></div>
       <div class="field"><label>Подпись (город · товар)</label><input name="meta" /></div>
+      <div class="field">
+        <label>Товар</label>
+        <select name="productId">${productOptions}</select>
+        <p class="form-note">Отзывы по товарам не в продаже на витрине не показываются.</p>
+      </div>
       <div class="field"><label>Текст отзыва</label><textarea name="text" rows="4" required></textarea></div>
       <div class="field"><label>Оценка (1–5)</label><input name="rating" type="number" min="1" max="5" value="5" /></div>
       <div class="field">
@@ -751,6 +776,7 @@
           id: String(fd.get("id") || "").trim(),
           author: String(fd.get("author") || "").trim(),
           meta: String(fd.get("meta") || "").trim(),
+          productId: String(fd.get("productId") || "").trim(),
           text: String(fd.get("text") || "").trim(),
           rating: Number(fd.get("rating") || 5),
           image: String(fd.get("image") || "").trim(),
@@ -760,6 +786,7 @@
         };
       }
     );
+  };
 
   const renderPromotions = () =>
     renderCollection(
@@ -885,12 +912,14 @@
     return data;
   };
 
-  const downloadOrdersFor1c = async (format) => {
-    const scope = state.exportScope || "paid";
+  const downloadOrdersFor1c = async (format, ids = []) => {
+    const scope = ids.length ? "all" : state.exportScope || "paid";
     const mark = state.exportMark ? "1" : "0";
-    const path = `/api/admin/orders/export?format=${encodeURIComponent(format)}&scope=${encodeURIComponent(
-      scope
-    )}&mark=${mark}`;
+    const selected = (ids || []).map(String).filter(Boolean);
+    const path =
+      `/api/admin/orders/export?format=${encodeURIComponent(format)}&scope=${encodeURIComponent(
+        scope
+      )}&mark=${mark}` + (selected.length ? `&ids=${encodeURIComponent(selected.join(","))}` : "");
     const res = await fetch((window.NMP_CONFIG?.apiBase || "") + path, {
       headers: { Authorization: `Bearer ${getToken()}` }
     });
@@ -919,7 +948,99 @@
     await api(`/api/admin/orders/${encodeURIComponent(id)}`, { method: "DELETE" });
     delete state.expandedOrders[id];
     if (state.editingOrderId === id) state.editingOrderId = null;
+    selectedSet("orders").delete(id);
     await load();
+  };
+
+  const selectedSet = (kind) => {
+    const key = kind === "leads" ? "selectedLeadIds" : "selectedOrderIds";
+    if (!(state[key] instanceof Set)) state[key] = new Set();
+    return state[key];
+  };
+
+  const selectedIds = (kind) => [...selectedSet(kind)];
+
+  const summarizeBulk = (data, word) => {
+    const ok = Number(data?.okCount ?? data?.changed ?? data?.deleted ?? 0);
+    const fail = Number(data?.failCount ?? 0);
+    if (fail) return `${word}: ${ok} успешно, ${fail} с ошибкой`;
+    return `${word}: ${ok}`;
+  };
+
+  const runOrdersBulk = async (action, extra = {}) => {
+    const ids = selectedIds("orders");
+    if (!ids.length) {
+      window.NMP_toast("Сначала отметьте заказы галочками");
+      return;
+    }
+    const data = await api("/api/admin/orders/bulk", {
+      method: "POST",
+      body: JSON.stringify({ ids, action, ...extra })
+    });
+    state.selectedOrderIds = new Set();
+    await load();
+    return data;
+  };
+
+  const runLeadsBulk = async (action, extra = {}) => {
+    const ids = selectedIds("leads");
+    if (!ids.length) {
+      window.NMP_toast("Сначала отметьте заявки галочками");
+      return;
+    }
+    const data = await api("/api/admin/leads/bulk", {
+      method: "POST",
+      body: JSON.stringify({ ids, action, ...extra })
+    });
+    state.selectedLeadIds = new Set();
+    await load();
+    return data;
+  };
+
+  const bindSelection = (kind, attr) => {
+    const set = selectedSet(kind);
+    const boxes = [...root.querySelectorAll(`[${attr}]`)];
+    const refresh = () => {
+      const countEl = root.querySelector(`[data-selected-count="${kind}"]`);
+      const bar = root.querySelector(`[data-bulk-bar="${kind}"]`);
+      const selectAll = root.querySelector(`[data-select-all="${kind}"]`);
+      const n = set.size;
+      if (countEl) countEl.textContent = String(n);
+      if (bar) bar.hidden = n === 0;
+      boxes.forEach((box) => {
+        const id = box.getAttribute(attr);
+        const checked = set.has(id);
+        box.checked = checked;
+        box.closest("article")?.classList.toggle("is-checked", checked);
+      });
+      if (selectAll) {
+        const visibleIds = boxes.map((box) => box.getAttribute(attr));
+        selectAll.checked = visibleIds.length > 0 && visibleIds.every((id) => set.has(id));
+        selectAll.indeterminate = visibleIds.some((id) => set.has(id)) && !selectAll.checked;
+      }
+    };
+    boxes.forEach((box) => {
+      box.addEventListener("change", () => {
+        const id = box.getAttribute(attr);
+        if (box.checked) set.add(id);
+        else set.delete(id);
+        refresh();
+      });
+    });
+    root.querySelector(`[data-select-all="${kind}"]`)?.addEventListener("change", (event) => {
+      const on = event.target.checked;
+      boxes.forEach((box) => {
+        const id = box.getAttribute(attr);
+        if (on) set.add(id);
+        else set.delete(id);
+      });
+      refresh();
+    });
+    root.querySelector(`[data-clear-selection="${kind}"]`)?.addEventListener("click", () => {
+      set.clear();
+      refresh();
+    });
+    refresh();
   };
 
   const filterOrders = (orders) => {
@@ -1228,6 +1349,29 @@
         <input class="admin-search" type="search" id="orderSearch" placeholder="Поиск: № заказа, телефон, ФИО, трек, ПВЗ, SKU" value="${esc(
           state.orderQuery
         )}" />
+        <div class="admin-select-row">
+          <label class="admin-select">
+            <input type="checkbox" data-select-all="orders" />
+            <span>Выбрать все на экране</span>
+          </label>
+        </div>
+        <div class="admin-bulk-bar" data-bulk-bar="orders" hidden>
+          <strong>Выбрано: <span data-selected-count="orders">0</span></strong>
+          <select id="bulkOrderStatus" aria-label="Статус для выбранных заказов">
+            <option value="">Сменить статус…</option>
+            <option value="assembly">Сборка / к отгрузке</option>
+            <option value="shipped">Отправлен</option>
+            <option value="arrived">В ПВЗ / выдан</option>
+            <option value="cancelled">Отменён</option>
+          </select>
+          <button class="btn btn-primary" type="button" data-bulk-orders="status">Применить статус</button>
+          <button class="btn btn-ghost" type="button" data-bulk-orders="markPaid">Отметить оплаченными</button>
+          <button class="btn btn-ghost" type="button" data-bulk-orders="sync">Синхронизировать</button>
+          <button class="btn btn-ghost" type="button" data-bulk-orders="notifyTelegram">Статус в Telegram</button>
+          <button class="btn btn-ghost" type="button" data-bulk-orders="export">Выгрузить Excel</button>
+          <button class="btn btn-ghost admin-danger" type="button" data-bulk-orders="delete">Удалить</button>
+          <button class="btn btn-ghost" type="button" data-clear-selection="orders">Снять выбор</button>
+        </div>
       </div>
       <div class="admin-list">
         ${
@@ -1240,8 +1384,16 @@
                   return `
               <article class="admin-order ${order.overdue ? "is-overdue" : ""} ${
                     order.paymentStatus === "paid" && order.status === "assembly" ? "is-ship" : ""
-                  } ${order.status === "cancelled" ? "is-cancelled" : ""}" data-order-card="${esc(order.id)}">
+                  } ${order.status === "cancelled" ? "is-cancelled" : ""} ${
+                    selectedSet("orders").has(order.id) ? "is-checked" : ""
+                  }" data-order-card="${esc(order.id)}">
                 <header>
+                  <label class="admin-select admin-select-card">
+                    <input type="checkbox" data-select-order="${esc(order.id)}" ${
+                      selectedSet("orders").has(order.id) ? "checked" : ""
+                    } />
+                    <span class="visually-hidden">Выбрать заказ ${esc(order.id)}</span>
+                  </label>
                   <div>
                     <div class="admin-order-badges">
                       <span class="admin-pill status">${esc(statusLabel(order.status))}</span>
@@ -1412,6 +1564,52 @@
         }
       </div>`);
     bindShell();
+    bindSelection("orders", "data-select-order");
+
+    root.querySelectorAll("[data-bulk-orders]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const action = btn.getAttribute("data-bulk-orders");
+        const ids = selectedIds("orders");
+        if (!ids.length) {
+          window.NMP_toast("Сначала отметьте заказы галочками");
+          return;
+        }
+        btn.disabled = true;
+        try {
+          if (action === "export") {
+            const count = await downloadOrdersFor1c("xlsx", ids);
+            window.NMP_toast(count ? `Выгружено заказов: ${count}` : "Нет заказов для выгрузки");
+            return;
+          }
+          if (action === "delete" && !window.confirm(`Удалить выбранные заказы (${ids.length}) безвозвратно?`)) {
+            return;
+          }
+          if (action === "status") {
+            const status = document.getElementById("bulkOrderStatus")?.value || "";
+            if (!status) {
+              window.NMP_toast("Выберите статус");
+              return;
+            }
+            if (status === "cancelled" && !window.confirm(`Отменить выбранные заказы (${ids.length})?`)) return;
+            const data = await runOrdersBulk("status", { status });
+            if (data) window.NMP_toast(summarizeBulk(data, "Статус обновлён"));
+            return;
+          }
+          const labels = {
+            markPaid: "Отмечены оплаченными",
+            sync: "Синхронизация",
+            notifyTelegram: "Telegram",
+            delete: "Удалено"
+          };
+          const data = await runOrdersBulk(action);
+          if (data) window.NMP_toast(summarizeBulk(data, labels[action] || "Готово"));
+        } catch (err) {
+          window.NMP_toast(err.message || "Ошибка массового действия");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
 
     document.getElementById("syncAllOrders")?.addEventListener("click", async () => {
       const btn = document.getElementById("syncAllOrders");
@@ -1639,23 +1837,44 @@
     const list = state.leads || [];
     const fresh = list.filter((l) => l.status === "new").length;
     root.innerHTML = shell(`
-      <p class="form-note">Заявки «Сообщить о поступлении» с витрины. Новых: <strong>${fresh}</strong> · Всего: ${list.length}</p>
+      <p class="form-note">Заявки «Сообщить о поступлении» и сообщения с формы. Новых: <strong>${fresh}</strong> · Всего: ${list.length}</p>
+      <div class="admin-select-row">
+        <label class="admin-select">
+          <input type="checkbox" data-select-all="leads" />
+          <span>Выбрать все</span>
+        </label>
+      </div>
+      <div class="admin-bulk-bar" data-bulk-bar="leads" hidden>
+        <strong>Выбрано: <span data-selected-count="leads">0</span></strong>
+        <button class="btn btn-primary" type="button" data-bulk-leads="done">Отметить обработанными</button>
+        <button class="btn btn-ghost" type="button" data-bulk-leads="new">Вернуть в новые</button>
+        <button class="btn btn-ghost admin-danger" type="button" data-bulk-leads="delete">Удалить</button>
+        <button class="btn btn-ghost" type="button" data-clear-selection="leads">Снять выбор</button>
+      </div>
       <div class="admin-list">
         ${
           list.length
             ? list
                 .map((lead) => {
                   return `
-              <article class="admin-order ${lead.status === "new" ? "is-ship" : ""}">
+              <article class="admin-order ${lead.status === "new" ? "is-ship" : ""} ${
+                    selectedSet("leads").has(lead.id) ? "is-checked" : ""
+                  }" data-lead-card="${esc(lead.id)}">
                 <header>
+                  <label class="admin-select admin-select-card">
+                    <input type="checkbox" data-select-lead="${esc(lead.id)}" ${
+                      selectedSet("leads").has(lead.id) ? "checked" : ""
+                    } />
+                    <span class="visually-hidden">Выбрать заявку ${esc(lead.id)}</span>
+                  </label>
                   <div>
                     <div class="admin-order-badges">
                       <span class="admin-pill status">${esc(
                         lead.status === "done" ? "Обработана" : lead.status === "new" ? "Новая" : lead.status || "—"
                       )}</span>
                     </div>
-                    <h3 style="margin:0.15rem 0">${esc(lead.productName || lead.productId)}</h3>
-                    <p class="form-note">${when(lead.createdAt)} · ${esc(lead.productSku || "")} · ${esc(lead.id)}</p>
+                    <h3 style="margin:0.15rem 0">${esc(lead.productName || lead.productId || "Сообщение с сайта")}</h3>
+                    <p class="form-note">${when(lead.createdAt)} · ${esc(lead.productSku || lead.type || "")} · ${esc(lead.id)}</p>
                   </div>
                 </header>
                 <div class="admin-order-meta">
@@ -1674,6 +1893,9 @@
                           lead.id
                         )}">Вернуть в новые</button>`
                   }
+                  <button class="btn btn-ghost admin-danger" type="button" data-lead-delete="${esc(
+                    lead.id
+                  )}">Удалить</button>
                 </div>
               </article>`;
                 })
@@ -1682,6 +1904,37 @@
         }
       </div>`);
     bindShell();
+    bindSelection("leads", "data-select-lead");
+    root.querySelectorAll("[data-bulk-leads]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const action = btn.getAttribute("data-bulk-leads");
+        const ids = selectedIds("leads");
+        if (!ids.length) {
+          window.NMP_toast("Сначала отметьте заявки галочками");
+          return;
+        }
+        btn.disabled = true;
+        try {
+          if (action === "delete" && !window.confirm(`Удалить выбранные заявки (${ids.length})?`)) return;
+          const payload =
+            action === "delete"
+              ? await runLeadsBulk("delete")
+              : await runLeadsBulk("status", { status: action === "done" ? "done" : "new" });
+          if (payload) {
+            window.NMP_toast(
+              summarizeBulk(
+                payload,
+                action === "delete" ? "Удалено" : action === "done" ? "Обработано" : "Возвращено в новые"
+              )
+            );
+          }
+        } catch (err) {
+          window.NMP_toast(err.message || "Ошибка массового действия");
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    });
     root.querySelectorAll("[data-lead-done]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await api(`/api/admin/leads/${encodeURIComponent(btn.getAttribute("data-lead-done"))}`, {
@@ -1698,6 +1951,16 @@
           method: "PATCH",
           body: JSON.stringify({ status: "new" })
         });
+        await load();
+      });
+    });
+    root.querySelectorAll("[data-lead-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-lead-delete");
+        if (!window.confirm("Удалить заявку?")) return;
+        await api(`/api/admin/leads/${encodeURIComponent(id)}`, { method: "DELETE" });
+        selectedSet("leads").delete(id);
+        window.NMP_toast("Заявка удалена");
         await load();
       });
     });

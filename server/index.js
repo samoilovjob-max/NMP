@@ -1745,6 +1745,39 @@ app.patch("/api/admin/leads/:id", adminGuard, (req, res) => {
   }
 });
 
+app.delete("/api/admin/leads/:id", adminGuard, (req, res) => {
+  try {
+    const ok = leads.deleteLead(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Заявка не найдена" });
+    res.json({ ok: true, id: req.params.id });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/api/admin/leads/bulk", adminGuard, (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
+    const action = String(req.body?.action || "").trim();
+    if (!ids.length) return res.status(400).json({ message: "Не выбраны заявки" });
+    if (action === "delete") {
+      const result = leads.bulkDeleteLeads(ids);
+      return res.json({ ok: true, okCount: result.deleted, failCount: 0, ...result });
+    }
+    if (action === "status") {
+      const status = String(req.body?.status || "").trim();
+      if (!["new", "done"].includes(status)) {
+        return res.status(400).json({ message: "Некорректный статус заявки" });
+      }
+      const result = leads.bulkUpdateLeads(ids, { status });
+      return res.json({ ok: true, okCount: result.changed, failCount: 0, ...result });
+    }
+    return res.status(400).json({ message: "Неизвестное действие" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 app.get("/api/admin/orders", adminGuard, (_req, res) => {
   const now = Date.now();
   const orders = store.listOrders().map((order) => ({
@@ -1964,112 +1997,189 @@ function applyOrderEdit(order, body = {}) {
   return patch;
 }
 
+async function mutateAdminOrder(id, body = {}) {
+  const order = store.getOrder(id);
+  if (!order) {
+    const err = new Error("Заказ не найден");
+    err.status = 404;
+    throw err;
+  }
+
+  const { status, createCdek, markPaid, sync, edit } = body;
+  let updated = order;
+  let syncResult = null;
+
+  if (sync) {
+    const synced = await syncOrderFromProviders(order.id, { force: true });
+    return { order: decorateAdminOrder(synced.order), sync: synced.sync };
+  }
+
+  if (markPaid && order.paymentStatus !== "paid") {
+    updated = await markOrderPaid(order.id, { source: "admin" });
+  }
+
+  if (createCdek && updated.paymentStatus === "paid" && !updated.cdek?.uuid) {
+    if ((updated.deliveryMethod || "cdek") !== "cdek") {
+      const err = new Error("Для самовывоза и городской доставки накладная СДЭК не создаётся");
+      err.status = 400;
+      err.order = decorateAdminOrder(updated);
+      throw err;
+    }
+    try {
+      const cdek = await createCdekWaybill(updated);
+      updated = store.updateOrder(updated.id, {
+        cdek: {
+          ...updated.cdek,
+          uuid: cdek.uuid,
+          trackNumber: cdek.cdekNumber || "",
+          stage: cdek.cdekNumber
+            ? `Создан в СДЭК · № ${cdek.cdekNumber}`
+            : "Заявка создана в СДЭК",
+          history: [
+            ...(updated.cdek?.history || []),
+            {
+              at: new Date().toISOString(),
+              title: "Накладная создана вручную",
+              detail: cdek.cdekNumber || cdek.uuid
+            }
+          ]
+        }
+      });
+    } catch (error) {
+      const err = new Error("СДЭК: " + error.message);
+      err.status = 400;
+      err.order = decorateAdminOrder(updated);
+      throw err;
+    }
+  }
+
+  const patch = edit ? applyOrderEdit(updated, body) : {};
+  if (!edit && typeof body.adminNotes === "string") patch.adminNotes = body.adminNotes;
+
+  if (status && ["assembly", "shipped", "arrived", "cancelled", "pending_payment"].includes(status)) {
+    patch.status = status;
+    const history = [...((patch.cdek || updated.cdek)?.history || [])];
+    if (status === "shipped") {
+      history.push({
+        at: new Date().toISOString(),
+        title: "Отмечено админом: отправка",
+        detail: "Заказ сдан в доставку"
+      });
+      patch.cdek = {
+        ...(patch.cdek || updated.cdek),
+        stage: "Отправлен · сдан в СДЭК",
+        history
+      };
+    } else if (status === "arrived") {
+      history.push({
+        at: new Date().toISOString(),
+        title: "Отмечено админом: прибыл / выдан",
+        detail: "Заказ доступен к вручению или выдан"
+      });
+      patch.cdek = {
+        ...(patch.cdek || updated.cdek),
+        stage: "Прибыл к вручению / выдан",
+        history
+      };
+    } else if (status === "cancelled") {
+      history.push({
+        at: new Date().toISOString(),
+        title: "Заказ отменён админом",
+        detail: body.cancelReason || "Отмена"
+      });
+      patch.cdek = {
+        ...(patch.cdek || updated.cdek),
+        stage: "Отменён",
+        history
+      };
+    }
+  }
+
+  if (Object.keys(patch).length) updated = store.updateOrder(updated.id, patch);
+  if (status) {
+    notify
+      .notifyCustomerOrderMove(updated, {
+        title: `📦 Заказ ${updated.id}: ${notify.statusLabel(updated)}`,
+        detail: updated.cdek?.stage || "",
+        force: true
+      })
+      .catch(() => {});
+  }
+  return { order: decorateAdminOrder(updated), sync: syncResult };
+}
+
 app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
   try {
-    const order = store.getOrder(req.params.id);
-    if (!order) return res.status(404).json({ message: "Заказ не найден" });
-
-    const body = req.body || {};
-    const { status, createCdek, markPaid, sync, edit } = body;
-    let updated = order;
-
-    if (sync) {
-      const synced = await syncOrderFromProviders(order.id, { force: true });
-      return res.json({ ok: true, order: decorateAdminOrder(synced.order), sync: synced.sync });
-    }
-
-    if (markPaid && order.paymentStatus !== "paid") {
-      updated = await markOrderPaid(order.id, { source: "admin" });
-    }
-
-    if (createCdek && updated.paymentStatus === "paid" && !updated.cdek?.uuid) {
-      if ((updated.deliveryMethod || "cdek") !== "cdek") {
-        return res.status(400).json({
-          message: "Для самовывоза и городской доставки накладная СДЭК не создаётся",
-          order: decorateAdminOrder(updated)
-        });
-      }
-      try {
-        const cdek = await createCdekWaybill(updated);
-        updated = store.updateOrder(updated.id, {
-          cdek: {
-            ...updated.cdek,
-            uuid: cdek.uuid,
-            trackNumber: cdek.cdekNumber || "",
-            stage: cdek.cdekNumber
-              ? `Создан в СДЭК · № ${cdek.cdekNumber}`
-              : "Заявка создана в СДЭК",
-            history: [
-              ...(updated.cdek?.history || []),
-              {
-                at: new Date().toISOString(),
-                title: "Накладная создана вручную",
-                detail: cdek.cdekNumber || cdek.uuid
-              }
-            ]
-          }
-        });
-      } catch (error) {
-        return res.status(400).json({ message: "СДЭК: " + error.message, order: decorateAdminOrder(updated) });
-      }
-    }
-
-    const patch = edit ? applyOrderEdit(updated, body) : {};
-    if (!edit && typeof body.adminNotes === "string") patch.adminNotes = body.adminNotes;
-
-    if (status && ["assembly", "shipped", "arrived", "cancelled", "pending_payment"].includes(status)) {
-      patch.status = status;
-      const history = [...((patch.cdek || updated.cdek)?.history || [])];
-      if (status === "shipped") {
-        history.push({
-          at: new Date().toISOString(),
-          title: "Отмечено админом: отправка",
-          detail: "Заказ сдан в доставку"
-        });
-        patch.cdek = {
-          ...(patch.cdek || updated.cdek),
-          stage: "Отправлен · сдан в СДЭК",
-          history
-        };
-      } else if (status === "arrived") {
-        history.push({
-          at: new Date().toISOString(),
-          title: "Отмечено админом: прибыл / выдан",
-          detail: "Заказ доступен к вручению или выдан"
-        });
-        patch.cdek = {
-          ...(patch.cdek || updated.cdek),
-          stage: "Прибыл к вручению / выдан",
-          history
-        };
-      } else if (status === "cancelled") {
-        history.push({
-          at: new Date().toISOString(),
-          title: "Заказ отменён админом",
-          detail: body.cancelReason || "Отмена"
-        });
-        patch.cdek = {
-          ...(patch.cdek || updated.cdek),
-          stage: "Отменён",
-          history
-        };
-      }
-    }
-
-    if (Object.keys(patch).length) updated = store.updateOrder(updated.id, patch);
-    if (status) {
-      notify
-        .notifyCustomerOrderMove(updated, {
-          title: `📦 Заказ ${updated.id}: ${notify.statusLabel(updated)}`,
-          detail: updated.cdek?.stage || "",
-          force: true
-        })
-        .catch(() => {});
-    }
-    res.json({ ok: true, order: decorateAdminOrder(updated) });
+    const result = await mutateAdminOrder(req.params.id, req.body || {});
+    res.json({ ok: true, ...result });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    const status = error.status || 500;
+    res.status(status).json({
+      message: error.message,
+      ...(error.order ? { order: error.order } : {})
+    });
   }
+});
+
+app.post("/api/admin/orders/bulk", adminGuard, async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).filter(Boolean) : [];
+  const action = String(req.body?.action || "").trim();
+  if (!ids.length) return res.status(400).json({ message: "Не выбраны заказы" });
+
+  const results = [];
+  for (const id of ids) {
+    try {
+      if (action === "delete") {
+        const order = store.getOrder(id);
+        if (!order) throw Object.assign(new Error("Заказ не найден"), { status: 404 });
+        store.deleteOrder(id);
+        results.push({ id, ok: true });
+        continue;
+      }
+      if (action === "notifyTelegram") {
+        const order = store.getOrder(id);
+        if (!order) throw Object.assign(new Error("Заказ не найден"), { status: 404 });
+        const result = await notify.notifyCustomerOrderMove(order, {
+          title: `📦 Заказ ${order.id}: статус`,
+          detail: order.cdek?.stage || "",
+          force: true
+        });
+        if (result.skipped && result.reason === "client not linked") {
+          results.push({ id, ok: false, message: "Telegram не привязан" });
+        } else if (!result.ok) {
+          results.push({ id, ok: false, message: result.error || result.reason || "Не удалось отправить" });
+        } else {
+          results.push({ id, ok: true });
+        }
+        continue;
+      }
+      if (action === "sync") {
+        const result = await mutateAdminOrder(id, { sync: true });
+        results.push({ id, ok: true, changes: result.sync?.changes || [] });
+        continue;
+      }
+      if (action === "markPaid") {
+        await mutateAdminOrder(id, { markPaid: true });
+        results.push({ id, ok: true });
+        continue;
+      }
+      if (action === "status") {
+        const status = String(req.body?.status || "").trim();
+        if (!["assembly", "shipped", "arrived", "cancelled", "pending_payment"].includes(status)) {
+          throw Object.assign(new Error("Некорректный статус"), { status: 400 });
+        }
+        await mutateAdminOrder(id, { status });
+        results.push({ id, ok: true });
+        continue;
+      }
+      throw Object.assign(new Error("Неизвестное действие"), { status: 400 });
+    } catch (error) {
+      results.push({ id, ok: false, message: error.message });
+    }
+  }
+
+  const okCount = results.filter((r) => r.ok).length;
+  res.json({ ok: true, processed: results.length, okCount, failCount: results.length - okCount, results });
 });
 
 // Never expose repo internals / secrets / PII JSON via express.static(ROOT)

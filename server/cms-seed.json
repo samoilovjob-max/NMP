@@ -290,7 +290,8 @@
       "rating": 5,
       "image": "images/shore-lake.webp",
       "published": true,
-      "sortOrder": 1
+      "sortOrder": 1,
+      "productId": "1"
     },
     {
       "id": "rev-2",
@@ -300,7 +301,8 @@
       "rating": 5,
       "image": "images/product-4.webp",
       "published": true,
-      "sortOrder": 2
+      "sortOrder": 2,
+      "productId": "4"
     },
     {
       "id": "rev-3",
@@ -310,7 +312,8 @@
       "rating": 5,
       "image": "images/product-3.webp",
       "published": true,
-      "sortOrder": 3
+      "sortOrder": 3,
+      "productId": "3"
     },
     {
       "id": "rev-4",
@@ -320,7 +323,8 @@
       "rating": 5,
       "image": "images/product-2.webp",
       "published": true,
-      "sortOrder": 4
+      "sortOrder": 4,
+      "productId": "2"
     },
     {
       "id": "rev-5",
@@ -330,7 +334,8 @@
       "rating": 5,
       "image": "images/main-product.webp",
       "published": true,
-      "sortOrder": 5
+      "sortOrder": 5,
+      "productId": "1"
     },
     {
       "id": "rev-6",
@@ -340,7 +345,8 @@
       "rating": 5,
       "image": "images/product-41.webp",
       "published": true,
-      "sortOrder": 6
+      "sortOrder": 6,
+      "productId": "4"
     }
   ],
   "promotions": [

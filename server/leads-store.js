@@ -73,8 +73,41 @@ function updateLead(id, patch = {}) {
   return list[index];
 }
 
+function deleteLead(id) {
+  const list = readLeads();
+  const next = list.filter((item) => item.id !== String(id));
+  if (next.length === list.length) return false;
+  writeLeads(next);
+  return true;
+}
+
+function bulkUpdateLeads(ids = [], patch = {}) {
+  const wanted = new Set((ids || []).map((id) => String(id)));
+  const list = readLeads();
+  let changed = 0;
+  const next = list.map((item) => {
+    if (!wanted.has(String(item.id))) return item;
+    changed += 1;
+    return { ...item, ...patch, updatedAt: new Date().toISOString() };
+  });
+  if (changed) writeLeads(next);
+  return { changed, total: wanted.size };
+}
+
+function bulkDeleteLeads(ids = []) {
+  const wanted = new Set((ids || []).map((id) => String(id)));
+  const list = readLeads();
+  const next = list.filter((item) => !wanted.has(String(item.id)));
+  const deleted = list.length - next.length;
+  if (deleted) writeLeads(next);
+  return { deleted, total: wanted.size };
+}
+
 module.exports = {
   listLeads,
   addLead,
-  updateLead
+  updateLead,
+  deleteLead,
+  bulkUpdateLeads,
+  bulkDeleteLeads
 };
