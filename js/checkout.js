@@ -1,6 +1,8 @@
 (() => {
   const Store = window.NMP_Store;
   const params = new URLSearchParams(window.location.search);
+  // Подгружаем реестр ТК (СДЭК активен; остальные comingSoon — на витрине не показываем)
+  window.NMP_loadDeliveryProviders?.().catch(() => {});
   const buyId = params.get("buy");
   if (buyId) {
     const product = window.NMP_getProduct?.(buyId);
