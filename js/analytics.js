@@ -1,5 +1,6 @@
 (() => {
   const CONSENT_KEY = "nmp_analytics_consent";
+  const INFO_DISMISSED_KEY = "nmp_analytics_info_dismissed";
   const PURCHASE_TRACKED_PREFIX = "nmp_purchase_tracked_";
 
   let analyticsCfg = null;
@@ -102,7 +103,8 @@
   }
 
   function showConsentBanner(onAccept, onDecline) {
-    if (document.getElementById("analyticsConsent")) return;
+    document.getElementById("analyticsConsent")?.remove();
+    document.getElementById("analyticsInfoNotice")?.remove();
 
     const banner = document.createElement("div");
     banner.id = "analyticsConsent";
@@ -112,7 +114,7 @@
     banner.setAttribute("aria-label", "Согласие на cookies аналитики");
     banner.innerHTML = `
       <div class="analytics-consent-inner">
-        <p>Мы используем cookies и сервисы аналитики (Яндекс.Метрика, Google Analytics), чтобы улучшать сайт. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p>
+        <p>Мы используем cookies и сервисы аналитики (Яндекс.Метрика${analyticsCfg?.gaMeasurementId ? ", Google Analytics" : ""}), чтобы улучшать сайт. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p>
         <div class="analytics-consent-actions">
           <button type="button" class="btn btn-ghost" data-analytics-decline>Только необходимые</button>
           <button type="button" class="btn btn-primary" data-analytics-accept>Принять</button>
@@ -128,6 +130,52 @@
       banner.remove();
       onDecline();
     });
+  }
+
+  function showInfoNotice() {
+    if (document.getElementById("analyticsInfoNotice")) return;
+    try {
+      if (sessionStorage.getItem(INFO_DISMISSED_KEY) === "1") return;
+    } catch {
+      /* ignore */
+    }
+
+    const notice = document.createElement("div");
+    notice.id = "analyticsInfoNotice";
+    notice.className = "analytics-info-notice";
+    notice.setAttribute("role", "status");
+    notice.setAttribute("aria-live", "polite");
+    notice.innerHTML = `
+      <div class="analytics-info-inner">
+        <p>Мы используем cookies и Яндекс.Метрику для статистики посещений. <a href="privacy.html#cookies">Подробнее</a> · <button type="button" class="footer-cookie-link" data-cookie-settings-inline>Настройки</button></p>
+        <button type="button" class="analytics-info-close" aria-label="Закрыть уведомление">×</button>
+      </div>`;
+
+    document.body.appendChild(notice);
+    notice.querySelector(".analytics-info-close")?.addEventListener("click", () => {
+      try {
+        sessionStorage.setItem(INFO_DISMISSED_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      notice.remove();
+    });
+    notice.querySelector("[data-cookie-settings-inline]")?.addEventListener("click", () => {
+      window.NMP_analytics.openCookieSettings();
+    });
+  }
+
+  function injectFooterCookieLink() {
+    const footer = document.querySelector(".site-footer .footer-bottom, footer .footer-bottom");
+    if (!footer || footer.querySelector("[data-cookie-settings]")) return;
+
+    const link = document.createElement("button");
+    link.type = "button";
+    link.className = "footer-cookie-link";
+    link.setAttribute("data-cookie-settings", "");
+    link.textContent = "Cookies и аналитика";
+    link.addEventListener("click", () => window.NMP_analytics.openCookieSettings());
+    footer.appendChild(link);
   }
 
   function mapLineItems(items) {
@@ -160,6 +208,19 @@
     ready,
     isEnabled() {
       return Boolean(analyticsCfg?.enabled && started);
+    },
+    openCookieSettings() {
+      if (!analyticsCfg?.enabled) return;
+      showConsentBanner(
+        () => {
+          saveConsent(true);
+          startAnalytics(analyticsCfg);
+        },
+        () => {
+          saveConsent(false);
+          if (!started) readyResolve(window.NMP_analytics);
+        }
+      );
     },
     trackViewItem(product) {
       if (!started || !product) return;
@@ -244,6 +305,14 @@
       analyticsCfg = cfg.analytics || {};
       if (!analyticsCfg.enabled) {
         readyResolve(window.NMP_analytics);
+        return;
+      }
+
+      injectFooterCookieLink();
+
+      if (!analyticsCfg.requireConsent) {
+        startAnalytics(analyticsCfg);
+        showInfoNotice();
         return;
       }
 
