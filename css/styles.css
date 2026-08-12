@@ -1630,6 +1630,28 @@ html {
   .product-meta-actions .btn-primary {
     grid-column: 1 / -1;
   }
+
+  .product-page .product-stage {
+    aspect-ratio: 5 / 4;
+    max-height: 42vh;
+  }
+
+  .product-page .thumbs {
+    margin-top: 0.5rem;
+  }
+
+  .product-page .thumb {
+    width: 56px;
+    height: 56px;
+  }
+
+  .product-info .badge {
+    margin-top: 0.35rem;
+  }
+
+  .product-h1-sub {
+    display: none;
+  }
 }
 
 .seo-block {
