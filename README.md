@@ -5,7 +5,8 @@
 Сайт: [https://northmp.su/](https://northmp.su/)
 
 **Админка CMS:** [`/admin.html`](admin.html) — товары, цены, фото, новости, отзывы, акции, тексты, заказы.  
-**Инструкция:** [`docs/UPRAVLENIE-SAJTOM.md`](docs/UPRAVLENIE-SAJTOM.md)
+**Инструкция:** [`docs/UPRAVLENIE-SAJTOM.md`](docs/UPRAVLENIE-SAJTOM.md)  
+**Деплой на northmp.su (Beget):** [`docs/DEPLOY-NORTHMP-BEGET.md`](docs/DEPLOY-NORTHMP-BEGET.md)
 
 ## Запуск
 
