@@ -157,7 +157,12 @@
     </div>
     <div class="product-info reveal visible">
       <div class="badge">${product.badge || (available ? "" : "Скоро в продаже")}</div>
-      <h1>${product.h1 || product.name}</h1>
+      <h1>${product.name}</h1>
+      ${
+        product.h1 && product.h1 !== product.name
+          ? `<p class="product-h1-sub">${product.h1}</p>`
+          : ""
+      }
       <p class="sku-label">Артикул ${product.sku}</p>
       ${
         available

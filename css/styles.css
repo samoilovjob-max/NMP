@@ -711,7 +711,15 @@ html {
 
 .product-info h1 {
   font-size: clamp(1.55rem, 3.6vw, 2.35rem);
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.product-h1-sub {
+  margin: 0 0 0.55rem;
+  color: var(--frost-dim);
+  font-size: clamp(0.95rem, 1.8vw, 1.1rem);
+  line-height: 1.45;
+  max-width: 36rem;
 }
 
 .product-meta {
