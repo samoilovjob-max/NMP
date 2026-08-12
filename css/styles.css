@@ -129,6 +129,23 @@ h3 {
   margin-inline: auto;
 }
 
+/* Anchor targets clear the fixed header */
+html {
+  scroll-padding-top: calc(var(--header-h) + 0.75rem);
+}
+
+#catalog,
+#lifestyle,
+#about,
+#contact,
+#news,
+#reviews,
+#faq,
+#features,
+#promoStrip {
+  scroll-margin-top: calc(var(--header-h) + 0.75rem);
+}
+
 /* Header */
 .site-header {
   position: fixed;
@@ -1057,7 +1074,16 @@ h3 {
 }
 
 .page-hero h1 {
-  max-width: 18ch;
+  max-width: min(18ch, 100%);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .page-hero h1 {
+    font-size: clamp(1.85rem, 8.5vw, 2.45rem);
+    max-width: 100%;
+  }
 }
 
 .prose {
