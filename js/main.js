@@ -251,4 +251,26 @@
 
   window.addEventListener("nmp:cart", refreshCartBadge);
   refreshCartBadge();
+
+  /* Reliable in-page / cross-page anchors (contact, catalog, …) */
+  const scrollToHashTarget = () => {
+    const raw = String(window.location.hash || "").replace(/^#/, "");
+    if (!raw) return;
+    const id = decodeURIComponent(raw);
+    const el =
+      document.getElementById(id) ||
+      (id === "feedback" || id === "obratnaya-svyaz" ? document.getElementById("contact") : null);
+    if (!el) return;
+    window.requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+  window.addEventListener("hashchange", scrollToHashTarget);
+  window.addEventListener("load", () => {
+    window.setTimeout(scrollToHashTarget, 60);
+    window.setTimeout(scrollToHashTarget, 400);
+  });
+  if (document.readyState === "complete") {
+    window.setTimeout(scrollToHashTarget, 60);
+  }
 })();

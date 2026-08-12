@@ -229,12 +229,10 @@
       <div class="summary-total"><span>Итого</span><strong>${window.NMP_formatPrice(total + delivery)}</strong></div>
       ${
         method === "pickup"
-          ? `<p class="form-note">Самовывоз: ${PICKUP_ADDRESS}. Отгрузка по предварительной договорённости.</p>`
+          ? `<p class="form-note">Самовывоз в Петрозаводске. Отгрузка по предварительной договорённости.</p>`
           : method === "local"
             ? `<p class="form-note">${LOCAL_LABEL}. Адрес укажите в поле «Адрес доставки по Петрозаводску».</p>`
-            : `<p class="form-note">Отправка из ${publicConfig?.fromCity || "Петрозаводска"}, ${
-                publicConfig?.fromAddress || "Лесной проспект 47"
-              }</p>`
+            : `<p class="form-note">Отправка из Петрозаводска</p>`
       }
       <p class="form-note">${
         publicConfig?.payments?.mode === "yookassa"

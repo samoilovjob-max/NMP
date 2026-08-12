@@ -1222,6 +1222,71 @@ app.get("/api/orders/:id", (req, res) => {
   res.json({ ok: true, order: publicOrder(order) });
 });
 
+app.post("/api/orders/:id/cancel", async (req, res) => {
+  try {
+    const order = store.getOrder(req.params.id);
+    if (!order) return res.status(404).json({ message: "Заказ не найден" });
+
+    if (order.status === "cancelled") {
+      return res.json({ ok: true, already: true, order: publicOrder(order) });
+    }
+
+    const phoneDigits = store.normalizePhoneDigits(
+      String(req.body?.phone || req.query?.phone || "")
+    );
+    const orderPhone = store.normalizePhoneDigits(order.customer?.phone);
+    if (phoneDigits.length >= 10 && orderPhone && phoneDigits !== orderPhone) {
+      return res.status(403).json({ message: "Телефон не совпадает с заказом" });
+    }
+
+    // Покупатель может отменить до передачи в доставку
+    const cancellable =
+      order.status === "pending_payment" ||
+      (order.status === "assembly" && !(order.cdek?.trackNumber || order.cdek?.uuid));
+    if (!cancellable || ["shipped", "arrived"].includes(order.status)) {
+      return res.status(400).json({
+        message:
+          "Этот заказ уже нельзя отменить самостоятельно. Напишите нам в обратную связь — поможем."
+      });
+    }
+
+    const reason = String(req.body?.reason || "Отмена покупателем").slice(0, 400);
+    const at = new Date().toISOString();
+    const history = [
+      ...(order.cdek?.history || []),
+      { at, title: "Заказ отменён покупателем", detail: reason }
+    ].slice(-40);
+
+    const updated = store.updateOrder(order.id, {
+      status: "cancelled",
+      paymentStatus: order.paymentStatus === "paid" ? order.paymentStatus : "canceled",
+      cancelledAt: at,
+      cancelReason: reason,
+      cancelledBy: "customer",
+      cdek: {
+        ...order.cdek,
+        stage: "Отменён покупателем",
+        history
+      }
+    });
+
+    notify
+      .notifyCustomerOrderMove(updated, {
+        title: `📦 Заказ ${updated.id}: отменён`,
+        detail: reason,
+        force: true
+      })
+      .catch(() => {});
+    notify
+      .sendTelegram(`🚫 Покупатель отменил заказ ${updated.id}\n${reason}`)
+      .catch(() => {});
+
+    res.json({ ok: true, order: publicOrder(updated) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 app.post("/api/payments/create", async (req, res) => {
   try {
     const { orderId } = req.body || {};
@@ -1560,7 +1625,7 @@ app.get("/api/admin/orders", adminGuard, (_req, res) => {
   res.json({ ok: true, orders, shipSlaHours: CONFIG.shipSlaHours, yookassa: yookassaReady });
 });
 
-app.get("/api/admin/orders/export", adminGuard, (req, res) => {
+app.get("/api/admin/orders/export", adminGuard, async (req, res) => {
   try {
     const format = String(req.query.format || "commerceml").toLowerCase();
     const scope = String(req.query.scope || "paid").toLowerCase();
@@ -1571,9 +1636,10 @@ app.get("/api/admin/orders/export", adminGuard, (req, res) => {
       .filter(Boolean);
 
     const selected = orders1c.filterOrdersForExport(store.listOrders(), { scope, ids });
-    const exported = orders1c.exportOrders(selected, format);
+    const exported = await orders1c.exportOrders(selected, format);
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-    const filename = `nmp-orders-1c-${scope}-${stamp}.${exported.extension}`;
+    const kind = format === "xlsx" || format === "excel" ? "excel" : "1c";
+    const filename = `nmp-orders-${kind}-${scope}-${stamp}.${exported.extension}`;
 
     if (markExported && selected.length) {
       const at = new Date().toISOString();
@@ -1586,7 +1652,7 @@ app.get("/api/admin/orders/export", adminGuard, (req, res) => {
               ...(order.cdek?.history || []),
               {
                 at,
-                title: "Выгружен в 1С",
+                title: format === "xlsx" || format === "excel" ? "Выгружен в Excel" : "Выгружен в 1С",
                 detail: `Формат ${format} · файл ${filename}`
               }
             ].slice(-40)

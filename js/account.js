@@ -180,6 +180,43 @@
     });
   };
 
+  const canCustomerCancel = (order) => {
+    if (!order || order.status === "cancelled") return false;
+    if (["shipped", "arrived"].includes(order.status)) return false;
+    if (order.status === "pending_payment") return true;
+    if (order.status === "assembly" && !(order.cdek?.trackNumber || order.cdek?.uuid)) return true;
+    return false;
+  };
+
+  const bindCancelButtons = () => {
+    root.querySelectorAll("[data-cancel-order]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const orderId = btn.getAttribute("data-cancel-order");
+        const ok = window.confirm(
+          `Отменить заказ ${orderId}? Если оплата уже прошла, мы свяжемся по возврату.`
+        );
+        if (!ok) return;
+        btn.disabled = true;
+        try {
+          const user = Store.getUser?.() || {};
+          const data = await api(`/api/orders/${encodeURIComponent(orderId)}/cancel`, {
+            method: "POST",
+            body: JSON.stringify({
+              phone: user.phone || "",
+              reason: "Отмена покупателем из личного кабинета"
+            })
+          });
+          if (data.order) Store.createOrder(data.order);
+          window.NMP_toast("Заказ отменён");
+          await render();
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось отменить заказ");
+          btn.disabled = false;
+        }
+      });
+    });
+  };
+
   const render = async () => {
     if (focusId && payDemo) {
       try {
@@ -370,6 +407,11 @@
                     ? `<button class="btn btn-primary" type="button" data-repay="${order.id}">Оплатить</button>`
                     : ""
                 }
+                ${
+                  canCustomerCancel(order)
+                    ? `<button class="btn btn-ghost" type="button" data-cancel-order="${order.id}">Отменить заказ</button>`
+                    : ""
+                }
                 <button class="btn btn-ghost tg-link-btn" type="button" data-tg-link="${order.id}">
                   ${order.telegramLinked ? "Telegram подключён · открыть бота" : "Статус в Telegram"}
                 </button>
@@ -383,6 +425,7 @@
     bindLookupForm();
     bindRepayButtons();
     bindTelegramButtons();
+    bindCancelButtons();
 
     document.getElementById("refreshTracking")?.addEventListener("click", () => {
       window.NMP_toast("Обновляем статусы…");

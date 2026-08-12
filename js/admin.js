@@ -746,7 +746,7 @@
     const count = Number(res.headers.get("X-NMP-Export-Count") || 0);
     const disposition = res.headers.get("Content-Disposition") || "";
     const match = disposition.match(/filename="?([^"]+)"?/i);
-    const filename = match?.[1] || `nmp-orders-1c.${format === "csv" ? "csv" : format === "json" ? "json" : "xml"}`;
+    const filename = match?.[1] || `nmp-orders.${format === "csv" ? "csv" : format === "json" ? "json" : format === "xlsx" || format === "excel" ? "xlsx" : "xml"}`;
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -1028,8 +1028,8 @@
           <button class="btn btn-primary" type="button" id="syncAllOrders">Синхронизировать статусы</button>
         </div>
         <div class="admin-export-1c">
-          <h4 style="margin:0.6rem 0 0.35rem">Выгрузка в 1С</h4>
-          <p class="form-note" style="margin:0 0 0.55rem">CommerceML XML — стандартный обмен с 1С. CSV — для Excel / ручной загрузки. JSON — для HTTP-обработчиков.</p>
+          <h4 style="margin:0.6rem 0 0.35rem">Выгрузка заказов</h4>
+          <p class="form-note" style="margin:0 0 0.55rem">Excel (.xlsx) — для работы в таблице. CommerceML XML — обмен с 1С. CSV / JSON — дополнительные форматы.</p>
           <div class="admin-filter-row" style="margin-bottom:0.45rem">
             <label class="admin-filter ${state.exportScope === "paid" ? "active" : ""}">
               <input type="radio" name="exportScope" value="paid" ${state.exportScope === "paid" ? "checked" : ""} hidden />
@@ -1049,7 +1049,8 @@
             </label>
           </div>
           <div class="admin-actions">
-            <button class="btn btn-primary" type="button" data-export-1c="commerceml">Скачать XML (CommerceML)</button>
+            <button class="btn btn-primary" type="button" data-export-1c="xlsx">Скачать Excel</button>
+            <button class="btn btn-ghost" type="button" data-export-1c="commerceml">Скачать XML (CommerceML)</button>
             <button class="btn btn-ghost" type="button" data-export-1c="csv">Скачать CSV</button>
             <button class="btn btn-ghost" type="button" data-export-1c="json">Скачать JSON</button>
             <label class="check-line" style="margin:0;align-items:center">

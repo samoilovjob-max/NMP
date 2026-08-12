@@ -354,7 +354,80 @@ function buildJson(orders) {
   );
 }
 
-function exportOrders(orders, format = "commerceml") {
+async function buildXlsx(orders) {
+  const ExcelJS = require("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Northern Magical Place";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet("Заказы", {
+    views: [{ state: "frozen", ySplit: 1 }]
+  });
+
+  sheet.columns = [
+    { header: "Номер заказа", key: "id", width: 18 },
+    { header: "Дата", key: "date", width: 12 },
+    { header: "Время", key: "time", width: 10 },
+    { header: "Статус", key: "status", width: 18 },
+    { header: "Оплата", key: "payment", width: 16 },
+    { header: "ФИО", key: "fio", width: 28 },
+    { header: "Телефон", key: "phone", width: 16 },
+    { header: "E-mail", key: "email", width: 24 },
+    { header: "Город", key: "city", width: 16 },
+    { header: "Доставка", key: "delivery", width: 24 },
+    { header: "ПВЗ / адрес", key: "address", width: 36 },
+    { header: "Трек", key: "track", width: 16 },
+    { header: "Товары", key: "items", width: 40 },
+    { header: "Сумма товаров", key: "goods", width: 14 },
+    { header: "Доставка ₽", key: "deliverySum", width: 12 },
+    { header: "Итого ₽", key: "total", width: 12 },
+    { header: "Комментарий", key: "comment", width: 28 },
+    { header: "Заметка админа", key: "adminNotes", width: 28 }
+  ];
+
+  const headerRow = sheet.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.alignment = { vertical: "middle", wrapText: true };
+
+  orders.forEach((order) => {
+    const created = toLocalParts(order.createdAt);
+    const customer = order.customer || {};
+    const items = Array.isArray(order.items) ? order.items : [];
+    const itemsText = items
+      .map((item) => `${item.name || item.sku || "товар"} × ${item.qty || 0}`)
+      .join("; ");
+
+    sheet.addRow({
+      id: order.id,
+      date: created.date,
+      time: created.time,
+      status: statusLabel(order.status),
+      payment: paymentLabel(order.paymentStatus),
+      fio: fio(customer),
+      phone: customer.phone || "",
+      email: customer.email || "",
+      city: order.city || customer.city || "",
+      delivery: deliveryLabel(order.deliveryMethod),
+      address: order.localAddress || order.pvzAddress || "",
+      track: order.cdek?.trackNumber || "",
+      items: itemsText,
+      goods: Number(order.goodsTotal || 0),
+      deliverySum: Number(order.deliverySum || 0),
+      total: Number(order.total || 0),
+      comment: order.comment || "",
+      adminNotes: order.adminNotes || ""
+    });
+  });
+
+  ["goods", "deliverySum", "total"].forEach((key) => {
+    sheet.getColumn(key).numFmt = "#,##0.00";
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
+async function exportOrders(orders, format = "commerceml") {
   const fmt = String(format || "commerceml").toLowerCase();
   if (fmt === "csv") {
     return {
@@ -370,6 +443,13 @@ function exportOrders(orders, format = "commerceml") {
       body: buildJson(orders)
     };
   }
+  if (fmt === "xlsx" || fmt === "excel") {
+    return {
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      extension: "xlsx",
+      body: await buildXlsx(orders)
+    };
+  }
   return {
     contentType: "application/xml; charset=utf-8",
     extension: "xml",
@@ -382,5 +462,6 @@ module.exports = {
   exportOrders,
   buildCommerceMl,
   buildCsv,
-  buildJson
+  buildJson,
+  buildXlsx
 };
