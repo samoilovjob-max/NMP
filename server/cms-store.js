@@ -117,7 +117,7 @@ function saveProduct(input, { isNew = false } = {}) {
       input.availabilityNote != null ? input.availabilityNote : base.availabilityNote || ""
     ).trim(),
     sortOrder: Number(input.sortOrder ?? base.sortOrder ?? products.length + 1),
-    image: String(input.image || base.image || "images/product-1.png"),
+    image: String(input.image || base.image || "images/product-1.webp"),
     imageAlt: String(input.imageAlt || input.name || ""),
     gallery: Array.isArray(input.gallery)
       ? input.gallery.filter(Boolean)

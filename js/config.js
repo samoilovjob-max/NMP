@@ -16,7 +16,7 @@ window.NMP_CONFIG = {
     telegram: "https://t.me/+79210110302",
     whatsapp: "https://wa.me/79210110302",
     max: "https://max.ru/",
-    maxCard: "images/MAX_SS.jpg",
+    maxCard: "images/MAX_SS.webp",
     instagram: "https://www.instagram.com/northern_magical_place/"
   }
 };

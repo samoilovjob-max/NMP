@@ -230,7 +230,7 @@
     }
     const maxLink = document.querySelector(".messenger-max, a[aria-label='Написать в MAX']");
     if (maxLink) {
-      const card = contacts.maxCard || "images/MAX_SS.jpg";
+      const card = contacts.maxCard || "images/MAX_SS.webp";
       maxLink.setAttribute("href", "#max-card");
       maxLink.setAttribute("data-max-card", card);
     }
@@ -309,6 +309,6 @@
     const link = event.target.closest("[data-max-card], .messenger-max");
     if (!link) return;
     event.preventDefault();
-    openMaxCard(link.getAttribute("data-max-card") || window.NMP_CONFIG?.contacts?.maxCard || "images/MAX_SS.jpg");
+    openMaxCard(link.getAttribute("data-max-card") || window.NMP_CONFIG?.contacts?.maxCard || "images/MAX_SS.webp");
   });
 })();

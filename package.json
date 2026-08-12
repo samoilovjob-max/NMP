@@ -5,7 +5,8 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "node server/index.js"
+    "dev": "node server/index.js",
+    "optimize-images": "node scripts/optimize-storefront-images.js"
   },
   "repository": {
     "type": "git",

@@ -7,12 +7,12 @@ window.NMP_PRODUCTS = [
     "h1": "Северный Кочевник — походная костровая система для диких маршрутов",
     "badge": "Хит сезона",
     "price": 18900,
-    "image": "images/product-1.png",
+    "image": "images/product-1.webp",
     "imageAlt": "Северный Кочевник — разборная костровая система для путешествий",
     "gallery": [
-      "images/product-1.png",
-      "images/main-product.png",
-      "images/shore-lake.png"
+      "images/product-1.webp",
+      "images/main-product.webp",
+      "images/shore-lake.webp"
     ],
     "galleryAlts": [
       "Северный Кочевник в собранном виде",
@@ -66,12 +66,12 @@ window.NMP_PRODUCTS = [
     "h1": "Пайкула — костровая чаша с характером карельских скал",
     "badge": "Скоро в продаже",
     "price": 21500,
-    "image": "images/product-2.png",
+    "image": "images/product-2.webp",
     "imageAlt": "Пайкула — костровая чаша-гриль для загородного отдыха",
     "gallery": [
-      "images/product-2.png",
-      "images/product-21.png",
-      "images/product-22.png"
+      "images/product-2.webp",
+      "images/product-21.webp",
+      "images/product-22.webp"
     ],
     "galleryAlts": [
       "Пайкула на террасе",
@@ -125,12 +125,12 @@ window.NMP_PRODUCTS = [
     "h1": "Лесная Свеча — костровой очаг, который освещает сад как огромная свеча",
     "badge": "Скоро в продаже",
     "price": 19900,
-    "image": "images/product-3.jpg",
+    "image": "images/product-3.webp",
     "imageAlt": "Лесная Свеча — вертикальный костровой очаг с резными стенками",
     "gallery": [
-      "images/product-3.jpg",
-      "images/product-31.png",
-      "images/product-32.png"
+      "images/product-3.webp",
+      "images/product-31.webp",
+      "images/product-32.webp"
     ],
     "galleryAlts": [
       "Лесная Свеча у дома",
@@ -184,12 +184,12 @@ window.NMP_PRODUCTS = [
     "h1": "Северный очаг — тёплый центр премиального загородного отдыха",
     "badge": "Скоро в продаже",
     "price": 24900,
-    "image": "images/product-4.png",
+    "image": "images/product-4.webp",
     "imageAlt": "Северный очаг — премиальная костровая чаша для загородного отдыха",
     "gallery": [
-      "images/product-4.png",
-      "images/product-41.png",
-      "images/product-42.png"
+      "images/product-4.webp",
+      "images/product-41.webp",
+      "images/product-42.webp"
     ],
     "galleryAlts": [
       "Северный очаг на патио",
