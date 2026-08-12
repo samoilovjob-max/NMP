@@ -15,6 +15,7 @@ const orders1c = require("./orders-1c-export");
 const notify = require("./notify");
 const backup = require("./backup");
 const tgClients = require("./telegram-clients");
+const delivery = require("./delivery");
 
 notify.attachStore(store);
 
@@ -356,6 +357,7 @@ function publicOrder(order) {
     status: order.status,
     paymentStatus: order.paymentStatus,
     deliveryMethod: order.deliveryMethod || "cdek",
+    carrierId: order.carrierId || (order.deliveryMethod === "cdek" || !order.deliveryMethod ? "cdek" : null),
     items: order.items,
     total: order.total,
     goodsTotal: order.goodsTotal,
@@ -682,7 +684,12 @@ app.get("/api/health", async (_req, res) => {
       yookassaNeedsShopId: yookassaSecretOnly,
       paymentsDemo: CONFIG.paymentsDemo && !yookassaReady,
       telegramNotify: notify.isConfigured(),
-      admin: Boolean(CONFIG.adminToken)
+      admin: Boolean(CONFIG.adminToken),
+      carriers: delivery.listPublic().map((p) => ({
+        id: p.id,
+        enabled: p.enabled,
+        comingSoon: Boolean(p.comingSoon)
+      }))
     });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message });
@@ -696,6 +703,10 @@ app.get("/api/config/public", (_req, res) => {
     fromAddress: CONFIG.fromAddress,
     pickupAddress: CONFIG.pickupAddress,
     deliveryMethods: ["cdek", "pickup", "local"],
+    checkoutMethods: delivery.checkoutMethods(),
+    /** ТК: активный СДЭК + будущие (comingSoon) без включения на витрине */
+    carriers: delivery.listPublic(),
+    defaultCarrierId: delivery.defaultCarrierId(),
     mapProvider: "openstreetmap",
     yandexMapsApiKey: "",
     servicePath: "/api/cdek/service",
@@ -707,6 +718,15 @@ app.get("/api/config/public", (_req, res) => {
       needsShopId: yookassaSecretOnly
     },
     shipSlaHours: CONFIG.shipSlaHours
+  });
+});
+
+app.get("/api/delivery/providers", (_req, res) => {
+  res.json({
+    ok: true,
+    defaultCarrierId: delivery.defaultCarrierId(),
+    providers: delivery.listPublic(),
+    checkoutMethods: delivery.checkoutMethods()
   });
 });
 
@@ -1126,6 +1146,19 @@ app.post("/api/orders", async (req, res) => {
     const goodsTotal = items.reduce((sum, item) => sum + item.sum, 0);
     const total = goodsTotal + delivery;
 
+    // carrierId — ТК для carrier-backed методов; pickup/local без ТК
+    let carrierId = null;
+    if (deliveryMethod === "cdek") {
+      const requested = String(body.carrierId || "cdek").trim();
+      const provider = delivery.get(requested);
+      if (!provider || !provider.enabled) {
+        return res.status(400).json({
+          message: "Выбранная служба доставки пока недоступна. Сейчас работает СДЭК."
+        });
+      }
+      carrierId = provider.id;
+    }
+
     const order = store.createOrder({
       customer: {
         lastName,
@@ -1140,6 +1173,7 @@ app.post("/api/orders", async (req, res) => {
       goodsTotal,
       deliverySum: delivery,
       deliveryMethod,
+      carrierId,
       total,
       city: nextCity,
       cityCode: nextCityCode,

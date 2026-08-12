@@ -1016,7 +1016,7 @@
 
     root.innerHTML = shell(`
       <div class="admin-orders-tools">
-        <p class="form-note" style="margin:0">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Кнопка «Синхронизировать статусы» подтягивает оплату из ЮKassa и трек/этап из СДЭК.</p>
+        <p class="form-note" style="margin:0">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Кнопка «Синхронизировать статусы» подтягивает оплату из ЮKassa и трек/этап из СДЭК. Дополнительные ТК (Деловые Линии, Яндекс, Ozon, X5) заложены в архитектуре и пока не подключены.</p>
         <div class="admin-orders-stats">
           <span class="admin-stat">Всего: <strong>${orders.length}</strong></span>
           <span class="admin-stat">К отгрузке: <strong>${needShip.length}</strong></span>
