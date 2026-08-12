@@ -168,12 +168,10 @@
     root.innerHTML = reviews
       .map((r) => {
         const media = r.video
-          ? `<div class="review-media"><video src="${escAttr(r.video)}" controls playsinline preload="metadata" poster="${escAttr(r.image || "")}"></video></div>`
-          : r.image
-            ? `<div class="review-media"><img src="${escAttr(r.image)}" alt="" loading="lazy" /></div>`
-            : "";
+          ? `<div class="review-media"><video src="${escAttr(r.video)}" controls playsinline preload="metadata"></video></div>`
+          : "";
         return `
-      <article class="review reveal visible ${r.image || r.video ? "has-media" : ""}">
+      <article class="review reveal visible ${r.video ? "has-media" : ""}">
         ${media}
         <div class="stars" aria-label="${r.rating || 5} из 5">${stars(r.rating)}</div>
         <p>«${String(r.text || "").replace(/^«|»$/g, "")}»</p>
