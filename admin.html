@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Админка заказов — Northern Magical Place</title>
+  <title>Админка — Northern Magical Place</title>
   <link rel="icon" href="images/favicon.png" type="image/png" sizes="32x32" />
   <link rel="icon" href="images/logo-mark.jpg" type="image/jpeg" sizes="any" />
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
@@ -12,38 +12,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
-  <header class="site-header scrolled" id="header">
-    <div class="header-inner">
-      <a class="brand" href="index.html" aria-label="Northern Magical Place">
-        <img class="brand-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="160" height="78" />
-        <span class="brand-text">
-          <span>Northern</span>
-          <span>Magical Place</span>
-        </span>
-      </a>
-      <nav class="nav" id="nav">
-        <a href="index.html">Сайт</a>
-        <a href="admin.html" class="active">Админка</a>
-      </nav>
-    </div>
-  </header>
-
-  <main>
-    <section class="page-hero compact">
-      <div class="container">
-        <div class="eyebrow">CMS</div>
-        <h1>Управление сайтом</h1>
-        <p class="lead">Товары, цены, фото, новости, отзывы, акции и заказы — в одном месте.</p>
-      </div>
-    </section>
-
-    <section class="section" style="padding-top:1.5rem;">
-      <div class="container">
-        <div id="adminRoot" class="admin-root"></div>
-      </div>
-    </section>
-  </main>
+<body class="admin-body">
+  <div id="adminRoot" class="admin-root"></div>
 
   <script src="js/config.js"></script>
   <script src="js/products.js"></script>

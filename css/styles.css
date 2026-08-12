@@ -2382,9 +2382,321 @@ html {
   text-transform: uppercase;
 }
 
+/* ========== Bitrix-like admin shell ========== */
+.admin-body {
+  min-height: 100vh;
+  background: #0f1214;
+}
+
+.admin-body.admin-login-page {
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(47, 198, 246, 0.08), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgba(196, 92, 38, 0.12), transparent 45%),
+    #0f1214;
+}
+
 .admin-root {
   display: grid;
   gap: 1.25rem;
+}
+
+body.admin-app {
+  overflow: hidden;
+}
+
+body.admin-app .admin-root {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+  min-height: 100vh;
+  height: 100vh;
+}
+
+.bx-sidebar {
+  display: flex;
+  flex-direction: column;
+  background: #1e252c;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  color: #d5dbe3;
+  z-index: 40;
+}
+
+.bx-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.1rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bx-sidebar-brand img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bx-sidebar-brand strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.bx-sidebar-brand span {
+  display: block;
+  font-size: 0.75rem;
+  color: #8b96a3;
+}
+
+.bx-menu {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 0.65rem 1rem;
+}
+
+.bx-menu-group + .bx-menu-group {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.bx-menu-group-title {
+  padding: 0.35rem 0.7rem 0.5rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7d8894;
+}
+
+.bx-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.62rem 0.7rem;
+  margin: 0.1rem 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #c4ccd5;
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.bx-menu-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.bx-menu-item.is-active {
+  background: rgba(47, 198, 246, 0.14);
+  color: #fff;
+  box-shadow: inset 3px 0 0 #2fc6f6;
+}
+
+.bx-menu-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  display: inline-flex;
+}
+
+.bx-menu-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bx-menu-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.bx-menu-count {
+  min-width: 1.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #aeb7c2;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.bx-menu-item.is-active .bx-menu-count {
+  background: rgba(47, 198, 246, 0.22);
+  color: #dff7ff;
+}
+
+.bx-sidebar-footer {
+  padding: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.bx-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #14191e;
+}
+
+.bx-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: #1a2128;
+  flex-wrap: wrap;
+}
+
+.bx-crumbs {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1;
+  min-width: 0;
+  color: #8b96a3;
+  font-size: 0.9rem;
+}
+
+.bx-crumbs strong {
+  color: #f2f4f6;
+  font-weight: 600;
+}
+
+.bx-topbar-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bx-top-btn {
+  min-height: 2.35rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.78rem;
+  gap: 0.4rem;
+}
+
+.bx-top-btn .bx-menu-icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.bx-menu-toggle {
+  display: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: transparent;
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.bx-menu-toggle span {
+  display: block;
+  height: 2px;
+  margin: 4px 0;
+  background: #d5dbe3;
+  border-radius: 2px;
+}
+
+.bx-workspace {
+  flex: 1;
+  overflow: auto;
+  padding: 1.25rem 1.35rem 2rem;
+}
+
+.bx-page-head {
+  margin-bottom: 1.1rem;
+}
+
+.bx-page-head h1 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  color: #f4f6f8;
+}
+
+.bx-sidebar-backdrop {
+  display: none;
+}
+
+.bx-login-wrap {
+  width: min(100%, 26rem);
+}
+
+.bx-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.bx-login-brand img {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.bx-login-brand strong {
+  display: block;
+  color: var(--frost);
+  font-family: var(--font-display);
+}
+
+.bx-login-brand span {
+  display: block;
+  color: var(--steel);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 960px) {
+  body.admin-app .admin-root {
+    grid-template-columns: 1fr;
+  }
+
+  .bx-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(86vw, 280px);
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+  }
+
+  body.bx-sidebar-open .bx-sidebar {
+    transform: translateX(0);
+  }
+
+  .bx-menu-toggle {
+    display: inline-block;
+  }
+
+  .bx-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 35;
+  }
+
+  .bx-sidebar-backdrop[hidden] {
+    display: none;
+  }
 }
 
 .admin-login,
@@ -2396,6 +2708,9 @@ html {
 
 .admin-login {
   max-width: 28rem;
+  width: 100%;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .admin-toolbar {
@@ -2683,27 +2998,11 @@ html {
 }
 
 .admin-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.25rem 0 1rem;
+  display: none;
 }
 
 .admin-tab {
-  appearance: none;
-  border: 1px solid rgba(232, 230, 225, 0.2);
-  background: transparent;
-  color: var(--frost-dim);
-  padding: 0.55rem 0.9rem;
-  font: inherit;
-  cursor: pointer;
-}
-
-.admin-tab.active,
-.admin-tab:hover {
-  color: var(--frost);
-  border-color: rgba(212, 120, 58, 0.55);
-  background: rgba(212, 120, 58, 0.12);
+  display: none;
 }
 
 .admin-form,

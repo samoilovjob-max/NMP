@@ -69,36 +69,143 @@
       cancelled: "Отменён"
     })[status] || status;
 
+  const tabMeta = {
+    products: { label: "Товары", group: "content" },
+    news: { label: "Новости", group: "content" },
+    reviews: { label: "Отзывы", group: "content" },
+    site: { label: "Тексты сайта", group: "content" },
+    orders: { label: "Заказы", group: "shop" },
+    leads: { label: "Заявки", group: "shop" },
+    promotions: { label: "Акции", group: "marketing" }
+  };
+
+  const menuIcon = (name) => {
+    const icons = {
+      products:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2"/></svg>',
+      news:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11v16H5z"/><path d="M16 8h3v12h-3"/><path d="M8 8h5M8 12h5M8 16h3"/></svg>',
+      reviews:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.2 4.5 5 .7-3.6 3.5.9 5L12 14.8 7.5 16.7l.9-5L4.8 8.2l5-.7z"/></svg>',
+      site:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v3H4zM4 10h10v3H4zM4 15h16v3H4z"/></svg>',
+      orders:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h15l-1.5 9H7.2L6 7Z"/><path d="M6 7 5 3H2"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>',
+      leads:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="m4 7 8 6 8-6"/></svg>',
+      promotions:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12V7h8l6-3v16l-6-3H5z"/><path d="M5 10h8"/></svg>',
+      home:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 11 8-7 8 7"/><path d="M6 10v9h12v-9"/></svg>',
+      logout:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5"/><path d="M13 12H4"/><path d="m16 8 4 4-4 4"/></svg>',
+      refresh:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>'
+    };
+    return icons[name] || icons.site;
+  };
+
+  const setAdminMode = (on) => {
+    document.body.classList.toggle("admin-app", Boolean(on));
+    document.body.classList.toggle("admin-login-page", !on);
+  };
+
   const shell = (inner) => {
-    const tabs = [
-      ["products", "Товары"],
-      ["promotions", "Акции"],
-      ["news", "Новости"],
-      ["reviews", "Отзывы"],
-      ["site", "Тексты сайта"],
-      ["leads", "Заявки"],
-      ["orders", "Заказы"]
+    const groups = [
+      {
+        id: "content",
+        title: "Контент",
+        items: ["products", "news", "reviews", "site"]
+      },
+      {
+        id: "shop",
+        title: "Магазин",
+        items: ["orders", "leads"]
+      },
+      {
+        id: "marketing",
+        title: "Маркетинг",
+        items: ["promotions"]
+      }
     ];
+    const current = tabMeta[state.tab] || tabMeta.products;
+    const counts = {
+      orders: Array.isArray(state.orders) ? state.orders.length : 0,
+      leads: Array.isArray(state.leads) ? state.leads.length : 0,
+      products: Array.isArray(state.cms?.products) ? state.cms.products.length : 0
+    };
+
+    setAdminMode(true);
+
     return `
-      <div class="admin-toolbar">
-        <div>
-          <h2 style="margin:0">Управление сайтом</h2>
-          <p class="form-note">Изменения сразу попадают на витрину и в оплату.</p>
+      <aside class="bx-sidebar" aria-label="Меню админки">
+        <div class="bx-sidebar-brand">
+          <img src="images/logo-mark.webp" alt="" width="36" height="36" />
+          <div>
+            <strong>NMP Admin</strong>
+            <span>Управление сайтом</span>
+          </div>
         </div>
-        <div class="admin-actions">
-          <button class="btn btn-ghost" type="button" id="adminRefresh">Обновить</button>
-          <button class="btn btn-ghost" type="button" id="adminLogout">Выйти</button>
+        <nav class="bx-menu">
+          ${groups
+            .map(
+              (group) => `
+            <div class="bx-menu-group">
+              <div class="bx-menu-group-title">${group.title}</div>
+              ${group.items
+                .map((id) => {
+                  const item = tabMeta[id];
+                  const count = counts[id];
+                  return `
+                    <button type="button" class="bx-menu-item ${state.tab === id ? "is-active" : ""}" data-tab="${id}">
+                      <span class="bx-menu-icon">${menuIcon(id)}</span>
+                      <span class="bx-menu-label">${item.label}</span>
+                      ${count ? `<span class="bx-menu-count">${count}</span>` : ""}
+                    </button>`;
+                })
+                .join("")}
+            </div>`
+            )
+            .join("")}
+        </nav>
+        <div class="bx-sidebar-footer">
+          <a class="bx-menu-item bx-menu-link" href="index.html" target="_blank" rel="noopener">
+            <span class="bx-menu-icon">${menuIcon("home")}</span>
+            <span class="bx-menu-label">Открыть сайт</span>
+          </a>
+          <button type="button" class="bx-menu-item" id="adminLogout">
+            <span class="bx-menu-icon">${menuIcon("logout")}</span>
+            <span class="bx-menu-label">Выйти</span>
+          </button>
+        </div>
+      </aside>
+      <div class="bx-main">
+        <header class="bx-topbar">
+          <button type="button" class="bx-menu-toggle" id="adminMenuToggle" aria-label="Меню" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="bx-crumbs">
+            <span>Админка</span>
+            <span aria-hidden="true">/</span>
+            <strong>${current.label}</strong>
+          </div>
+          <div class="bx-topbar-actions">
+            <button class="btn btn-ghost bx-top-btn" type="button" id="adminRefresh">
+              <span class="bx-menu-icon">${menuIcon("refresh")}</span>
+              Обновить
+            </button>
+            <a class="btn btn-ghost bx-top-btn" href="index.html" target="_blank" rel="noopener">На сайт</a>
+          </div>
+        </header>
+        <div class="bx-workspace">
+          <div class="bx-page-head">
+            <h1>${current.label}</h1>
+            <p class="form-note">Изменения сразу попадают на витрину и в оплату.</p>
+          </div>
+          <div class="admin-panel">${inner}</div>
         </div>
       </div>
-      <nav class="admin-tabs" aria-label="Разделы админки">
-        ${tabs
-          .map(
-            ([id, label]) =>
-              `<button type="button" class="admin-tab ${state.tab === id ? "active" : ""}" data-tab="${id}">${label}</button>`
-          )
-          .join("")}
-      </nav>
-      <div class="admin-panel">${inner}</div>`;
+      <div class="bx-sidebar-backdrop" id="adminSidebarBackdrop" hidden></div>`;
   };
 
   const bindShell = () => {
@@ -107,10 +214,28 @@
       sessionStorage.removeItem(TOKEN_KEY);
       renderLogin();
     });
+    const toggle = document.getElementById("adminMenuToggle");
+    const backdrop = document.getElementById("adminSidebarBackdrop");
+    const closeMenu = () => {
+      document.body.classList.remove("bx-sidebar-open");
+      if (toggle) toggle.setAttribute("aria-expanded", "false");
+      if (backdrop) backdrop.hidden = true;
+    };
+    const openMenu = () => {
+      document.body.classList.add("bx-sidebar-open");
+      if (toggle) toggle.setAttribute("aria-expanded", "true");
+      if (backdrop) backdrop.hidden = false;
+    };
+    toggle?.addEventListener("click", () => {
+      if (document.body.classList.contains("bx-sidebar-open")) closeMenu();
+      else openMenu();
+    });
+    backdrop?.addEventListener("click", closeMenu);
     root.querySelectorAll("[data-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.tab = btn.getAttribute("data-tab");
         state.editingProductId = null;
+        closeMenu();
         render();
       });
     });
@@ -167,21 +292,32 @@
 
   /* ---------- Login ---------- */
   const renderLogin = (error = "") => {
+    setAdminMode(false);
     root.innerHTML = `
-      <form class="admin-login" id="adminLogin">
-        <h2>Вход в админку</h2>
-        <p class="form-note">Введите логин и пароль администратора.</p>
-        <div class="field">
-          <label for="adminLoginName">Логин</label>
-          <input id="adminLoginName" name="login" type="text" required autocomplete="username" spellcheck="false" />
-        </div>
-        <div class="field">
-          <label for="adminPassword">Пароль</label>
-          <input id="adminPassword" name="password" type="password" required autocomplete="current-password" />
-        </div>
-        ${error ? `<p class="form-note" style="color:#c45c26">${esc(error)}</p>` : ""}
-        <button class="btn btn-primary" type="submit">Войти</button>
-      </form>`;
+      <div class="bx-login-wrap">
+        <form class="admin-login" id="adminLogin">
+          <div class="bx-login-brand">
+            <img src="images/logo-mark.webp" alt="Northern Magical Place" width="56" height="56" />
+            <div>
+              <strong>NMP Admin</strong>
+              <span>Вход в панель управления</span>
+            </div>
+          </div>
+          <h2>Авторизация</h2>
+          <p class="form-note">Введите логин и пароль администратора.</p>
+          <div class="field">
+            <label for="adminLoginName">Логин</label>
+            <input id="adminLoginName" name="login" type="text" required autocomplete="username" spellcheck="false" />
+          </div>
+          <div class="field">
+            <label for="adminPassword">Пароль</label>
+            <input id="adminPassword" name="password" type="password" required autocomplete="current-password" />
+          </div>
+          ${error ? `<p class="form-note" style="color:#c45c26">${esc(error)}</p>` : ""}
+          <button class="btn btn-primary" type="submit">Войти</button>
+          <a class="form-note" href="index.html">← На сайт</a>
+        </form>
+      </div>`;
     document.getElementById("adminLogin").addEventListener("submit", async (event) => {
       event.preventDefault();
       const login = String(event.target.login.value || "").trim();
