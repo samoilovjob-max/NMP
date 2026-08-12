@@ -1241,7 +1241,7 @@ app.post("/api/orders", async (req, res) => {
     let nextPvzCode = pvzCode;
     let nextPvzAddress = pvzAddress;
     let nextTariff = Number(tariffCode) || 136;
-    let delivery = Math.max(0, Number(deliverySum) || 0);
+    let shippingSum = Math.max(0, Number(deliverySum) || 0);
 
     if (deliveryMethod === "cdek") {
       if (!cityCode || !pvzCode || !pvzAddress) {
@@ -1253,7 +1253,7 @@ app.post("/api/orders", async (req, res) => {
       nextPvzCode = "PICKUP";
       nextPvzAddress = PICKUP_ADDRESS;
       nextTariff = 0;
-      delivery = 0;
+      shippingSum = 0;
     } else if (deliveryMethod === "local") {
       if (!localAddress && !String(comment || "").trim()) {
         return res.status(400).json({ message: "Укажите адрес доставки по Петрозаводску" });
@@ -1263,12 +1263,12 @@ app.post("/api/orders", async (req, res) => {
       nextPvzCode = "LOCAL";
       nextPvzAddress = localAddress || String(comment || "").trim() || LOCAL_LABEL;
       nextTariff = 0;
-      delivery = 0;
+      shippingSum = 0;
     }
 
     const items = catalog.resolveOrderItems(rawItems);
     const goodsTotal = items.reduce((sum, item) => sum + item.sum, 0);
-    const total = goodsTotal + delivery;
+    const total = goodsTotal + shippingSum;
 
     // carrierId — ТК для carrier-backed методов; pickup/local без ТК
     let carrierId = null;
@@ -1295,7 +1295,7 @@ app.post("/api/orders", async (req, res) => {
       },
       items,
       goodsTotal,
-      deliverySum: delivery,
+      deliverySum: shippingSum,
       deliveryMethod,
       carrierId,
       total,
