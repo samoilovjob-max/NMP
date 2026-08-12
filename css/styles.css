@@ -1603,6 +1603,16 @@ html {
     padding-bottom: 2rem;
   }
 
+  .hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: min(100%, 22rem);
+  }
+
+  .hero-actions .btn {
+    width: 100%;
+  }
+
   .hero-product {
     grid-template-columns: 88px 1fr;
     width: 100%;
@@ -1622,6 +1632,26 @@ html {
 
   .features {
     background-attachment: scroll;
+  }
+
+  .notify-overlay {
+    place-items: start center;
+    padding: 0.65rem 0.65rem calc(0.65rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .notify-dialog {
+    width: 100%;
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bx-topbar-actions {
+    width: 100%;
+  }
+
+  .bx-top-btn {
+    flex: 1 1 auto;
   }
 }
 
@@ -3078,6 +3108,8 @@ body.admin-app .admin-root {
   display: grid;
   place-items: center;
   padding: 1.25rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .notify-overlay[hidden] {
