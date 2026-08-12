@@ -77,7 +77,7 @@
       "@type": "Brand",
       name: "Northern Magical Place"
     },
-    category: (product.keywords || [])[0] || "Костровые системы",
+    category: (product.keywords || [])[0] || "Костровые чаши",
     offers: {
       "@type": "Offer",
       url: pageUrl,
@@ -167,7 +167,9 @@
       ${
         available
           ? `<p class="price-lg">${priceLabel}</p>`
-          : `<p class="price-lg price-soon">Цена по запросу</p>`
+          : Number(product.price) > 0
+            ? `<p class="price-lg">от ${window.NMP_formatPrice(product.price)}</p>`
+            : `<p class="price-lg price-soon">Цена по запросу</p>`
       }
       <div class="product-actions">
         ${
@@ -189,7 +191,7 @@
       }
       <ul class="trust-list">
         <li>Оплата через ЮKassa</li>
-        <li>Сборка 1–2 дня · отгрузка до 48 ч</li>
+        <li>Сборка 1–2 рабочих дня · отгрузка до 48 ч</li>
         <li>СДЭК по России · самовывоз в Петрозаводске</li>
         <li>Статус заказа — в личном кабинете или Telegram</li>
       </ul>
@@ -238,7 +240,7 @@
         }
       </div>
 
-      <p class="form-note">Смотрите также: <a href="index.html#catalog">каталог костровых систем Northern Magical Place</a></p>
+      <p class="form-note">Смотрите также: <a href="index.html#catalog">каталог костровых чаш Northern Magical Place</a></p>
       <p><a href="index.html#catalog">← Все изделия</a></p>
     </div>
   `;

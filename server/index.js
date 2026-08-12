@@ -94,10 +94,11 @@ const upload = multer({
       cb(null, `${Date.now()}-${crypto.randomBytes(4).toString("hex")}${safe}`);
     }
   }),
-  limits: { fileSize: 8 * 1024 * 1024 },
+  limits: { fileSize: 40 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (/^image\/(jpeg|png|webp|gif|svg\+xml)$/.test(file.mimetype)) cb(null, true);
-    else cb(new Error("Можно загружать только изображения"));
+    else if (/^video\/(mp4|webm|quicktime)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error("Можно загружать изображения или видео (mp4/webm)"));
   }
 });
 
@@ -844,6 +845,15 @@ app.get("/api/cms", (_req, res) => {
 app.post("/api/availability-notify", (req, res) => {
   try {
     const body = req.body || {};
+    const consentOk =
+      body.consent === true ||
+      body.consent === "true" ||
+      body.consent === "on" ||
+      body.consent === 1 ||
+      body.consent === "1";
+    if (!consentOk) {
+      return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });
+    }
     const product = cms.getProduct(body.productId);
     if (!product || product.active === false) {
       return res.status(404).json({ message: "Товар не найден" });
@@ -861,7 +871,8 @@ app.post("/api/availability-notify", (req, res) => {
       productId: product.id,
       productName: product.name,
       productSku: product.sku,
-      type: "availability"
+      type: "availability",
+      consentAt: new Date().toISOString()
     });
     notify.notifyNewLead(lead).catch(() => {});
     res.json({ ok: true, lead: { id: lead.id, createdAt: lead.createdAt } });
@@ -1672,6 +1683,20 @@ app.post("/api/admin/upload", adminGuard, (req, res) => {
     if (!req.file) return res.status(400).json({ message: "Файл не получен" });
     try {
       const absolute = path.join(UPLOAD_DIR, req.file.filename);
+      const isVideo = /^video\//.test(req.file.mimetype || "");
+      if (isVideo) {
+        const url = `images/uploads/${req.file.filename}`;
+        return res.json({
+          ok: true,
+          url,
+          path: url,
+          filename: req.file.filename,
+          format: path.extname(req.file.filename).replace(".", "") || "mp4",
+          bytesBefore: req.file.size,
+          bytesAfter: req.file.size,
+          optimized: false
+        });
+      }
       const optimized = await optimizeUploadedImage(absolute);
       res.json({
         ok: true,

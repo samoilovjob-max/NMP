@@ -21,18 +21,44 @@
     });
   }
 
-  function hasConsent() {
-    if (!analyticsCfg?.requireConsent) return true;
+  function readConsentCookie() {
     try {
-      return localStorage.getItem(CONSENT_KEY) === "1";
+      const match = document.cookie.match(/(?:^|;\s*)nmp_analytics_consent=(1|0)(?:;|$)/);
+      return match ? match[1] : null;
     } catch {
-      return false;
+      return null;
     }
   }
 
-  function saveConsent(value) {
+  function getConsentDecision() {
     try {
-      localStorage.setItem(CONSENT_KEY, value ? "1" : "0");
+      const stored = localStorage.getItem(CONSENT_KEY);
+      if (stored === "1" || stored === "0") return stored;
+    } catch {
+      /* ignore */
+    }
+    return readConsentCookie();
+  }
+
+  function hasConsent() {
+    if (!analyticsCfg?.requireConsent) return true;
+    return getConsentDecision() === "1";
+  }
+
+  function hasDecidedConsent() {
+    if (!analyticsCfg?.requireConsent) return true;
+    return getConsentDecision() !== null;
+  }
+
+  function saveConsent(value) {
+    const flag = value ? "1" : "0";
+    try {
+      localStorage.setItem(CONSENT_KEY, flag);
+    } catch {
+      /* ignore */
+    }
+    try {
+      document.cookie = `nmp_analytics_consent=${flag}; path=/; max-age=31536000; SameSite=Lax`;
     } catch {
       /* ignore */
     }
@@ -317,8 +343,10 @@
         return;
       }
 
-      if (hasConsent()) {
-        startAnalytics(analyticsCfg);
+      // Уже отвечал (принять / только необходимые) — баннер больше не показываем
+      if (hasDecidedConsent()) {
+        if (hasConsent()) startAnalytics(analyticsCfg);
+        else readyResolve(window.NMP_analytics);
         return;
       }
 

@@ -110,6 +110,10 @@
               <textarea id="notifyComment" name="comment" rows="2" placeholder="Необязательно"></textarea>
             </div>
             <p class="form-note">Укажите телефон или e-mail — напишем, когда модель появится в продаже.</p>
+            <label class="check-line notify-consent">
+              <input type="checkbox" id="notifyConsent" name="consent" required />
+              <span>Согласен на обработку персональных данных и с <a href="privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a></span>
+            </label>
             <button class="btn btn-primary" type="submit">Жду оповещение</button>
           </form>
         </div>`;
@@ -123,13 +127,19 @@
       });
       overlay.querySelector("#availabilityNotifyForm").addEventListener("submit", async (ev) => {
         ev.preventDefault();
+        const consent = overlay.querySelector("#notifyConsent");
+        if (consent && !consent.checked) {
+          showToast("Нужно согласие на обработку персональных данных");
+          return;
+        }
         const fd = new FormData(ev.target);
         const payload = {
           productId: fd.get("productId"),
           name: fd.get("name"),
           phone: fd.get("phone"),
           email: fd.get("email"),
-          comment: fd.get("comment")
+          comment: fd.get("comment"),
+          consent: true
         };
         try {
           const res = await fetch((window.NMP_CONFIG?.apiBase || "") + "/api/availability-notify", {

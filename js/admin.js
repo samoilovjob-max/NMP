@@ -106,8 +106,14 @@
   };
 
   const setAdminMode = (on) => {
+    document.documentElement.classList.add("admin-html");
     document.body.classList.toggle("admin-app", Boolean(on));
     document.body.classList.toggle("admin-login-page", !on);
+    if (on) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
   };
 
   const shell = (inner) => {
@@ -679,6 +685,7 @@
       await load();
     });
     bindUploader(`${key}ImageFile`, `${key}Image`);
+    bindUploader(`${key}VideoFile`, `${key}Video`);
   };
 
   const renderNews = () =>
@@ -725,6 +732,17 @@
       <div class="field"><label>Подпись (город · товар)</label><input name="meta" /></div>
       <div class="field"><label>Текст отзыва</label><textarea name="text" rows="4" required></textarea></div>
       <div class="field"><label>Оценка (1–5)</label><input name="rating" type="number" min="1" max="5" value="5" /></div>
+      <div class="field">
+        <label>Фото к отзыву</label>
+        <input name="image" id="reviewsImage" placeholder="images/..." />
+        <input type="file" id="reviewsImageFile" accept="image/*" />
+      </div>
+      <div class="field">
+        <label>Видеоотзыв (URL mp4/webm)</label>
+        <input name="video" id="reviewsVideo" placeholder="images/uploads/review.mp4 или https://..." />
+        <input type="file" id="reviewsVideoFile" accept="video/mp4,video/webm,video/quicktime" />
+        <p class="form-note">Если есть видео — оно показывается вместо фото (фото можно оставить как постер).</p>
+      </div>
       <div class="field"><label>Порядок</label><input name="sortOrder" type="number" value="1" /></div>
       <div class="field check-field"><label><input name="published" type="checkbox" checked /> Показывать на сайте</label></div>`,
       (form) => {
@@ -735,6 +753,8 @@
           meta: String(fd.get("meta") || "").trim(),
           text: String(fd.get("text") || "").trim(),
           rating: Number(fd.get("rating") || 5),
+          image: String(fd.get("image") || "").trim(),
+          video: String(fd.get("video") || "").trim(),
           sortOrder: Number(fd.get("sortOrder") || 1),
           published: form.published.checked
         };

@@ -866,32 +866,52 @@ html {
 
 .reviews-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.25rem;
 }
 
 .review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   padding: 1.6rem 1.4rem;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.02);
+}
+
+.review-media {
+  margin: -0.35rem -0.15rem 0.15rem;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.review-media img,
+.review-media video {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
 }
 
 .stars {
   color: var(--ember-soft);
   letter-spacing: 0.15em;
   font-size: 0.85rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0;
 }
 
 .review p {
-  margin: 0 0 1.2rem;
+  margin: 0;
   color: var(--frost-dim);
+  flex: 1;
 }
 
 .review footer {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  margin-top: auto;
 }
 
 .review strong {
@@ -901,6 +921,15 @@ html {
 .review span {
   font-size: 0.85rem;
   color: var(--steel);
+}
+
+.notify-consent {
+  margin: 0.35rem 0 0.85rem;
+  text-align: left;
+}
+
+.notify-dialog .check-line {
+  align-items: flex-start;
 }
 
 /* FAQ */
@@ -2383,8 +2412,13 @@ html {
 }
 
 /* ========== Bitrix-like admin shell ========== */
+html.admin-html,
+html.admin-html body.admin-body {
+  height: 100%;
+}
+
 .admin-body {
-  min-height: 100vh;
+  min-height: 100%;
   background: #0f1214;
 }
 
@@ -2392,6 +2426,8 @@ html {
   display: grid;
   place-items: center;
   padding: 1.5rem;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(ellipse at 20% 0%, rgba(47, 198, 246, 0.08), transparent 50%),
     radial-gradient(ellipse at 80% 100%, rgba(196, 92, 38, 0.12), transparent 45%),
@@ -2404,20 +2440,26 @@ html {
 }
 
 body.admin-app {
+  height: 100%;
+  max-height: 100dvh;
   overflow: hidden;
 }
 
 body.admin-app .admin-root {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 260px minmax(0, 1fr);
   gap: 0;
-  min-height: 100vh;
-  height: 100vh;
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .bx-sidebar {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   background: #1e252c;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   color: #d5dbe3;
@@ -2455,8 +2497,12 @@ body.admin-app .admin-root {
 }
 
 .bx-menu {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 0.75rem 0.65rem 1rem;
 }
 
@@ -2543,6 +2589,7 @@ body.admin-app .admin-root {
 }
 
 .bx-sidebar-footer {
+  flex: 0 0 auto;
   padding: 0.65rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -2551,6 +2598,9 @@ body.admin-app .admin-root {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
   background: #14191e;
 }
 
@@ -2561,6 +2611,7 @@ body.admin-app .admin-root {
   padding: 0.7rem 1.1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   background: #1a2128;
+  flex: 0 0 auto;
   flex-wrap: wrap;
 }
 
@@ -2617,9 +2668,24 @@ body.admin-app .admin-root {
 }
 
 .bx-workspace {
-  flex: 1;
-  overflow: auto;
-  padding: 1.25rem 1.35rem 2rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 1.25rem 1.35rem 2.5rem;
+  scroll-padding-bottom: 2rem;
+}
+
+.bx-workspace .admin-panel {
+  min-height: min-content;
+}
+
+.bx-workspace .admin-list,
+.bx-workspace .admin-form,
+.bx-workspace .admin-card {
+  max-width: 100%;
 }
 
 .bx-page-head {
@@ -2666,13 +2732,17 @@ body.admin-app .admin-root {
 
 @media (max-width: 960px) {
   body.admin-app .admin-root {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    height: 100%;
+    max-height: 100dvh;
   }
 
   .bx-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
     width: min(86vw, 280px);
+    height: 100%;
+    max-height: 100dvh;
     transform: translateX(-105%);
     transition: transform 0.22s ease;
     box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
@@ -2696,6 +2766,10 @@ body.admin-app .admin-root {
 
   .bx-sidebar-backdrop[hidden] {
     display: none;
+  }
+
+  .bx-workspace {
+    padding: 1rem 0.9rem 2.5rem;
   }
 }
 

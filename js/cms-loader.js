@@ -32,7 +32,9 @@
     const href = productHref(p);
     const buyHref = `checkout.html?buy=${encodeURIComponent(p.id)}`;
     const priceLabel = !available
-      ? `<span class="price price-soon">Цена по запросу</span>`
+      ? Number(p.price || p.basePrice || p.effectivePrice) > 0
+        ? `<span class="price">от ${money(p.price || p.basePrice || p.effectivePrice)}</span>`
+        : `<span class="price price-soon">Цена по запросу</span>`
       : p.hasPromo
         ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
         : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
@@ -145,17 +147,23 @@
     }
     if (section) section.hidden = false;
     root.innerHTML = reviews
-      .map(
-        (r) => `
-      <article class="review reveal visible">
+      .map((r) => {
+        const media = r.video
+          ? `<div class="review-media"><video src="${escAttr(r.video)}" controls playsinline preload="metadata" poster="${escAttr(r.image || "")}"></video></div>`
+          : r.image
+            ? `<div class="review-media"><img src="${escAttr(r.image)}" alt="" loading="lazy" /></div>`
+            : "";
+        return `
+      <article class="review reveal visible ${r.image || r.video ? "has-media" : ""}">
+        ${media}
         <div class="stars" aria-label="${r.rating || 5} из 5">${stars(r.rating)}</div>
         <p>«${String(r.text || "").replace(/^«|»$/g, "")}»</p>
         <footer>
           <strong>${r.author || ""}</strong>
           <span>${r.meta || ""}</span>
         </footer>
-      </article>`
-      )
+      </article>`;
+      })
       .join("");
   };
 

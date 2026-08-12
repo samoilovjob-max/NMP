@@ -1,7 +1,7 @@
 {
   "name": "northern-magical-place",
   "version": "1.0.0",
-  "description": "Лендинг и заказ костровых систем Northern Magical Place с интеграцией СДЭК",
+  "description": "Лендинг и заказ костровых чаш Northern Magical Place с интеграцией СДЭК",
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
