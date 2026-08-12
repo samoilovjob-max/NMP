@@ -710,8 +710,9 @@ html {
 }
 
 .product-info h1 {
-  font-size: clamp(1.55rem, 3.6vw, 2.35rem);
+  font-size: clamp(1.35rem, 2.8vw, 1.95rem);
   margin-bottom: 0.35rem;
+  line-height: 1.15;
 }
 
 .product-h1-sub {
@@ -1169,14 +1170,17 @@ html {
 }
 
 .page-hero h1 {
-  max-width: min(18ch, 100%);
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+  max-width: min(22ch, 100%);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 @media (max-width: 640px) {
   .page-hero h1 {
-    font-size: clamp(1.85rem, 8.5vw, 2.45rem);
+    font-size: clamp(1.45rem, 6vw, 1.85rem);
     max-width: 100%;
   }
 }
