@@ -30,20 +30,42 @@
 
   const renderProductCard = (p, { available, imageLoading, fetchPriority }) => {
     const href = productHref(p);
+    const buyHref = `checkout.html?buy=${encodeURIComponent(p.id)}`;
     const priceLabel = !available
       ? `<span class="price price-soon">Цена по запросу</span>`
       : p.hasPromo
         ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
         : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
     const badge = available && p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
+    const specs = Array.isArray(p.specs) ? p.specs.filter(Boolean).slice(0, 4) : [];
+    const useCases = Array.isArray(p.useCases) ? p.useCases.filter(Boolean).slice(0, 3) : [];
+    const benefits =
+      specs.length || useCases.length
+        ? `<div class="product-value">
+            ${
+              specs.length
+                ? `<ul class="product-benefits" aria-label="Преимущества">
+                    ${specs.map((item) => `<li>${item}</li>`).join("")}
+                  </ul>`
+                : ""
+            }
+            ${
+              useCases.length
+                ? `<p class="product-usecases-line"><span>Где применять:</span> ${useCases.join(" · ")}</p>`
+                : ""
+            }
+          </div>`
+        : "";
     const action = available
       ? `<div class="product-meta-actions">
-              <a class="btn btn-primary" href="${href}">Подробнее</a>
+              <a class="btn btn-primary" href="${buyHref}">Купить</a>
               <button class="btn btn-ghost" type="button" data-add-cart="${escAttr(p.id)}">В корзину</button>
+              <a class="btn btn-ghost" href="${href}">Подробнее</a>
             </div>`
       : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
           p.id
-        )}" data-notify-name="${escAttr(p.name)}">Сообщить о поступлении</button>`;
+        )}" data-notify-name="${escAttr(p.name)}">Сообщить о поступлении</button>
+            <a class="btn btn-ghost" href="${href}">Подробнее</a>`;
     const loadingAttr = imageLoading === "eager" ? 'loading="eager"' : 'loading="lazy"';
     const priorityAttr = fetchPriority ? ` fetchpriority="${fetchPriority}"` : "";
     return `
@@ -55,11 +77,12 @@
             ${badge ? `<div class="badge">${badge}</div>` : ""}
             <h3><a href="${href}">${p.name}</a></h3>
             <p class="sku-label">Артикул ${p.sku || ""}</p>
-            <div class="rich-text">${p.short || ""}</div>
+            <div class="product-price-row">${priceLabel}</div>
             <div class="product-meta">
-              ${priceLabel}
               ${action}
             </div>
+            <div class="rich-text product-short">${p.short || ""}</div>
+            ${benefits}
             ${
               available
                 ? ""

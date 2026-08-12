@@ -124,10 +124,20 @@
   const gallery = product.gallery || [product.image];
   const galleryAlts = product.galleryAlts || [];
   const useCases = Array.isArray(product.useCases) ? product.useCases : [];
+  const specs = Array.isArray(product.specs) ? product.specs : [];
+  const highlightSpecs = specs.slice(0, 4);
 
   const priceLabel = product.hasPromo
-    ? `${window.NMP_formatPrice(product.basePrice || product.price)} → ${window.NMP_formatPrice(product.price)}`
+    ? `<s class="price-old">${window.NMP_formatPrice(product.basePrice || product.price)}</s> ${window.NMP_formatPrice(product.price)}`
     : window.NMP_formatPrice(product.price);
+
+  const shortLead =
+    product.short ||
+    String(product.description || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 180);
 
   root.innerHTML = `
     <div class="product-gallery reveal visible">
@@ -154,26 +164,24 @@
           ? `<p class="price-lg">${priceLabel}</p>`
           : `<p class="price-lg price-soon">Цена по запросу</p>`
       }
-      <div class="lead rich-text">${product.description || ""}</div>
-      <ul class="spec-list">
-        ${product.specs.map((item) => `<li>${item}</li>`).join("")}
-      </ul>
-      ${
-        useCases.length
-          ? `<section class="seo-block product-usecases"><h2>Где применять</h2><ul class="spec-list">${useCases
-              .map((item) => `<li>${item}</li>`)
-              .join("")}</ul></section>`
-          : ""
-      }
       <div class="product-actions">
         ${
           available
             ? `<a class="btn btn-primary" href="checkout.html?buy=${encodeURIComponent(product.id)}">Купить</a>
-        <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>`
+        <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>
+        <a class="btn btn-ghost" href="#product-details">Подробнее</a>`
             : `<button class="btn btn-primary" type="button" data-notify-product="${product.id}" data-notify-name="${product.name}">Сообщить о поступлении</button>
         <a class="btn btn-ghost" href="index.html#catalog">Смотреть каталог</a>`
         }
       </div>
+      ${shortLead ? `<p class="product-pitch">${shortLead}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
+      ${
+        highlightSpecs.length
+          ? `<ul class="product-benefits product-benefits-page" aria-label="Ключевые преимущества">
+              ${highlightSpecs.map((item) => `<li>${item}</li>`).join("")}
+            </ul>`
+          : ""
+      }
       <ul class="trust-list">
         <li>Оплата через ЮKassa</li>
         <li>Сборка 1–2 дня · отгрузка до 48 ч</li>
@@ -187,29 +195,67 @@
             "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
       }</p>
 
-      ${
-        product.faq?.length
-          ? `<section class="seo-block">
-              <h2>Частые вопросы</h2>
-              <div class="product-faq">
-                ${product.faq
-                  .map(
-                    (item) => `
-                  <details class="product-faq-item">
-                    <summary>${item.q}</summary>
-                    <p>${item.a}</p>
-                  </details>`
-                  )
-                  .join("")}
-              </div>
-            </section>`
-          : ""
-      }
+      <div id="product-details" class="product-details">
+        <div class="lead rich-text">${product.description || ""}</div>
+        ${
+          specs.length
+            ? `<section class="seo-block">
+                <h2>Характеристики</h2>
+                <ul class="spec-list">${specs.map((item) => `<li>${item}</li>`).join("")}</ul>
+              </section>`
+            : ""
+        }
+        ${
+          useCases.length
+            ? `<section class="seo-block product-usecases"><h2>Где применять</h2><ul class="spec-list">${useCases
+                .map((item) => `<li>${item}</li>`)
+                .join("")}</ul></section>`
+            : ""
+        }
+
+        ${
+          product.faq?.length
+            ? `<section class="seo-block">
+                <h2>Частые вопросы</h2>
+                <div class="product-faq">
+                  ${product.faq
+                    .map(
+                      (item) => `
+                    <details class="product-faq-item">
+                      <summary>${item.q}</summary>
+                      <p>${item.a}</p>
+                    </details>`
+                    )
+                    .join("")}
+                </div>
+              </section>`
+            : ""
+        }
+      </div>
 
       <p class="form-note">Смотрите также: <a href="index.html#catalog">каталог костровых систем Northern Magical Place</a></p>
       <p><a href="index.html#catalog">← Все изделия</a></p>
     </div>
   `;
+
+  document.getElementById("productStickyBuy")?.remove();
+  if (available) {
+    const stickyEl = document.createElement("div");
+    stickyEl.className = "product-sticky-buy";
+    stickyEl.id = "productStickyBuy";
+    stickyEl.innerHTML = `
+      <div class="product-sticky-buy-inner">
+        <div>
+          <strong>${product.name}</strong>
+          <span class="price">${window.NMP_formatPrice(product.price)}</span>
+        </div>
+        <div class="product-sticky-actions">
+          <a class="btn btn-primary" href="checkout.html?buy=${encodeURIComponent(product.id)}">Купить</a>
+          <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>
+        </div>
+      </div>`;
+    document.body.appendChild(stickyEl);
+  }
 
   const mainImage = document.getElementById("mainImage");
   root.querySelectorAll(".thumb").forEach((btn) => {
@@ -221,6 +267,19 @@
     });
   });
 
+  const sticky = document.getElementById("productStickyBuy");
+  const actions = root.querySelector(".product-actions");
+  if (sticky && actions && "IntersectionObserver" in window) {
+    // Show sticky only after primary CTAs leave the viewport (not on first paint)
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        const scrolledPast = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+        sticky.classList.toggle("is-visible", scrolledPast);
+      },
+      { threshold: 0, rootMargin: "-72px 0px 0px 0px" }
+    );
+    io.observe(actions);
+  }
   root.querySelector("[data-add-cart]")?.addEventListener("click", () => {
     if (product.availableForOrder === false) {
       window.NMP_openAvailabilityNotify?.(product);
