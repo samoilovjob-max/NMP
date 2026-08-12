@@ -403,7 +403,10 @@
             <label for="message">Сообщение</label>
             <textarea id="message" name="message" required placeholder="Расскажите, какая модель вас интересует"></textarea>
           </div>
-          <p class="form-note">Нажимая кнопку, вы соглашаетесь с <a href="privacy.html">политикой конфиденциальности</a>.</p>
+          <label class="check-line form-consent">
+            <input type="checkbox" id="contactConsent" name="consent" required />
+            <span>Согласен на обработку персональных данных и с <a href="privacy.html">политикой конфиденциальности</a></span>
+          </label>
           <button class="btn btn-primary" type="submit">Отправить</button>
         </form>
       </div>

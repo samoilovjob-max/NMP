@@ -208,12 +208,18 @@
     }
     contactForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const consent = contactForm.querySelector("#contactConsent");
+      if (consent && !consent.checked) {
+        showToast("Нужно согласие на обработку персональных данных");
+        return;
+      }
       const fd = new FormData(contactForm);
       const payload = {
         name: String(fd.get("name") || "").trim(),
         phone: String(fd.get("phone") || "").trim(),
         email: String(fd.get("email") || "").trim(),
-        message: String(fd.get("message") || "").trim()
+        message: String(fd.get("message") || "").trim(),
+        consent: true
       };
       try {
         const res = await fetch((window.NMP_CONFIG?.apiBase || "") + "/api/contact", {

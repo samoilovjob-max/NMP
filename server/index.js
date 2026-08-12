@@ -20,7 +20,64 @@ const delivery = require("./delivery");
 notify.attachStore(store);
 
 const app = express();
-app.use(cors());
+app.disable("x-powered-by");
+
+// Same-origin storefront; reflect Origin only for localhost / known hosts (no wildcard).
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin) return cb(null, true);
+      try {
+        const host = new URL(origin).hostname;
+        const ok =
+          host === "localhost" ||
+          host === "127.0.0.1" ||
+          host === "northmp.su" ||
+          host.endsWith(".northmp.su") ||
+          host.endsWith(".lhr.life") ||
+          host.endsWith(".loca.lt") ||
+          host.endsWith(".trycloudflare.com") ||
+          host.endsWith(".pinggy.link");
+        return cb(null, ok);
+      } catch {
+        return cb(null, false);
+      }
+    },
+    credentials: false
+  })
+);
+
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  // HSTS only when request is HTTPS (or behind TLS-terminating proxy)
+  const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "").split(",")[0].trim();
+  if (proto === "https") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  // Baseline CSP: allow self + maps/fonts/payment widgets used by the storefront
+  res.setHeader(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "form-action 'self'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+      "script-src 'self' 'unsafe-inline' https://unpkg.com https://yookassa.ru https://*.yookassa.ru",
+      "connect-src 'self' https: wss:",
+      "frame-src 'self' https://yoomoney.ru https://*.yoomoney.ru https://yookassa.ru https://*.yookassa.ru"
+    ].join("; ")
+  );
+  next();
+});
+
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -412,7 +469,41 @@ function adminGuard(req, res, next) {
   next();
 }
 
+const adminLoginAttempts = new Map();
+
+function clientIp(req) {
+  const xf = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  return xf || req.socket?.remoteAddress || "unknown";
+}
+
+function consumeAdminLoginAttempt(ip) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const maxFails = 5;
+  let entry = adminLoginAttempts.get(ip);
+  if (!entry || now - entry.windowStart > windowMs) {
+    entry = { windowStart: now, fails: 0 };
+    adminLoginAttempts.set(ip, entry);
+  }
+  if (entry.fails >= maxFails) {
+    const retryAfterSec = Math.ceil((entry.windowStart + windowMs - now) / 1000);
+    return { blocked: true, retryAfterSec };
+  }
+  return { blocked: false, entry };
+}
+
 app.post("/api/admin/login", (req, res) => {
+  const ip = clientIp(req);
+  const gate = consumeAdminLoginAttempt(ip);
+  if (gate.blocked) {
+    res.setHeader("Retry-After", String(gate.retryAfterSec));
+    return res.status(429).json({
+      message: `Слишком много попыток входа. Повторите через ${gate.retryAfterSec} сек.`
+    });
+  }
+
   const login = String(req.body?.login || req.body?.username || "").trim();
   const password = String(req.body?.password || "");
 
@@ -425,9 +516,11 @@ app.post("/api/admin/login", (req, res) => {
   const loginOk = safeEqualText(login, CONFIG.adminUser);
   const passwordOk = safeEqualText(password, CONFIG.adminPassword);
   if (!loginOk || !passwordOk) {
+    gate.entry.fails += 1;
     return res.status(401).json({ message: "Неверный логин или пароль" });
   }
 
+  adminLoginAttempts.delete(ip);
   return res.json({
     ok: true,
     token: CONFIG.adminToken,
@@ -770,12 +863,22 @@ app.post("/api/availability-notify", (req, res) => {
 app.post("/api/contact", (req, res) => {
   try {
     const body = req.body || {};
+    const consentOk =
+      body.consent === true ||
+      body.consent === "true" ||
+      body.consent === "on" ||
+      body.consent === 1 ||
+      body.consent === "1";
+    if (!consentOk) {
+      return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });
+    }
     const lead = leads.addLead({
       type: "contact",
       name: body.name,
       phone: body.phone,
       email: body.email,
-      comment: body.message || body.comment
+      comment: body.message || body.comment,
+      consentAt: new Date().toISOString()
     });
     notify.notifyNewLead(lead).catch(() => {});
     res.json({ ok: true, id: lead.id });
@@ -1934,7 +2037,53 @@ app.patch("/api/admin/orders/:id", adminGuard, async (req, res) => {
   }
 });
 
-app.use(express.static(ROOT));
+// Never expose repo internals / secrets / PII JSON via express.static(ROOT)
+app.use((req, res, next) => {
+  let pathname = req.path || "/";
+  try {
+    pathname = decodeURIComponent(pathname);
+  } catch {
+    return res.status(400).type("text/plain").send("Bad request");
+  }
+  pathname = path.posix.normalize(pathname.replace(/\\/g, "/"));
+  if (pathname.includes("\0") || pathname.includes("..")) {
+    return res.status(400).type("text/plain").send("Bad request");
+  }
+  const lower = pathname.toLowerCase();
+  const blockedPrefixes = ["/server", "/node_modules", "/.git", "/.cursor", "/docs"];
+  const blockedExact = new Set([
+    "/package.json",
+    "/package-lock.json",
+    "/.gitignore",
+    "/.env",
+    "/readme.md",
+    "/license",
+    "/license.md"
+  ]);
+  if (
+    blockedPrefixes.some((p) => lower === p || lower.startsWith(`${p}/`)) ||
+    blockedExact.has(lower) ||
+    /(^|\/)\.env(\.|$|\/)/i.test(lower) ||
+    lower.endsWith(".md")
+  ) {
+    return res.status(404).type("text/plain").send("Not found");
+  }
+  next();
+});
+
+app.use(
+  express.static(ROOT, {
+    dotfiles: "deny",
+    index: ["index.html"],
+    setHeaders(res, filePath) {
+      if (/\.(html?)$/i.test(filePath)) {
+        res.setHeader("Cache-Control", "no-cache");
+      } else if (/\.(css|js|mjs|woff2?|png|jpe?g|webp|svg|ico)$/i.test(filePath)) {
+        res.setHeader("Cache-Control", "public, max-age=86400");
+      }
+    }
+  })
+);
 
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => {
