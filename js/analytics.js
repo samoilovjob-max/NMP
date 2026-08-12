@@ -114,10 +114,11 @@
     banner.setAttribute("aria-label", "Согласие на cookies аналитики");
     banner.innerHTML = `
       <div class="analytics-consent-inner">
-        <p>Мы используем cookies и сервисы аналитики (Яндекс.Метрика${analyticsCfg?.gaMeasurementId ? ", Google Analytics" : ""}), чтобы улучшать сайт. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p>
+        <p class="analytics-consent-title">Cookies и аналитика</p>
+        <p class="analytics-consent-text">Мы используем cookies и Яндекс.Метрику${analyticsCfg?.gaMeasurementId ? " и Google Analytics" : ""}, чтобы улучшать сайт. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p>
         <div class="analytics-consent-actions">
-          <button type="button" class="btn btn-ghost" data-analytics-decline>Только необходимые</button>
-          <button type="button" class="btn btn-primary" data-analytics-accept>Принять</button>
+          <button type="button" class="btn btn-ghost analytics-consent-btn" data-analytics-decline>Только необходимые</button>
+          <button type="button" class="btn btn-primary analytics-consent-btn" data-analytics-accept>Принять</button>
         </div>
       </div>`;
 
