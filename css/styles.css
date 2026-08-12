@@ -134,18 +134,6 @@ html {
   scroll-padding-top: calc(var(--header-h) + 0.75rem);
 }
 
-#catalog,
-#lifestyle,
-#about,
-#contact,
-#news,
-#reviews,
-#faq,
-#features,
-#promoStrip {
-  scroll-margin-top: calc(var(--header-h) + 0.75rem);
-}
-
 /* Header */
 .site-header {
   position: fixed;
