@@ -1553,6 +1553,14 @@ app.post("/api/payments/demo/:orderId", async (req, res) => {
   }
 });
 
+app.get("/api/payments/webhook", (_req, res) => {
+  res.status(200).json({
+    ok: true,
+    message:
+      "Webhook ЮKassa активен. Касса шлёт сюда POST-уведомления; открытие ссылки в браузере (GET) — нормальная проверка URL."
+  });
+});
+
 app.post("/api/payments/webhook", async (req, res) => {
   try {
     const event = req.body || {};
