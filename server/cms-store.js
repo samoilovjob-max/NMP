@@ -38,6 +38,31 @@ function uid(prefix) {
   return `${prefix}-${crypto.randomBytes(4).toString("hex")}`;
 }
 
+/** SEO: Google treats hyphens as word separators; underscores are not. */
+function normalizeSlug(value, fallback = "") {
+  return String(value || fallback || "")
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-")
+    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+const LEGACY_PUBLIC_ASSETS = {
+  "images/MAX_SS.webp": "images/max-ss.webp",
+  "images/MAX_SS.jpg": "images/max-ss.jpg",
+  "images/Telegram_Logo.svg": "images/telegram-logo.svg",
+  "images/WhatsApp_logo.svg": "images/whatsapp-logo.svg",
+  "images/Instagram_Logo.svg": "images/instagram-logo.svg",
+  "images/MAX_Logo.svg": "images/max-logo.svg"
+};
+
+function rewriteLegacyPublicAsset(url) {
+  if (!url) return url;
+  return LEGACY_PUBLIC_ASSETS[url] || url;
+}
+
 function sortByOrder(list, key = "sortOrder") {
   return [...list].sort((a, b) => Number(a[key] || 0) - Number(b[key] || 0));
 }
@@ -50,8 +75,14 @@ function listProducts({ activeOnly = false } = {}) {
 }
 
 function getProduct(id) {
-  const key = String(id || "");
-  return listProducts().find((p) => p.id === key || p.slug === key) || null;
+  const key = String(id || "").trim();
+  if (!key) return null;
+  const slugKey = normalizeSlug(key);
+  return (
+    listProducts().find(
+      (p) => p.id === key || p.slug === key || normalizeSlug(p.slug) === slugKey
+    ) || null
+  );
 }
 
 function effectivePrice(product) {
@@ -69,6 +100,7 @@ function publicProduct(product) {
   const availableForOrder = product.availableForOrder !== false;
   return {
     ...product,
+    slug: normalizeSlug(product.slug, product.id),
     price: payPrice,
     basePrice: price,
     effectivePrice: payPrice,
@@ -98,10 +130,7 @@ function saveProduct(input, { isNew = false } = {}) {
     ...input,
     id,
     sku: String(input.sku || base.sku || `NMP-${id}`).trim(),
-    slug: String(input.slug || base.slug || `product-${id}`)
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, "-"),
+    slug: normalizeSlug(input.slug || base.slug, `product-${id}`),
     name: String(input.name || base.name || "Новый товар").trim(),
     h1: String(input.h1 || input.name || base.h1 || "").trim(),
     price: Math.max(0, Number(input.price ?? base.price ?? 0)),
@@ -219,6 +248,9 @@ function saveSite(patch) {
   cms.site = { ...(cms.site || {}), ...(patch || {}) };
   if (patch?.contacts) {
     cms.site.contacts = { ...(cms.site.contacts || {}), ...patch.contacts };
+    if (cms.site.contacts.maxCard) {
+      cms.site.contacts.maxCard = rewriteLegacyPublicAsset(cms.site.contacts.maxCard);
+    }
   }
   writeCms(cms);
   return cms.site;
@@ -254,13 +286,20 @@ function publicReviews() {
 
 function getPublicCms() {
   const cms = readCms();
+  const site = { ...(cms.site || {}) };
+  if (site.contacts) {
+    site.contacts = {
+      ...site.contacts,
+      maxCard: rewriteLegacyPublicAsset(site.contacts.maxCard)
+    };
+  }
   return {
     updatedAt: cms.updatedAt,
     products: listProducts({ activeOnly: true }).map(publicProduct),
     news: listCollection("news", { publishedOnly: true }),
     reviews: publicReviews(),
     promotions: listCollection("promotions", { publishedOnly: true }),
-    site: cms.site || {}
+    site
   };
 }
 

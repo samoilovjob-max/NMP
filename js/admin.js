@@ -363,7 +363,7 @@
         <div class="admin-form-grid">
           <div class="field"><label>ID</label><input name="id" value="${esc(p.id || "")}" ${isNew ? "" : "readonly"} required placeholder="5" /></div>
           <div class="field"><label>Артикул (SKU)</label><input name="sku" value="${esc(p.sku || "")}" required /></div>
-          <div class="field"><label>Slug (латиница)</label><input name="slug" value="${esc(p.slug || "")}" required /></div>
+          <div class="field"><label>Slug (латиница и дефисы)</label><input name="slug" value="${esc(p.slug || "")}" required pattern="[a-z0-9]+(-[a-z0-9]+)*" title="Только латиница и дефисы, без подчёркиваний" placeholder="severnyy-kochevnik" /></div>
           <div class="field"><label>Порядок</label><input name="sortOrder" type="number" value="${esc(p.sortOrder ?? 1)}" /></div>
           <div class="field"><label>Название</label><input name="name" value="${esc(p.name || "")}" required /></div>
           <div class="field"><label>Плашка (badge)</label><input name="badge" value="${esc(p.badge || "")}" /></div>

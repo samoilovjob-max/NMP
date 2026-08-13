@@ -240,8 +240,26 @@ window.NMP_PRODUCTS = [
 window.NMP_formatPrice = (value) =>
   new Intl.NumberFormat("ru-RU").format(value) + " ₽";
 
-window.NMP_getProduct = (id) =>
-  window.NMP_PRODUCTS.find((item) => item.id === String(id) || item.slug === String(id));
+window.NMP_normalizeSlug = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-");
 
-window.NMP_getProductBySlug = (slug) =>
-  window.NMP_PRODUCTS.find((item) => item.slug === String(slug));
+window.NMP_getProduct = (id) => {
+  const key = String(id || "");
+  const slugKey = window.NMP_normalizeSlug(key);
+  return window.NMP_PRODUCTS.find(
+    (item) =>
+      item.id === key ||
+      item.slug === key ||
+      window.NMP_normalizeSlug(item.slug) === slugKey
+  );
+};
+
+window.NMP_getProductBySlug = (slug) => {
+  const slugKey = window.NMP_normalizeSlug(slug);
+  return window.NMP_PRODUCTS.find(
+    (item) => item.slug === String(slug) || window.NMP_normalizeSlug(item.slug) === slugKey
+  );
+};

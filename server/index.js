@@ -2197,6 +2197,30 @@ app.post("/api/admin/orders/bulk", adminGuard, async (req, res) => {
   res.json({ ok: true, processed: results.length, okCount, failCount: results.length - okCount, results });
 });
 
+// SEO: 301 old underscore asset URLs to hyphenated names
+const LEGACY_ASSET_REDIRECTS = {
+  "/images/Telegram_Logo.svg": "/images/telegram-logo.svg",
+  "/images/WhatsApp_logo.svg": "/images/whatsapp-logo.svg",
+  "/images/Instagram_Logo.svg": "/images/instagram-logo.svg",
+  "/images/MAX_Logo.svg": "/images/max-logo.svg",
+  "/images/MAX_SS.webp": "/images/max-ss.webp",
+  "/images/MAX_SS.jpg": "/images/max-ss.jpg"
+};
+app.use((req, res, next) => {
+  const target = LEGACY_ASSET_REDIRECTS[req.path];
+  if (target) return res.redirect(301, target);
+  const slug = typeof req.query.slug === "string" ? req.query.slug : "";
+  if (req.path === "/product.html" && slug.includes("_")) {
+    const params = new URLSearchParams();
+    for (const [key, value] of Object.entries(req.query)) {
+      if (value == null) continue;
+      params.set(key, key === "slug" ? String(value).replace(/_/g, "-") : String(value));
+    }
+    return res.redirect(301, `/product.html?${params.toString()}`);
+  }
+  next();
+});
+
 // Never expose repo internals / secrets / PII JSON via express.static(ROOT)
 app.use((req, res, next) => {
   let pathname = req.path || "/";

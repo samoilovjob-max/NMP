@@ -22,10 +22,19 @@
   const applyProducts = (products) => {
     if (!Array.isArray(products) || !products.length) return;
     window.NMP_PRODUCTS = products;
-    window.NMP_getProduct = (id) =>
-      (window.NMP_PRODUCTS || []).find(
-        (item) => item.id === String(id) || item.slug === String(id)
+    window.NMP_getProduct = (id) => {
+      const key = String(id || "");
+      const slugKey =
+        typeof window.NMP_normalizeSlug === "function"
+          ? window.NMP_normalizeSlug(key)
+          : key.replace(/_/g, "-");
+      return (window.NMP_PRODUCTS || []).find(
+        (item) =>
+          item.id === key ||
+          item.slug === key ||
+          String(item.slug || "").replace(/_/g, "-") === slugKey
       );
+    };
   };
 
   const renderProductCard = (p, { available, imageLoading, fetchPriority }) => {
@@ -255,7 +264,7 @@
     }
     const maxLink = document.querySelector(".messenger-max, a[aria-label='Написать в MAX']");
     if (maxLink) {
-      const card = contacts.maxCard || "images/MAX_SS.webp";
+      const card = contacts.maxCard || "images/max-ss.webp";
       maxLink.setAttribute("href", "#max-card");
       maxLink.setAttribute("data-max-card", card);
     }
@@ -334,6 +343,6 @@
     const link = event.target.closest("[data-max-card], .messenger-max");
     if (!link) return;
     event.preventDefault();
-    openMaxCard(link.getAttribute("data-max-card") || window.NMP_CONFIG?.contacts?.maxCard || "images/MAX_SS.webp");
+    openMaxCard(link.getAttribute("data-max-card") || window.NMP_CONFIG?.contacts?.maxCard || "images/max-ss.webp");
   });
 })();
