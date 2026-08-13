@@ -82,7 +82,7 @@
     return `
         <article class="product reveal visible ${available ? "" : "product-soon"}" id="product-${p.id}">
           <a class="product-media" href="${href}">
-            <img src="${p.image}" alt="${p.imageAlt || p.name}" ${loadingAttr}${priorityAttr} />
+            <img src="${p.image}" alt="${escAttr(p.imageAlt || p.name)}" ${loadingAttr}${priorityAttr} />
           </a>
           <div class="product-body">
             ${badge ? `<div class="badge">${badge}</div>` : ""}
@@ -226,7 +226,7 @@
             )}" data-notify-name="${escAttr(linked?.name || n.title || "")}">Сообщить о поступлении</button>`;
         return `
         <article class="news-card reveal visible">
-          ${n.image ? `<img src="${n.image}" alt="" loading="lazy" />` : ""}
+          ${n.image ? `<img src="${n.image}" alt="${escAttr(n.title || "Новость Northern Magical Place")}" loading="lazy" />` : ""}
           <div>
             ${date ? `<p class="form-note">${date}</p>` : ""}
             <h3>${n.title || ""}</h3>
@@ -307,7 +307,11 @@
         }
       });
     } else {
-      overlay.querySelector("img").src = src;
+      const img = overlay.querySelector("img");
+      if (img) {
+        img.src = src;
+        img.alt = "QR-код MAX — Сергей Самойлов";
+      }
       overlay.hidden = false;
       return;
     }

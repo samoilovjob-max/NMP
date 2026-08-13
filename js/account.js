@@ -371,7 +371,7 @@
                     .map(
                       (item) => `
                     <div class="summary-line">
-                      <img src="${item.image}" alt="" />
+                      <img src="${item.image}" alt="${window.NMP_escAttr?.(item.name) || item.name}" />
                       <div>
                         <strong>${item.name}</strong>
                         <span class="sku-label">Артикул ${item.sku || "—"}</span>

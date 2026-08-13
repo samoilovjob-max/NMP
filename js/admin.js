@@ -148,7 +148,7 @@
     return `
       <aside class="bx-sidebar" aria-label="Меню админки">
         <div class="bx-sidebar-brand">
-          <img src="images/logo-mark.webp" alt="" width="36" height="36" />
+          <img src="images/logo-mark.webp" alt="Northern Magical Place" width="36" height="36" />
           <div>
             <strong>NMP Admin</strong>
             <span>Управление сайтом</span>
@@ -548,7 +548,7 @@
           .map(
             (p) => `
           <article class="admin-card">
-            <img src="${esc(p.image)}" alt="" />
+            <img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" />
             <div>
               <div class="badge">${
                 p.active === false
@@ -1089,7 +1089,7 @@
     return `<div class="admin-order-items">${items
       .map((item) => {
         const img = item.image
-          ? `<img src="${esc(item.image)}" alt="" loading="lazy" />`
+          ? `<img src="${esc(item.image)}" alt="${esc(item.name || "Товар")}" loading="lazy" />`
           : `<span class="form-note">нет фото</span>`;
         return `<div class="admin-order-item">
           ${img}

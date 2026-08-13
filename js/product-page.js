@@ -12,6 +12,14 @@
   const product = getProduct(id);
   const root = document.getElementById("productRoot");
   const siteUrl = "https://northmp.su";
+  const escAttr =
+    typeof window.NMP_escAttr === "function"
+      ? window.NMP_escAttr
+      : (value) =>
+          String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;");
 
   const upsertMeta = (attr, key, content) => {
     if (!content) return;
@@ -142,15 +150,15 @@
   root.innerHTML = `
     <div class="product-gallery reveal visible">
       <div class="product-stage">
-        <img id="mainImage" src="${product.image}" alt="${product.imageAlt || product.name}" />
+        <img id="mainImage" src="${product.image}" alt="${escAttr(product.imageAlt || product.name)}" />
       </div>
       <div class="thumbs">
         ${gallery
           .map(
             (src, index) =>
-              `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}" data-alt="${
+              `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}" data-alt="${escAttr(
                 galleryAlts[index] || product.imageAlt || product.name
-              }"><img src="${src}" alt="${galleryAlts[index] || product.name}" loading="lazy" /></button>`
+              )}"><img src="${src}" alt="${escAttr(galleryAlts[index] || product.imageAlt || product.name)}" loading="lazy" /></button>`
           )
           .join("")}
       </div>

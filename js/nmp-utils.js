@@ -1,4 +1,10 @@
 /** Shared product URL helper for storefront scripts */
+window.NMP_escAttr = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+
 window.NMP_productHref = (productOrId, productMaybe) => {
   const product =
     typeof productOrId === "object" && productOrId

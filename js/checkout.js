@@ -118,7 +118,6 @@
     if (localInfo) localInfo.hidden = !isLocal;
 
     if (cityInput) cityInput.required = isCdek;
-    if (cityCodeInput) cityCodeInput.required = isCdek;
     if (localAddressInput) localAddressInput.required = isLocal;
 
     if (method === "pickup") {
@@ -209,7 +208,7 @@
           .map(
             (line) => `
           <div class="summary-line">
-            <img src="${line.product.image}" alt="" />
+            <img src="${line.product.image}" alt="${window.NMP_escAttr?.(line.product.imageAlt || line.product.name) || line.product.name}" />
             <div>
               <strong>${line.product.name}</strong>
               <span class="sku-label">Артикул ${line.product.sku}</span>

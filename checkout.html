@@ -12,6 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -24,7 +25,7 @@
           <span>Magical Place</span>
         </span>
       </a>
-      <nav class="nav" id="nav">
+      <nav class="nav" id="nav" aria-label="Основная навигация">
         <a href="index.html#catalog">Изделия</a>
         <a href="account.html">Личный кабинет</a>
         <a href="buyers.html">Доставка и возврат</a>
@@ -33,7 +34,7 @@
         <a class="icon-btn" href="account.html" aria-label="Личный кабинет">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.8-3.2 4.2-4.8 7-4.8s5.2 1.6 7 4.8"/></svg>
         </a>
-        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню"><span></span><span></span><span></span></button>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню" aria-expanded="false"><span></span><span></span><span></span></button>
       </div>
     </div>
   </header>
@@ -112,7 +113,7 @@
             <p>Укажите адрес доставки в поле ниже. Мы свяжемся с вами для согласования времени.</p>
             <div class="field" style="margin:0.35rem 0 0">
               <label for="localAddress">Адрес доставки по Петрозаводску</label>
-              <input id="localAddress" name="localAddress" type="text" autocomplete="street-address" placeholder="Улица, дом, квартира" />
+              <input id="localAddress" name="localAddress" type="text" autocomplete="address-line1" placeholder="Улица, дом, квартира" />
             </div>
             <p class="form-note">Самовывоз со склада: г. Петрозаводск, ул. Университетская 7/3.</p>
           </div>
@@ -122,7 +123,7 @@
           <div class="field">
             <label for="city">Город получения</label>
             <input id="city" name="city" required placeholder="Начните вводить город" autocomplete="off" />
-            <input type="hidden" id="cityCode" name="cityCode" required />
+            <input type="hidden" id="cityCode" name="cityCode" />
             <div id="citySuggest" class="suggest-list"></div>
           </div>
 
@@ -149,7 +150,7 @@
               <button class="btn btn-ghost" type="button" id="openCdekWidget">Показать на карте (необязательно)</button>
             </div>
             <div id="cdekWidget" class="cdek-widget-box" hidden>
-              <div id="pvzMap" class="pvz-map" aria-label="Карта пунктов выдачи СДЭК"></div>
+              <div id="pvzMap" class="pvz-map" role="region" aria-label="Карта пунктов выдачи СДЭК"></div>
               <p class="form-note map-attr">Карта: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
             </div>
             <input type="hidden" id="pvzCode" name="pvzCode" />
@@ -186,7 +187,6 @@
     </div>
   </footer>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script src="js/config.js"></script>
   <script src="js/analytics.js" defer></script>
   <script src="js/delivery-providers.js"></script>

@@ -790,12 +790,14 @@ html {
   font-size: 0.95rem;
 }
 
-.life-item strong {
+.life-item strong,
+.life-item h3 {
   display: block;
   color: var(--frost);
   font-family: var(--font-display);
   font-size: 1.05rem;
-  margin-bottom: 0.35rem;
+  margin: 0 0 0.35rem;
+  font-weight: 600;
 }
 
 .section-head h2 {
@@ -1337,7 +1339,7 @@ html {
   font-size: 0.9rem;
 }
 
-.footer-col h4 {
+.footer-col h3 {
   margin: 0 0 0.9rem;
   font-family: var(--font-display);
   font-size: 0.85rem;
@@ -1438,8 +1440,9 @@ html {
   background: rgba(255,255,255,0.02);
 }
 
-.info-card h3 {
+.info-card h2 {
   margin-bottom: 0.5rem;
+  font-size: 1.15rem;
 }
 
 .info-card p {
