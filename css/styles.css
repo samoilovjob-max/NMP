@@ -1100,6 +1100,7 @@ html {
 .contact-form {
   display: grid;
   gap: 0.9rem;
+  position: relative;
 }
 
 .field {
