@@ -268,6 +268,23 @@ certbot --nginx -d northmp.su -d www.northmp.su
 
 Согласиться с условиями, указать email для продления.
 
+Канонический хост — **без www**. После выпуска сертификата добавьте отдельный server-блок, чтобы `www.northmp.su` сразу отдавал 301, а не 200:
+
+```nginx
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name www.northmp.su;
+    ssl_certificate /etc/letsencrypt/live/northmp.su/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/northmp.su/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    return 301 https://northmp.su$request_uri;
+}
+```
+
+В блоке `northmp.su` оставьте только `server_name northmp.su;`. Приложение также делает этот редирект само, если запрос всё же дошёл до Node.
+
 Автопродление проверить:
 
 ```bash

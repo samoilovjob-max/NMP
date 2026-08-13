@@ -18,6 +18,7 @@ const backup = require("./backup");
 const tgClients = require("./telegram-clients");
 const delivery = require("./delivery");
 const { jsBundleMiddleware } = require("./js-bundles");
+const seo = require("./seo");
 
 notify.attachStore(store);
 
@@ -81,6 +82,8 @@ app.use((req, res, next) => {
 });
 
 app.use(compression({ threshold: 512, level: 6 }));
+app.use(seo.canonicalHostMiddleware);
+app.use(seo.indexHtmlRedirect);
 
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -2259,6 +2262,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(seo.productPageMiddleware(ROOT, cms));
 app.use(jsBundleMiddleware(ROOT));
 
 app.use(
