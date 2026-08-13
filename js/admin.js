@@ -321,7 +321,7 @@
             <label for="adminPassword">Пароль</label>
             <input id="adminPassword" name="password" type="password" required autocomplete="current-password" />
           </div>
-          ${error ? `<p class="form-note" style="color:#c45c26">${esc(error)}</p>` : ""}
+          ${error ? `<p class="form-note form-note-error">${esc(error)}</p>` : ""}
           <button class="btn btn-primary" type="submit">Войти</button>
           <a class="form-note" href="index.html">← На сайт</a>
         </form>
@@ -540,7 +540,7 @@
     }
 
     root.innerHTML = shell(`
-      <div class="admin-actions" style="margin-bottom:1rem">
+      <div class="admin-actions actions-block">
         <button class="btn btn-primary" type="button" id="addProduct">Добавить товар</button>
       </div>
       <div class="admin-table">
@@ -1183,7 +1183,7 @@
             )}</span></div>
             <div class="admin-money-row"><span>Доставка</span><span>${money(order.deliverySum)}</span></div>
             <div class="admin-money-row total"><span>Итого</span><span>${money(order.total)}</span></div>
-            <p class="form-note" style="margin-top:0.55rem">Оплата: ${esc(paymentLabel(order.paymentStatus))}${
+            <p class="form-note note-spaced">Оплата: ${esc(paymentLabel(order.paymentStatus))}${
               order.paymentId ? ` · ID ${esc(order.paymentId)}` : ""
             }</p>
           </div>
@@ -1293,7 +1293,7 @@
 
     root.innerHTML = shell(`
       <div class="admin-orders-tools">
-        <p class="form-note" style="margin:0">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Кнопка «Синхронизировать статусы» подтягивает оплату из ЮKassa и трек/этап из СДЭК. Дополнительные ТК (Деловые Линии, Яндекс, Ozon, X5) заложены в архитектуре и пока не подключены.</p>
+        <p class="form-note note-flush">SLA отгрузки: ${payload.shipSlaHours || 48} ч. Кнопка «Синхронизировать статусы» подтягивает оплату из ЮKassa и трек/этап из СДЭК. Дополнительные ТК (Деловые Линии, Яндекс, Ozon, X5) заложены в архитектуре и пока не подключены.</p>
         <div class="admin-orders-stats">
           <span class="admin-stat">Всего: <strong>${orders.length}</strong></span>
           <span class="admin-stat">К отгрузке: <strong>${needShip.length}</strong></span>
@@ -1301,13 +1301,13 @@
           <span class="admin-stat">Оплачено: <strong>${paid.length}</strong></span>
           <span class="admin-stat">В ПВЗ / выдано: <strong>${arrived.length}</strong></span>
         </div>
-        <div class="admin-actions" style="margin:0.35rem 0 0.15rem">
+        <div class="admin-actions actions-tight">
           <button class="btn btn-primary" type="button" id="syncAllOrders">Синхронизировать статусы</button>
         </div>
         <div class="admin-export-1c">
-          <h4 style="margin:0.6rem 0 0.35rem">Выгрузка заказов</h4>
-          <p class="form-note" style="margin:0 0 0.55rem">Excel (.xlsx) — для работы в таблице. CommerceML XML — обмен с 1С. CSV / JSON — дополнительные форматы.</p>
-          <div class="admin-filter-row" style="margin-bottom:0.45rem">
+          <h4>Выгрузка заказов</h4>
+          <p class="form-note note-export">Excel (.xlsx) — для работы в таблице. CommerceML XML — обмен с 1С. CSV / JSON — дополнительные форматы.</p>
+          <div class="admin-filter-row export-scope">
             <label class="admin-filter ${state.exportScope === "paid" ? "active" : ""}">
               <input type="radio" name="exportScope" value="paid" ${state.exportScope === "paid" ? "checked" : ""} hidden />
               Оплаченные
@@ -1330,7 +1330,7 @@
             <button class="btn btn-ghost" type="button" data-export-1c="commerceml">Скачать XML (CommerceML)</button>
             <button class="btn btn-ghost" type="button" data-export-1c="csv">Скачать CSV</button>
             <button class="btn btn-ghost" type="button" data-export-1c="json">Скачать JSON</button>
-            <label class="check-line" style="margin:0;align-items:center">
+            <label class="check-line check-inline">
               <input type="checkbox" id="exportMark1c" ${state.exportMark ? "checked" : ""} />
               <span>Пометить как выгруженные в 1С</span>
             </label>
@@ -1419,7 +1419,7 @@
                           : ""
                       }
                     </div>
-                    <h3 style="margin:0.15rem 0">${esc(order.id)}</h3>
+                    <h3 class="admin-card-title">${esc(order.id)}</h3>
                     <p class="form-note">Создан: ${when(order.createdAt)} · Оплачен: ${when(order.paidAt)} · Отправить до: ${when(
                       order.shipByAt
                     )}${order.lastSync?.at ? ` · Синхр.: ${when(order.lastSync.at)}` : ""}</p>
@@ -1439,9 +1439,9 @@
                         ${esc(order.customer?.phone || "—")}
                         ${
                           order.customer?.phone
-                            ? `<button class="btn btn-ghost" type="button" data-copy="${esc(
+                            ? `<button class="btn btn-ghost btn-copy" type="button" data-copy="${esc(
                                 order.customer.phone
-                              )}" style="margin-left:0.35rem;padding:0.2rem 0.45rem">Копировать</button>`
+                              )}">Копировать</button>`
                             : ""
                         }
                       </div>
@@ -1873,7 +1873,7 @@
                         lead.status === "done" ? "Обработана" : lead.status === "new" ? "Новая" : lead.status || "—"
                       )}</span>
                     </div>
-                    <h3 style="margin:0.15rem 0">${esc(lead.productName || lead.productId || "Сообщение с сайта")}</h3>
+                    <h3 class="admin-card-title">${esc(lead.productName || lead.productId || "Сообщение с сайта")}</h3>
                     <p class="form-note">${when(lead.createdAt)} · ${esc(lead.productSku || lead.type || "")} · ${esc(lead.id)}</p>
                   </div>
                 </header>

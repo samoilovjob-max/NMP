@@ -48,7 +48,7 @@
       </div>
     </section>
 
-    <section class="section" style="padding-top:2rem;">
+    <section class="section section-compact">
       <div class="container checkout-grid">
         <form class="checkout-form" id="checkoutForm">
           <h2>Данные получателя</h2>
@@ -111,7 +111,7 @@
             <h3>Адресная доставка по Петрозаводску</h3>
             <p>Доставка по городу Петрозаводску — <strong>по предварительной договорённости</strong> после оплаты.</p>
             <p>Укажите адрес доставки в поле ниже. Мы свяжемся с вами для согласования времени.</p>
-            <div class="field" style="margin:0.35rem 0 0">
+            <div class="field field-flush">
               <label for="localAddress">Адрес доставки по Петрозаводску</label>
               <input id="localAddress" name="localAddress" type="text" autocomplete="address-line1" placeholder="Улица, дом, квартира" />
             </div>
@@ -187,15 +187,8 @@
     </div>
   </footer>
 
-  <script src="js/config.js"></script>
-  <script src="js/analytics.js" defer></script>
-  <script src="js/delivery-providers.js"></script>
-  <script src="js/products.js"></script>
-  <script src="js/cms-loader.js"></script>
-  <script src="js/nmp-utils.js"></script>
-  <script src="js/store.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/nmp-storefront.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="js/checkout.js"></script>
+  <script src="js/nmp-checkout.js"></script>
 </body>
 </html>

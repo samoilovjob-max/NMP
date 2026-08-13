@@ -72,6 +72,14 @@ ul {
   position: relative;
 }
 
+.section.section-compact {
+  padding-top: 2rem;
+}
+
+.section.section-after-hero {
+  padding-top: 2.5rem;
+}
+
 .section-head {
   max-width: 40rem;
   margin-bottom: clamp(2rem, 5vw, 3.5rem);
@@ -364,6 +372,25 @@ html {
 .btn-ghost:hover {
   border-color: var(--frost);
   background: rgba(255, 255, 255, 0.04);
+}
+
+.btn-sm {
+  padding: 0.7rem 1rem;
+  font-size: 0.75rem;
+}
+
+.btn-row {
+  margin-top: 2.5rem;
+}
+
+.btn-row .btn + .btn,
+.faq-cta .btn + .btn {
+  margin-left: 0.5rem;
+}
+
+.faq-cta {
+  text-align: center;
+  margin-top: 2rem;
 }
 
 .btn-dark {
@@ -1005,6 +1032,7 @@ html {
 .contact-details {
   display: grid;
   gap: 1.1rem;
+  margin-top: 2rem;
 }
 
 .contact-details a,
@@ -1368,6 +1396,11 @@ html {
   border-top: 1px solid var(--line);
   color: var(--steel);
   font-size: 0.85rem;
+}
+
+.footer-bottom.plain {
+  border: 0;
+  padding-top: 0;
 }
 
 /* Page (buyers / privacy) */
@@ -2824,6 +2857,19 @@ body.admin-app .admin-root {
   gap: 1rem;
 }
 
+body.nav-lock {
+  overflow: hidden;
+}
+
+.metrica-pixel {
+  position: absolute;
+  left: -9999px;
+}
+
+.field-flush {
+  margin: 0.35rem 0 0;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -2953,6 +2999,52 @@ body.admin-app .admin-root {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 0.85rem;
+}
+
+.admin-actions.actions-block {
+  margin-bottom: 1rem;
+}
+
+.admin-actions.actions-tight {
+  margin: 0.35rem 0 0.15rem;
+}
+
+.form-note.form-note-error {
+  color: var(--ember);
+}
+
+.form-note.note-flush {
+  margin: 0;
+}
+
+.form-note.note-spaced {
+  margin-top: 0.55rem;
+}
+
+.form-note.note-export {
+  margin: 0 0 0.55rem;
+}
+
+.admin-export-1c h4 {
+  margin: 0.6rem 0 0.35rem;
+}
+
+.admin-filter-row.export-scope {
+  margin-bottom: 0.45rem;
+}
+
+.check-line.check-inline {
+  margin: 0;
+  align-items: center;
+}
+
+.admin-card-title {
+  margin: 0.15rem 0;
+}
+
+.btn-copy {
+  margin-left: 0.35rem;
+  padding: 0.2rem 0.45rem;
 }
 
 .price-old {

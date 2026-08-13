@@ -101,7 +101,7 @@
     });
 
     const noscript = document.createElement("noscript");
-    noscript.innerHTML = `<div><img src="https://mc.yandex.ru/watch/${id}" style="position:absolute;left:-9999px" alt="" /></div>`;
+    noscript.innerHTML = `<div><img class="metrica-pixel" src="https://mc.yandex.ru/watch/${id}" alt="" /></div>`;
     document.body.appendChild(noscript);
   }
 

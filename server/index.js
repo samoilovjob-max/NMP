@@ -16,6 +16,7 @@ const notify = require("./notify");
 const backup = require("./backup");
 const tgClients = require("./telegram-clients");
 const delivery = require("./delivery");
+const { jsBundleMiddleware } = require("./js-bundles");
 
 notify.attachStore(store);
 
@@ -2254,6 +2255,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+app.use(jsBundleMiddleware(ROOT));
 
 app.use(
   express.static(ROOT, {

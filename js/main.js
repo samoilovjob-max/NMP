@@ -33,7 +33,7 @@
     nav.classList.toggle("open", open);
     menuToggle.classList.toggle("open", open);
     menuToggle.setAttribute("aria-expanded", String(open));
-    document.body.style.overflow = open ? "hidden" : "";
+    document.body.classList.toggle("nav-lock", open);
     header?.classList.toggle("menu-open", open);
   };
 
