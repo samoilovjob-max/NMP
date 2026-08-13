@@ -324,13 +324,32 @@
   window.addEventListener("nmp:cart", refreshCartBadge);
   refreshCartBadge();
 
+  const decodeEmailParts = (el) => {
+    const user = String(el.getAttribute("data-user") || "")
+      .split("")
+      .reverse()
+      .join("");
+    const host = String(el.getAttribute("data-host") || "")
+      .split("")
+      .reverse()
+      .join("");
+    if (!user || !host) return "";
+    return `${user}@${host}`;
+  };
+
+  document.querySelectorAll("a.email-safe").forEach((link) => {
+    const email = decodeEmailParts(link);
+    if (!email) return;
+    link.textContent = email;
+    link.setAttribute("title", email);
+  });
+
   document.addEventListener("click", (event) => {
     const link = event.target.closest("a.email-safe");
     if (!link) return;
-    const reversed = String(link.getAttribute("data-email-rev") || "").trim();
-    if (!reversed) return;
+    const email = decodeEmailParts(link);
+    if (!email) return;
     event.preventDefault();
-    const email = reversed.split("").reverse().join("");
     const subject = String(link.getAttribute("data-email-subject") || "").trim();
     const mailto = subject
       ? `mailto:${email}?subject=${encodeURIComponent(subject)}`

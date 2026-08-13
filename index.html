@@ -434,9 +434,7 @@
           <div class="contact-details">
             <div>
               <strong>Почта</strong>
-              <a class="email-safe" href="#contact" data-email-rev="us.pmhtron@ofni">
-                <span class="email-rev">us.pmhtron@ofni</span>
-              </a>
+              <a class="email-safe" href="#contact" data-user="ofni" data-host="us.pmhtron">написать письмо</a>
               <p class="form-note">Нажмите — откроется письмо, адрес скопируется. Или напишите через форму справа.</p>
             </div>
             <div>
@@ -525,7 +523,7 @@
           <a href="buyers.html">Доставка, сборка и возврат</a>
           <a href="usage.html">Правила эксплуатации</a>
           <a href="privacy.html">Политика конфиденциальности</a>
-          <a class="email-safe" href="#contact" data-email-rev="us.pmhtron@ofni"><span class="email-rev">us.pmhtron@ofni</span></a>
+          <a class="email-safe" href="#contact" data-user="ofni" data-host="us.pmhtron">написать письмо</a>
           <p>+7 (921) 011-03-02</p>
         </div>
       </div>
@@ -538,6 +536,14 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script>
+    document.querySelectorAll("a.email-safe").forEach(function (link) {
+      var user = String(link.getAttribute("data-user") || "").split("").reverse().join("");
+      var host = String(link.getAttribute("data-host") || "").split("").reverse().join("");
+      if (!user || !host) return;
+      var email = user + "@" + host;
+      link.textContent = email;
+      link.setAttribute("title", email);
+    });
     window.addEventListener("load", function () {
       var href = "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap";
       var l = document.createElement("link");

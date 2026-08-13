@@ -1054,11 +1054,6 @@ html {
   text-underline-offset: 3px;
 }
 
-.email-rev {
-  unicode-bidi: bidi-override;
-  direction: rtl;
-}
-
 .hp-field {
   position: absolute;
   left: -12000px;
