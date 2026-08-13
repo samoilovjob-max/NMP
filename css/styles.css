@@ -1071,18 +1071,20 @@ html {
 .messenger-links {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin-top: 0.7rem;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
 }
 
 .messenger-link {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 1.75rem;
+  height: 1.75rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   background: transparent;
-  border-radius: 0;
+  border-radius: 50%;
+  overflow: hidden;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -1090,7 +1092,7 @@ html {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 .messenger-link:hover {
