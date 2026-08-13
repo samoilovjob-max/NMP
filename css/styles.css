@@ -1055,11 +1055,17 @@ html {
 }
 
 .hp-field {
-  position: absolute;
-  left: -12000px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
+  position: absolute !important;
+  left: -10000px !important;
+  top: auto;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden !important;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .messenger-links {

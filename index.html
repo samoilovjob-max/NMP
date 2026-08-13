@@ -75,6 +75,7 @@
       .hero-product{grid-template-columns:88px 1fr;width:100%}
       .hero-product img{width:88px;height:88px}
     }
+    .hp-field{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0;pointer-events:none}
   </style>
   <link rel="preload" href="css/styles.css" as="style" />
   <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'" />
@@ -435,7 +436,6 @@
             <div>
               <strong>Почта</strong>
               <a class="email-safe" href="#contact" data-user="ofni" data-host="us.pmhtron">написать письмо</a>
-              <p class="form-note">Нажмите — откроется письмо, адрес скопируется. Или напишите через форму справа.</p>
             </div>
             <div>
               <strong>Телефон</strong>
@@ -487,10 +487,7 @@
             <label for="message">Сообщение</label>
             <textarea id="message" name="message" required placeholder="Расскажите, какая модель вас интересует"></textarea>
           </div>
-          <div class="hp-field" aria-hidden="true">
-            <label for="contactWebsite">Сайт компании</label>
-            <input id="contactWebsite" name="website" type="text" tabindex="-1" autocomplete="off" />
-          </div>
+          <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
           <label class="check-line form-consent">
             <input type="checkbox" id="contactConsent" name="consent" required />
             <span>Я даю согласие на обработку персональных данных в соответствии с <a href="privacy.html">Политикой конфиденциальности</a> (152-ФЗ)</span>

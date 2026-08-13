@@ -110,10 +110,7 @@
               <textarea id="notifyComment" name="comment" rows="2" placeholder="Необязательно"></textarea>
             </div>
             <p class="form-note">Укажите телефон или e-mail — напишем, когда модель появится в продаже.</p>
-            <div class="hp-field" aria-hidden="true">
-              <label for="notifyWebsite">Сайт компании</label>
-              <input id="notifyWebsite" name="website" type="text" tabindex="-1" autocomplete="off" />
-            </div>
+            <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
             <label class="check-line notify-consent">
               <input type="checkbox" id="notifyConsent" name="consent" required />
               <span>Я даю согласие на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a> (152-ФЗ)</span>
