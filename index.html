@@ -87,7 +87,6 @@
     "name": "Northern Magical Place",
     "url": "https://northmp.su/",
     "logo": "https://northmp.su/images/logo-full.jpg",
-    "email": "info@northmp.su",
     "telephone": "+7-921-011-03-02",
     "address": {
       "@type": "PostalAddress",
@@ -434,7 +433,11 @@
 
           <div class="contact-details">
             <div>
-              <a href="mailto:info@northmp.su">info@northmp.su</a>
+              <strong>Почта</strong>
+              <a class="email-safe" href="#contact" data-email-rev="us.pmhtron@ofni">
+                <span class="email-rev">us.pmhtron@ofni</span>
+              </a>
+              <p class="form-note">Нажмите — откроется письмо, адрес скопируется. Или напишите через форму справа.</p>
             </div>
             <div>
               <strong>Телефон</strong>
@@ -486,6 +489,10 @@
             <label for="message">Сообщение</label>
             <textarea id="message" name="message" required placeholder="Расскажите, какая модель вас интересует"></textarea>
           </div>
+          <div class="hp-field" aria-hidden="true">
+            <label for="contactWebsite">Сайт компании</label>
+            <input id="contactWebsite" name="website" type="text" tabindex="-1" autocomplete="off" />
+          </div>
           <label class="check-line form-consent">
             <input type="checkbox" id="contactConsent" name="consent" required />
             <span>Я даю согласие на обработку персональных данных в соответствии с <a href="privacy.html">Политикой конфиденциальности</a> (152-ФЗ)</span>
@@ -518,7 +525,7 @@
           <a href="buyers.html">Доставка, сборка и возврат</a>
           <a href="usage.html">Правила эксплуатации</a>
           <a href="privacy.html">Политика конфиденциальности</a>
-          <a href="mailto:info@northmp.su">info@northmp.su</a>
+          <a class="email-safe" href="#contact" data-email-rev="us.pmhtron@ofni"><span class="email-rev">us.pmhtron@ofni</span></a>
           <p>+7 (921) 011-03-02</p>
         </div>
       </div>

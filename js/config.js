@@ -11,7 +11,6 @@ window.NMP_CONFIG = {
     servicePath: "/api/cdek/service"
   },
   contacts: {
-    email: "info@northmp.su",
     phone: "+7 (921) 011-03-02",
     telegram: "https://t.me/+79210110302",
     whatsapp: "https://wa.me/79210110302",

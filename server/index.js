@@ -871,9 +871,43 @@ app.get("/api/cms", (_req, res) => {
   res.json(cms.getPublicCms());
 });
 
+const publicFormAttempts = new Map();
+
+function consumePublicFormAttempt(ip) {
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000;
+  const maxHits = 8;
+  let entry = publicFormAttempts.get(ip);
+  if (!entry || now - entry.windowStart > windowMs) {
+    entry = { windowStart: now, count: 0 };
+    publicFormAttempts.set(ip, entry);
+  }
+  if (entry.count >= maxHits) {
+    const retryAfterSec = Math.ceil((entry.windowStart + windowMs - now) / 1000);
+    return { blocked: true, retryAfterSec };
+  }
+  entry.count += 1;
+  return { blocked: false };
+}
+
+function isHoneypot(body) {
+  const trap = String(body?.website || body?.company || body?.fax || "").trim();
+  return trap.length > 0;
+}
+
 app.post("/api/availability-notify", (req, res) => {
   try {
+    const gate = consumePublicFormAttempt(clientIp(req));
+    if (gate.blocked) {
+      res.setHeader("Retry-After", String(gate.retryAfterSec));
+      return res.status(429).json({
+        message: `Слишком много заявок. Повторите через ${gate.retryAfterSec} сек.`
+      });
+    }
     const body = req.body || {};
+    if (isHoneypot(body)) {
+      return res.json({ ok: true, lead: { id: "ok" } });
+    }
     const consentOk = hasPdConsent(body);
     if (!consentOk) {
       return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });
@@ -908,7 +942,17 @@ app.post("/api/availability-notify", (req, res) => {
 
 app.post("/api/contact", (req, res) => {
   try {
+    const gate = consumePublicFormAttempt(clientIp(req));
+    if (gate.blocked) {
+      res.setHeader("Retry-After", String(gate.retryAfterSec));
+      return res.status(429).json({
+        message: `Слишком много сообщений. Повторите через ${gate.retryAfterSec} сек.`
+      });
+    }
     const body = req.body || {};
+    if (isHoneypot(body)) {
+      return res.json({ ok: true, id: "ok" });
+    }
     const consentOk = hasPdConsent(body);
     if (!consentOk) {
       return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });

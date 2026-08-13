@@ -288,9 +288,11 @@ function getPublicCms() {
   const cms = readCms();
   const site = { ...(cms.site || {}) };
   if (site.contacts) {
+    const contacts = { ...site.contacts };
+    delete contacts.email;
     site.contacts = {
-      ...site.contacts,
-      maxCard: rewriteLegacyPublicAsset(site.contacts.maxCard)
+      ...contacts,
+      maxCard: rewriteLegacyPublicAsset(contacts.maxCard)
     };
   }
   return {

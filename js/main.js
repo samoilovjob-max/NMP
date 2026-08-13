@@ -110,6 +110,10 @@
               <textarea id="notifyComment" name="comment" rows="2" placeholder="Необязательно"></textarea>
             </div>
             <p class="form-note">Укажите телефон или e-mail — напишем, когда модель появится в продаже.</p>
+            <div class="hp-field" aria-hidden="true">
+              <label for="notifyWebsite">Сайт компании</label>
+              <input id="notifyWebsite" name="website" type="text" tabindex="-1" autocomplete="off" />
+            </div>
             <label class="check-line notify-consent">
               <input type="checkbox" id="notifyConsent" name="consent" required />
               <span>Я даю согласие на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a> (152-ФЗ)</span>
@@ -139,6 +143,7 @@
           phone: fd.get("phone"),
           email: fd.get("email"),
           comment: fd.get("comment"),
+          website: fd.get("website"),
           consent: true
         };
         try {
@@ -229,6 +234,7 @@
         phone: String(fd.get("phone") || "").trim(),
         email: String(fd.get("email") || "").trim(),
         message: String(fd.get("message") || "").trim(),
+        website: String(fd.get("website") || "").trim(),
         consent: true
       };
       try {
@@ -274,6 +280,7 @@
         phone: String(fd.get("phone") || "").trim(),
         email: String(fd.get("email") || "").trim(),
         message: `[${kindLabels[kind] || kind}] ${String(fd.get("message") || "").trim()}`,
+        website: String(fd.get("website") || "").trim(),
         consent: true
       };
       if (!payload.phone && !payload.email) {
@@ -316,6 +323,24 @@
 
   window.addEventListener("nmp:cart", refreshCartBadge);
   refreshCartBadge();
+
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest("a.email-safe");
+    if (!link) return;
+    const reversed = String(link.getAttribute("data-email-rev") || "").trim();
+    if (!reversed) return;
+    event.preventDefault();
+    const email = reversed.split("").reverse().join("");
+    const subject = String(link.getAttribute("data-email-subject") || "").trim();
+    const mailto = subject
+      ? `mailto:${email}?subject=${encodeURIComponent(subject)}`
+      : `mailto:${email}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(email).catch(() => {});
+    }
+    window.location.href = mailto;
+    showToast("Адрес скопирован — можно вставить в письмо");
+  });
 
   /* Reliable in-page / cross-page anchors (contact, catalog, …) */
   const scrollToHashTarget = () => {
