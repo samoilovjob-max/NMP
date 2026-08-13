@@ -118,8 +118,8 @@
     const parts = available.map((p, index) =>
       renderProductCard(p, {
         available: true,
-        imageLoading: index < 2 ? "eager" : "lazy",
-        fetchPriority: index < 2 ? "high" : undefined
+        imageLoading: "lazy",
+        fetchPriority: undefined
       })
     );
 

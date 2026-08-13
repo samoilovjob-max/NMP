@@ -3,6 +3,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const multer = require("multer");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
@@ -78,6 +79,8 @@ app.use((req, res, next) => {
   );
   next();
 });
+
+app.use(compression({ threshold: 512, level: 6 }));
 
 app.use(express.json({ limit: "8mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -2265,8 +2268,10 @@ app.use(
     setHeaders(res, filePath) {
       if (/\.(html?)$/i.test(filePath)) {
         res.setHeader("Cache-Control", "no-cache");
-      } else if (/\.(css|js|mjs|woff2?|png|jpe?g|webp|svg|ico)$/i.test(filePath)) {
+      } else if (/\.(css|js|mjs)$/i.test(filePath)) {
         res.setHeader("Cache-Control", "public, max-age=86400");
+      } else if (/\.(woff2?|png|jpe?g|webp|svg|ico)$/i.test(filePath)) {
+        res.setHeader("Cache-Control", "public, max-age=604800");
       }
     }
   })

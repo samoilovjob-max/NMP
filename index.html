@@ -20,10 +20,13 @@
   <link rel="icon" href="images/favicon.png" type="image/png" sizes="32x32" />
   <link rel="icon" href="images/favicon-16.png" type="image/png" sizes="16x16" />
   <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+  <link rel="preload" as="image" type="image/webp" href="images/hero-bg-1080.webp" imagesrcset="images/hero-bg-800.webp 800w, images/hero-bg-1080.webp 1080w, images/hero-bg-1280.webp 1280w" imagesizes="100vw" fetchpriority="high" />
+  <link rel="stylesheet" href="css/styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap" /></noscript>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -112,7 +115,16 @@
     <!-- 1. Hero -->
     <section class="hero">
       <div class="hero-bg" aria-hidden="true">
-        <img src="images/shore-lake.webp" alt="Костровая чаша Northern Magical Place на берегу карельского озера" />
+        <img
+          src="images/hero-bg-1080.webp"
+          srcset="images/hero-bg-800.webp 800w, images/hero-bg-1080.webp 1080w, images/hero-bg-1280.webp 1280w"
+          sizes="100vw"
+          width="1080"
+          height="704"
+          alt="Костровая чаша Northern Magical Place на берегу карельского озера"
+          fetchpriority="high"
+          decoding="async"
+        />
       </div>
       <div class="hero-content">
         <div class="hero-copy">
@@ -126,7 +138,7 @@
         </div>
 
         <aside class="hero-product">
-          <img src="images/main-product.webp" alt="Северный Кочевник — походная костровая чаша" />
+          <img src="images/main-product-thumb.webp" alt="Северный Кочевник — походная костровая чаша" width="112" height="112" decoding="async" />
           <div>
             <strong>Северный Кочевник</strong>
             <p>Готов к любым маршрутам: компактно в багажнике, выручает в диких местах и создаёт уют на стоянке.</p>
@@ -207,7 +219,7 @@
         <div class="lifestyle-grid">
           <article class="life-item reveal">
             <figure>
-              <img src="images/mountain-river.webp" alt="Вечер у костра на берегу горной реки" />
+              <img src="images/mountain-river.webp" alt="Вечер у костра на берегу горной реки" width="1363" height="768" loading="lazy" decoding="async" />
             </figure>
             <div>
               <h3>Идеальный вечер у быстрой реки</h3>
@@ -217,7 +229,7 @@
 
           <article class="life-item reveal">
             <figure>
-              <img src="images/country-house.webp" alt="Костровая чаша у загородного дома в Карелии" />
+              <img src="images/country-house.webp" alt="Костровая чаша у загородного дома в Карелии" width="1024" height="577" loading="lazy" decoding="async" />
             </figure>
             <div>
               <h3>Стиль. Вкус. Свобода. Комфорт. Эстетика.</h3>
@@ -227,7 +239,7 @@
 
           <article class="life-item reveal">
             <figure>
-              <img src="images/shore-lake.webp" alt="Ужин у костровой чаши на берегу озера" />
+              <img src="images/shore-lake.webp" alt="Ужин у костровой чаши на берегу озера" width="1269" height="832" loading="lazy" decoding="async" />
             </figure>
             <div>
               <h3>Идеальный ужин на берегу озера</h3>
@@ -237,7 +249,7 @@
 
           <article class="life-item reveal">
             <figure>
-              <img src="images/camping.webp" alt="Кемпинг с костровой чашей Northern Magical Place" />
+              <img src="images/camping.webp" alt="Кемпинг с костровой чашей Northern Magical Place" width="1363" height="768" loading="lazy" decoding="async" />
             </figure>
             <div>
               <h3>Центр притяжения вашего вечера</h3>
@@ -261,16 +273,16 @@
 
         <div class="about-gallery reveal">
           <figure class="wide">
-            <img src="images/country-house.webp" alt="Костровая чаша у загородного дома" />
+            <img src="images/country-house.webp" alt="Костровая чаша у загородного дома" width="1024" height="577" loading="lazy" decoding="async" />
           </figure>
           <figure>
-            <img src="images/model-01.webp" alt="Костровая чаша Northern Magical Place — модель в разработке" />
+            <img src="images/model-01.webp" alt="Костровая чаша Northern Magical Place — модель в разработке" width="1043" height="1024" loading="lazy" decoding="async" />
           </figure>
           <figure>
-            <img src="images/model-02.webp" alt="Очаг Northern Magical Place у современного дома — модель в разработке" />
+            <img src="images/model-02.webp" alt="Очаг Northern Magical Place у современного дома — модель в разработке" width="1076" height="992" loading="lazy" decoding="async" />
           </figure>
           <figure class="wide">
-            <img src="images/main-product.webp" alt="Северный Кочевник в сборе" />
+            <img src="images/main-product.webp" alt="Северный Кочевник в сборе" width="1110" height="944" loading="lazy" decoding="async" />
           </figure>
         </div>
       </div>
