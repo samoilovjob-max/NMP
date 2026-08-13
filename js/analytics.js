@@ -91,7 +91,7 @@
 
     window.ym(id, "init", {
       ssr: true,
-      webvisor: true,
+      webvisor: false,
       clickmap: true,
       ecommerce: "dataLayer",
       referrer: document.referrer,
@@ -140,8 +140,8 @@
     banner.setAttribute("aria-label", "Согласие на cookies аналитики");
     banner.innerHTML = `
       <div class="analytics-consent-inner">
-        <p class="analytics-consent-title">Cookies и аналитика</p>
-        <p class="analytics-consent-text">Мы используем cookies и Яндекс.Метрику${analyticsCfg?.gaMeasurementId ? " и Google Analytics" : ""}, чтобы улучшать сайт. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p>
+        <p class="analytics-consent-title">Персональные данные и cookies</p>
+        <p class="analytics-consent-text">Для статистики посещений мы можем загрузить Яндекс.Метрику. Это обработка данных по 152-ФЗ и только с вашего согласия. Корзина и оформление заказа работают без метрики. Подробнее — в <a href="privacy.html#cookies">Политике конфиденциальности</a>.</p>
         <div class="analytics-consent-actions">
           <button type="button" class="btn btn-ghost analytics-consent-btn" data-analytics-decline>Только необходимые</button>
           <button type="button" class="btn btn-primary analytics-consent-btn" data-analytics-accept>Принять</button>

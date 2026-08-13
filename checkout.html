@@ -166,10 +166,16 @@
             <textarea id="comment" name="comment" rows="3" placeholder="Здесь вы можете оставить Ваши пожелания к заказу и мы их обязательно учтем"></textarea>
           </div>
 
-          <label class="check-line">
-            <input type="checkbox" id="agree" name="agree" required />
-            <span>Подтверждаю, что ознакомлен(а) с <a href="privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a>, <a href="buyers.html" target="_blank" rel="noopener">условиями доставки и возврата</a> и <a href="usage.html" target="_blank" rel="noopener">правилами эксплуатации и гарантии</a>. Мне известно, что изделие предназначено для открытого огня на улице и требует соблюдения пожарной безопасности. Подтверждение не означает отказа от прав потребителя по законодательству РФ.</span>
-          </label>
+          <div class="check-stack">
+            <label class="check-line">
+              <input type="checkbox" id="pdConsent" name="consent" required />
+              <span>Я даю согласие на обработку персональных данных (ФИО, телефон, e-mail, адрес доставки) для оформления и исполнения заказа, передачи в ЮKassa и СДЭК — в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a> (152-ФЗ)</span>
+            </label>
+            <label class="check-line">
+              <input type="checkbox" id="agree" name="agree" required />
+              <span>Подтверждаю, что ознакомлен(а) с <a href="buyers.html" target="_blank" rel="noopener">условиями доставки и возврата</a> и <a href="usage.html" target="_blank" rel="noopener">правилами эксплуатации и гарантии</a>. Изделие предназначено для открытого огня на улице. Подтверждение не означает отказа от прав потребителя.</span>
+            </label>
+          </div>
 
           <button class="btn btn-primary" type="submit" id="payBtn" disabled>Оплатить через ЮKassa</button>
           <p class="form-note" id="checkoutStatusNote">После оплаты статусы заказа появятся в личном кабинете; при желании можно получать их и в Telegram.</p>
@@ -183,7 +189,7 @@
   <footer class="site-footer">
     <div class="container footer-simple">
       <img class="footer-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="160" height="78" />
-      <p>© 2026 Northern Magical Place · <a href="buyers.html">Доставка, сборка и возврат</a> · <a href="usage.html">Правила эксплуатации</a></p>
+      <p>© 2026 Northern Magical Place · <a href="buyers.html">Доставка, сборка и возврат</a> · <a href="usage.html">Правила эксплуатации</a> · <a href="privacy.html">Персональные данные</a></p>
     </div>
   </footer>
 

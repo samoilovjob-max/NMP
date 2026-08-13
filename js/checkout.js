@@ -45,6 +45,7 @@
   const tariffCodeInput = document.getElementById("tariffCode");
   const payBtn = document.getElementById("payBtn");
   const agreeBox = document.getElementById("agree");
+  const pdConsentBox = document.getElementById("pdConsent");
   const mapBox = document.getElementById("cdekWidget");
   const pvzToolbar = document.querySelector(".pvz-toolbar");
   const cdekBlock = document.getElementById("cdekDeliveryBlock");
@@ -151,7 +152,7 @@
 
   const syncPayButton = () => {
     const hasCart = cartLines().length > 0;
-    const agreed = Boolean(agreeBox?.checked);
+    const agreed = Boolean(agreeBox?.checked) && Boolean(pdConsentBox?.checked);
     const method = getDeliveryMethod();
     let deliveryOk = false;
     if (method === "pickup") {
@@ -480,6 +481,9 @@
     syncPayButton();
   };
 
+  pdConsentBox?.addEventListener("change", () => {
+    syncPayButton();
+  });
   agreeBox?.addEventListener("change", () => {
     syncPayButton();
   });
@@ -597,8 +601,8 @@
     event.preventDefault();
     const lines = cartLines();
     if (!lines.length) return;
-    if (!agreeBox?.checked) {
-      window.NMP_toast("Подтвердите согласие с политикой конфиденциальности");
+    if (!pdConsentBox?.checked || !agreeBox?.checked) {
+      window.NMP_toast("Отметьте согласие на обработку персональных данных и условия заказа");
       syncPayButton();
       return;
     }
@@ -670,7 +674,8 @@
           tariffCode: nextTariff,
           deliverySum: nextDeliverySum,
           comment: form.comment.value.trim(),
-          items: lines.map((l) => ({ productId: l.productId, qty: l.qty }))
+          items: lines.map((l) => ({ productId: l.productId, qty: l.qty })),
+          consent: true
         })
       });
 

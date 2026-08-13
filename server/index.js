@@ -148,6 +148,13 @@ const CONFIG = {
 const yookassaReady = Boolean(CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
 const yookassaSecretOnly = Boolean(!CONFIG.yookassa.shopId && CONFIG.yookassa.secretKey);
 
+const PD_POLICY_VERSION = "2026-08-13";
+
+function hasPdConsent(body) {
+  const value = body?.consent ?? body?.pdConsent;
+  return value === true || value === "true" || value === "on" || value === 1 || value === "1";
+}
+
 let tokenCache = { value: "", expiresAt: 0 };
 
 async function getToken() {
@@ -867,12 +874,7 @@ app.get("/api/cms", (_req, res) => {
 app.post("/api/availability-notify", (req, res) => {
   try {
     const body = req.body || {};
-    const consentOk =
-      body.consent === true ||
-      body.consent === "true" ||
-      body.consent === "on" ||
-      body.consent === 1 ||
-      body.consent === "1";
+    const consentOk = hasPdConsent(body);
     if (!consentOk) {
       return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });
     }
@@ -894,7 +896,8 @@ app.post("/api/availability-notify", (req, res) => {
       productName: product.name,
       productSku: product.sku,
       type: "availability",
-      consentAt: new Date().toISOString()
+      consentAt: new Date().toISOString(),
+      consentVersion: PD_POLICY_VERSION
     });
     notify.notifyNewLead(lead).catch(() => {});
     res.json({ ok: true, lead: { id: lead.id, createdAt: lead.createdAt } });
@@ -906,22 +909,19 @@ app.post("/api/availability-notify", (req, res) => {
 app.post("/api/contact", (req, res) => {
   try {
     const body = req.body || {};
-    const consentOk =
-      body.consent === true ||
-      body.consent === "true" ||
-      body.consent === "on" ||
-      body.consent === 1 ||
-      body.consent === "1";
+    const consentOk = hasPdConsent(body);
     if (!consentOk) {
       return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });
     }
+    const leadType = body.type === "pd-request" ? "pd-request" : "contact";
     const lead = leads.addLead({
-      type: "contact",
+      type: leadType,
       name: body.name,
       phone: body.phone,
       email: body.email,
       comment: body.message || body.comment,
-      consentAt: new Date().toISOString()
+      consentAt: new Date().toISOString(),
+      consentVersion: PD_POLICY_VERSION
     });
     notify.notifyNewLead(lead).catch(() => {});
     res.json({ ok: true, id: lead.id });
@@ -1246,6 +1246,9 @@ app.post("/api/orders", async (req, res) => {
     if (!lastName || !firstName || !phone || !email) {
       return res.status(400).json({ message: "Заполните данные получателя" });
     }
+    if (!hasPdConsent(body)) {
+      return res.status(400).json({ message: "Нужно согласие на обработку персональных данных" });
+    }
 
     const PICKUP_ADDRESS = CONFIG.pickupAddress;
     const LOCAL_LABEL = "Адресная доставка по г. Петрозаводску (по договорённости)";
@@ -1324,6 +1327,9 @@ app.post("/api/orders", async (req, res) => {
           ? [localAddress, comment].filter(Boolean).join(" · ")
           : comment,
       localAddress: deliveryMethod === "local" ? localAddress || nextPvzAddress : "",
+      pdConsent: true,
+      pdConsentAt: new Date().toISOString(),
+      pdConsentVersion: PD_POLICY_VERSION,
       cdek: {
         trackNumber: "",
         uuid: "",

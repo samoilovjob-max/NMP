@@ -33,7 +33,7 @@ function addLead(input = {}) {
   const productSku = String(input.productSku || "").trim();
   const comment = String(input.comment || "").trim();
 
-  if (type === "contact") {
+  if (type === "contact" || type === "pd-request") {
     if (!comment && !name) throw new Error("Напишите сообщение");
     if (!phone && !email) throw new Error("Укажите телефон или e-mail");
   } else {
@@ -43,7 +43,7 @@ function addLead(input = {}) {
 
   const lead = {
     id:
-      (type === "contact" ? "MSG-" : "LEAD-") +
+      (type === "contact" || type === "pd-request" ? "MSG-" : "LEAD-") +
       Math.random().toString(36).slice(2, 7).toUpperCase() +
       Date.now().toString(36).slice(-4).toUpperCase(),
     createdAt: new Date().toISOString(),
@@ -55,7 +55,9 @@ function addLead(input = {}) {
     productId,
     productName,
     productSku,
-    comment
+    comment,
+    consentAt: input.consentAt || new Date().toISOString(),
+    consentVersion: String(input.consentVersion || "")
   };
 
   const list = readLeads();

@@ -112,7 +112,7 @@
             <p class="form-note">Укажите телефон или e-mail — напишем, когда модель появится в продаже.</p>
             <label class="check-line notify-consent">
               <input type="checkbox" id="notifyConsent" name="consent" required />
-              <span>Согласен на обработку персональных данных и с <a href="privacy.html" target="_blank" rel="noopener">политикой конфиденциальности</a></span>
+              <span>Я даю согласие на обработку персональных данных в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a> (152-ФЗ)</span>
             </label>
             <button class="btn btn-primary" type="submit">Жду оповещение</button>
           </form>
@@ -241,6 +241,55 @@
         if (!res.ok) throw new Error(data.message || "Не удалось отправить сообщение");
         showToast("Сообщение отправлено. Мы свяжемся с вами.");
         contactForm.reset();
+      } catch (err) {
+        showToast(err.message || "Ошибка отправки");
+      }
+    });
+  }
+
+  const pdForm = document.getElementById("pdRequestForm");
+  if (pdForm) {
+    const pdPhone = pdForm.querySelector("#pdPhone");
+    if (pdPhone && typeof window.NMP_bindPhoneMask === "function") {
+      window.NMP_bindPhoneMask(pdPhone);
+    }
+    pdForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const consent = pdForm.querySelector("#pdConsent");
+      if (consent && !consent.checked) {
+        showToast("Нужно согласие на обработку персональных данных");
+        return;
+      }
+      const fd = new FormData(pdForm);
+      const kindLabels = {
+        access: "доступ к данным",
+        fix: "исправление",
+        delete: "удаление / отзыв согласия",
+        other: "иной запрос"
+      };
+      const kind = String(fd.get("kind") || "other");
+      const payload = {
+        type: "pd-request",
+        name: String(fd.get("name") || "").trim(),
+        phone: String(fd.get("phone") || "").trim(),
+        email: String(fd.get("email") || "").trim(),
+        message: `[${kindLabels[kind] || kind}] ${String(fd.get("message") || "").trim()}`,
+        consent: true
+      };
+      if (!payload.phone && !payload.email) {
+        showToast("Укажите телефон или e-mail для ответа");
+        return;
+      }
+      try {
+        const res = await fetch((window.NMP_CONFIG?.apiBase || "") + "/api/contact", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || "Не удалось отправить запрос");
+        showToast("Запрос отправлен. Ответим на указанные контакты.");
+        pdForm.reset();
       } catch (err) {
         showToast(err.message || "Ошибка отправки");
       }
