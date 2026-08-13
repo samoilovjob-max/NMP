@@ -341,7 +341,16 @@
     }
   };
 
-  window.NMP_cmsReady = boot();
+  window.NMP_cmsReady = new Promise((resolve) => {
+    const start = () => {
+      boot().then(resolve);
+    };
+    if (document.querySelector(".hero-bg img") && document.readyState !== "complete") {
+      window.addEventListener("load", start, { once: true });
+    } else {
+      start();
+    }
+  });
 
   document.addEventListener("click", (event) => {
     const link = event.target.closest("[data-max-card], .messenger-max");
