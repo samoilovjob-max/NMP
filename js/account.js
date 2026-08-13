@@ -16,10 +16,28 @@
       return data;
     });
 
+  const phoneQueryValue = (raw) => {
+    const phoneRaw = String(raw || "").trim();
+    const phone =
+      typeof window.NMP_normalizePhone === "function"
+        ? window.NMP_normalizePhone(phoneRaw)
+        : phoneRaw;
+    const digits = String(phone || phoneRaw || "").replace(/\D/g, "");
+    if (digits.length < 10) return "";
+    return phone ? `+${phone}` : phoneRaw;
+  };
+
+  const orderPhoneParam = (order) => {
+    const value =
+      phoneQueryValue(order?.customer?.phone) ||
+      phoneQueryValue(Store.getUser()?.phone);
+    return value ? `phone=${encodeURIComponent(value)}` : "";
+  };
+
   const lookupFormHtml = () => `
     <form class="account-lookup" id="orderLookupForm">
       <h3>Найти заказ</h3>
-      <p class="form-note">Достаточно одного поля: номер заказа <strong>или</strong> телефон из оформления. Можно указать оба — так надёжнее.</p>
+      <p class="form-note">Укажите <strong>телефон</strong> из оформления заказа. Номер заказа — по желанию (так поиск точнее).</p>
       <div class="field-row">
         <div class="field">
           <label for="lookupOrderId">Номер заказа</label>
@@ -27,7 +45,7 @@
         </div>
         <div class="field">
           <label for="lookupPhone">Телефон</label>
-          <input id="lookupPhone" name="phone" type="tel" placeholder="+7..." autocomplete="tel" />
+          <input id="lookupPhone" name="phone" type="tel" placeholder="+7..." autocomplete="tel" required />
         </div>
       </div>
       <button class="btn btn-primary" type="submit">Найти заказ</button>
@@ -44,21 +62,15 @@
       event.preventDefault();
       const orderId = String(form.orderId.value || "").trim();
       const phoneRaw = String(form.phone.value || "").trim();
-      const phone =
-        typeof window.NMP_normalizePhone === "function"
-          ? window.NMP_normalizePhone(phoneRaw)
-          : phoneRaw;
-      const phoneDigits = String(phone || phoneRaw || "").replace(/\D/g, "");
-      if (!orderId && phoneDigits.length < 10) {
-        window.NMP_toast("Укажите номер заказа или телефон");
+      const phoneValue = phoneQueryValue(phoneRaw);
+      if (!phoneValue) {
+        window.NMP_toast("Укажите телефон, с которым оформляли заказ");
         return;
       }
       try {
         const qs = new URLSearchParams();
         if (orderId) qs.set("orderId", orderId);
-        if (phoneDigits.length >= 10) {
-          qs.set("phone", phone ? `+${phone}` : phoneRaw);
-        }
+        qs.set("phone", phoneValue);
         const data = await api(`/api/orders/lookup?${qs.toString()}`);
         const found = Array.isArray(data.orders) && data.orders.length
           ? data.orders
@@ -119,7 +131,11 @@
 
   const syncFromServer = async (order) => {
     try {
-      const live = await api(`/api/payments/status/${encodeURIComponent(order.id)}`);
+      const phoneQs = orderPhoneParam(order);
+      if (!phoneQs) return order;
+      const live = await api(
+        `/api/payments/status/${encodeURIComponent(order.id)}?${phoneQs}`
+      );
       if (live.order) {
         return Store.updateOrder(order.id, {
           ...live.order,
@@ -161,9 +177,17 @@
     root.querySelectorAll("[data-tg-link]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         const orderId = btn.getAttribute("data-tg-link");
+        const order = Store.getOrders().find((o) => o.id === orderId);
+        const phoneQs = orderPhoneParam(order);
+        if (!phoneQs) {
+          window.NMP_toast("Сначала найдите заказ по телефону");
+          return;
+        }
         btn.disabled = true;
         try {
-          const data = await api(`/api/orders/${encodeURIComponent(orderId)}/telegram-link`);
+          const data = await api(
+            `/api/orders/${encodeURIComponent(orderId)}/telegram-link?${phoneQs}`
+          );
           if (!data.url) throw new Error("Ссылка недоступна");
           window.open(data.url, "_blank", "noopener");
           window.NMP_toast(
@@ -198,11 +222,20 @@
         if (!ok) return;
         btn.disabled = true;
         try {
-          const user = Store.getUser?.() || {};
+          const local = Store.getOrders().find((o) => o.id === orderId);
+          const phone =
+            phoneQueryValue(local?.customer?.phone) ||
+            phoneQueryValue(Store.getUser?.()?.phone) ||
+            "";
+          if (!phone) {
+            window.NMP_toast("Сначала найдите заказ по телефону");
+            btn.disabled = false;
+            return;
+          }
           const data = await api(`/api/orders/${encodeURIComponent(orderId)}/cancel`, {
             method: "POST",
             body: JSON.stringify({
-              phone: user.phone || "",
+              phone,
               reason: "Отмена покупателем из личного кабинета"
             })
           });
@@ -239,11 +272,18 @@
 
     if (focusId && !orders.find((o) => o.id === focusId)) {
       try {
-        const remote = await api(`/api/orders/${encodeURIComponent(focusId)}`);
-        if (remote.order) Store.createOrder(remote.order);
-        orders = Store.getOrders();
+        const phoneQs =
+          orderPhoneParam({ customer: Store.getUser?.() || {} }) ||
+          orderPhoneParam(orders[0]);
+        if (phoneQs) {
+          const remote = await api(
+            `/api/orders/${encodeURIComponent(focusId)}?${phoneQs}`
+          );
+          if (remote.order) Store.createOrder(remote.order);
+          orders = Store.getOrders();
+        }
       } catch {
-        /* ignore */
+        /* ignore — покажем форму поиска */
       }
     }
 

@@ -446,6 +446,21 @@ function publicOrder(order) {
   };
 }
 
+/** Public order endpoints: phone must match (anti-PII scrape by order id). */
+function requireMatchingOrderPhone(order, req) {
+  const phoneDigits = store.normalizePhoneDigits(
+    String(req.query?.phone || req.body?.phone || req.headers?.["x-order-phone"] || "")
+  );
+  if (phoneDigits.length < 10) {
+    return { ok: false, status: 400, message: "Укажите телефон, с которым оформляли заказ" };
+  }
+  const orderPhone = store.normalizePhoneDigits(order.customer?.phone);
+  if (!orderPhone || orderPhone !== phoneDigits) {
+    return { ok: false, status: 403, message: "Телефон не совпадает с заказом" };
+  }
+  return { ok: true };
+}
+
 function normalizeAdminToken(raw) {
   let token = String(raw || "").trim();
   if (/^bearer\s+/i.test(token)) token = token.replace(/^bearer\s+/i, "").trim();
@@ -916,14 +931,14 @@ app.get("/api/orders/lookup", (req, res) => {
     const hasOrderId = Boolean(orderId);
     const hasPhone = phoneDigits.length >= 10;
 
-    if (!hasOrderId && !hasPhone) {
+    // Телефон обязателен: по одному orderId не отдаём ПДн
+    if (!hasPhone) {
       return res.status(400).json({
-        message: "Укажите номер заказа или телефон, с которым оформляли заказ"
+        message: "Укажите телефон, с которым оформляли заказ"
       });
     }
 
-    // Номер заказа + телефон: строгая проверка совпадения
-    if (hasOrderId && hasPhone) {
+    if (hasOrderId) {
       const order = store.getOrder(orderId);
       if (!order) return res.status(404).json({ message: "Заказ не найден" });
       if (store.normalizePhoneDigits(order.customer?.phone) !== phoneDigits) {
@@ -933,15 +948,6 @@ app.get("/api/orders/lookup", (req, res) => {
       return res.json({ ok: true, order: pub, orders: [pub] });
     }
 
-    // Только номер заказа
-    if (hasOrderId) {
-      const order = store.getOrder(orderId);
-      if (!order) return res.status(404).json({ message: "Заказ не найден" });
-      const pub = publicOrder(order);
-      return res.json({ ok: true, order: pub, orders: [pub] });
-    }
-
-    // Только телефон — все заказы клиента
     const matched = store.findOrdersByPhone(phoneDigits).map(publicOrder).filter(Boolean);
     if (!matched.length) {
       return res.status(404).json({ message: "По этому телефону заказов не найдено" });
@@ -956,6 +962,8 @@ app.get("/api/orders/:id/telegram-link", async (req, res) => {
   try {
     const order = store.getOrder(req.params.id);
     if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    const gate = requireMatchingOrderPhone(order, req);
+    if (!gate.ok) return res.status(gate.status).json({ message: gate.message });
     const url = await notify.deepLinkForOrder(order.id);
     if (!url) {
       return res.status(503).json({ message: "Telegram-бот не настроен" });
@@ -1343,6 +1351,8 @@ app.post("/api/orders", async (req, res) => {
 app.get("/api/orders/:id", (req, res) => {
   const order = store.getOrder(req.params.id);
   if (!order) return res.status(404).json({ message: "Заказ не найден" });
+  const gate = requireMatchingOrderPhone(order, req);
+  if (!gate.ok) return res.status(gate.status).json({ message: gate.message });
   res.json({ ok: true, order: publicOrder(order) });
 });
 
@@ -1355,13 +1365,8 @@ app.post("/api/orders/:id/cancel", async (req, res) => {
       return res.json({ ok: true, already: true, order: publicOrder(order) });
     }
 
-    const phoneDigits = store.normalizePhoneDigits(
-      String(req.body?.phone || req.query?.phone || "")
-    );
-    const orderPhone = store.normalizePhoneDigits(order.customer?.phone);
-    if (phoneDigits.length >= 10 && orderPhone && phoneDigits !== orderPhone) {
-      return res.status(403).json({ message: "Телефон не совпадает с заказом" });
-    }
+    const gate = requireMatchingOrderPhone(order, req);
+    if (!gate.ok) return res.status(gate.status).json({ message: gate.message });
 
     // Покупатель может отменить до передачи в доставку
     const cancellable =
@@ -1587,6 +1592,8 @@ app.get("/api/payments/status/:orderId", async (req, res) => {
   try {
     let order = store.getOrder(req.params.orderId);
     if (!order) return res.status(404).json({ message: "Заказ не найден" });
+    const gate = requireMatchingOrderPhone(order, req);
+    if (!gate.ok) return res.status(gate.status).json({ message: gate.message });
 
     if (yookassaReady && order.paymentId && order.paymentStatus !== "paid") {
       const payment = await yookassaRequest(`payments/${order.paymentId}`);
