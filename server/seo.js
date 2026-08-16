@@ -135,6 +135,11 @@ function productBodyHtml(product, rich) {
           : ""
       }
       <p>Костровая чаша Northern Magical Place из конструкционной стали, производство в Карелии. Доставка СДЭК по России, самовывоз и адресная доставка по Петрозаводску. Оплата через ЮKassa. Возврат надлежащего качества — 14 дней.</p>
+      <p>Смотрите также:
+        <a href="/kostrovaya-chasha-dlya-avtoputeshestviy.html">костровая чаша для автопутешествий</a> ·
+        <a href="/kostrovaya-chasha-ili-mangal.html">костровая чаша или мангал</a> ·
+        <a href="/kostrovye-chashi.html">каталог</a>
+      </p>
     </article>`;
 }
 
