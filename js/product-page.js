@@ -46,7 +46,7 @@
     if (root) {
       root.innerHTML = `<p class="lead">Товар не найден. <a href="index.html#catalog">Вернуться в каталог</a></p>`;
     }
-    document.title = "Товар не найден — Northern Magical Place";
+    document.title = "Товар не найден — Северное магическое место";
     return;
   }
 
@@ -60,7 +60,7 @@
   const gallery = product.gallery || [product.image];
   const galleryAbs = [...new Set([absoluteImage, ...gallery.map(abs)])];
   const displayName = product.cardTitle || product.h1 || product.name;
-  const pageTitle = product.seoTitle || `${displayName} | Northern Magical Place`;
+  const pageTitle = product.seoTitle || `${displayName} | Северное магическое место`;
   const pageDesc =
     product.seoDescription ||
     String(product.short || "")
@@ -79,14 +79,14 @@
   upsertMeta("name", "description", pageDesc);
   upsertMeta("name", "keywords", (product.keywords || []).join(", "));
   upsertMeta("property", "og:type", "product");
-  upsertMeta("property", "og:site_name", "Northern Magical Place");
+  upsertMeta("property", "og:site_name", "Северное магическое место — Northern Magical Place");
   upsertMeta("property", "og:locale", "ru_RU");
   upsertMeta("property", "og:title", pageTitle);
   upsertMeta("property", "og:description", pageDesc);
   upsertMeta("property", "og:url", pageUrl);
   upsertMeta("property", "og:image", absoluteImage);
   upsertMeta("property", "og:image:alt", product.imageAlt || displayName);
-  upsertMeta("property", "product:brand", "Northern Magical Place");
+  upsertMeta("property", "product:brand", "Северное магическое место");
   upsertMeta("property", "product:availability", available ? "in stock" : "preorder");
   upsertMeta("property", "product:condition", "new");
   upsertMeta("property", "product:retailer_item_id", product.sku || product.id);
@@ -121,6 +121,7 @@
     seller: {
       "@type": "Organization",
       name: "Northern Magical Place",
+      alternateName: "Северное магическое место",
       url: `${siteUrl}/`
     },
     hasMerchantReturnPolicy: {
@@ -162,7 +163,11 @@
     mpn: product.sku,
     image: galleryAbs,
     description: pageDesc,
-    brand: { "@type": "Brand", name: "Northern Magical Place" },
+    brand: {
+      "@type": "Brand",
+      name: "Northern Magical Place",
+      alternateName: "Северное магическое место"
+    },
     category: (product.keywords || [])[0] || "Костровые чаши",
     material: "Конструкционная сталь",
     offers: offer

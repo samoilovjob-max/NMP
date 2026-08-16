@@ -82,6 +82,7 @@ function buildOffer(product, canonical) {
     seller: {
       "@type": "Organization",
       name: "Northern Magical Place",
+      alternateName: "Северное магическое место",
       url: `${SITE}/`
     },
     hasMerchantReturnPolicy: {
@@ -141,7 +142,8 @@ function buildProductGraph(product, reviews = []) {
     description,
     brand: {
       "@type": "Brand",
-      name: "Northern Magical Place"
+      name: "Northern Magical Place",
+      alternateName: "Северное магическое место"
     },
     category: "Костровые чаши",
     material: "Конструкционная сталь",

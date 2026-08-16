@@ -65,7 +65,7 @@ ${params.join("\n")}
 <yml_catalog date="${xmlEsc(ymlDate(updatedAt))}">
   <shop>
     <name>Northern Magical Place</name>
-    <company>Самойлов Сергей Сергеевич (НПД)</company>
+    <company>Северное магическое место — Самойлов Сергей Сергеевич (НПД)</company>
     <url>${SITE}/</url>
     <email>info@northmp.su</email>
     <currencies>
