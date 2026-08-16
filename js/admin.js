@@ -379,7 +379,8 @@
             p.availabilityNote || ""
           )}" placeholder="Скоро в продаже — оставьте контакты" /></div>
         </div>
-        <div class="field"><label>H1 на странице товара</label><input name="h1" value="${esc(p.h1 || "")}" /></div>
+        <div class="field"><label>H1 на странице товара</label><input name="h1" value="${esc(p.h1 || "")}" placeholder="Северный Кочевник — костровая чаша походная разборная" /></div>
+        <div class="field"><label>Заголовок в каталоге</label><input name="cardTitle" value="${esc(p.cardTitle || "")}" placeholder="Северный Кочевник — костровая чаша походная" /></div>
         <div class="field"><label>Короткое описание</label><textarea name="short" rows="2" data-rich="product-short" data-rich-label="Карточка товара">${esc(p.short || "")}</textarea></div>
         <div class="field"><label>Полное описание</label><textarea name="description" rows="5" data-rich="product-desc" data-rich-label="Страница товара">${esc(p.description || "")}</textarea></div>
         <div class="admin-form-grid">
@@ -444,6 +445,7 @@
       availableForOrder: form.availableForOrder.checked,
       availabilityNote: String(fd.get("availabilityNote") || "").trim(),
       h1: String(fd.get("h1") || "").trim(),
+      cardTitle: String(fd.get("cardTitle") || "").trim(),
       short: String(fd.get("short") || "").trim(),
       description: String(fd.get("description") || "").trim(),
       image: String(fd.get("image") || "").trim(),
