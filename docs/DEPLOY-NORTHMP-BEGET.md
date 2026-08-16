@@ -152,7 +152,7 @@ YOOKASSA_SEND_RECEIPT=true
 YOOKASSA_VAT_CODE=1
 
 # Яндекс.Метрика
-YANDEX_METRICA_ID=111532214
+YANDEX_METRICA_ID=111658498
 ANALYTICS_REQUIRE_CONSENT=true
 
 # Telegram (опционально)
@@ -363,7 +363,7 @@ dig www.northmp.su +short
 
 ### 5.2. Яндекс.Метрика
 
-1. [metrika.yandex.ru](https://metrika.yandex.ru/) → счётчик **111532214**
+1. [metrika.yandex.ru](https://metrika.yandex.ru/) → счётчик **111658498**
 2. Адрес сайта: `https://northmp.su`
 3. На сайте после «Принять» в баннере cookies — в Network должен быть запрос к `mc.yandex.ru`
 

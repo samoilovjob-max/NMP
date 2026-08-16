@@ -91,7 +91,7 @@
 
     window.ym(id, "init", {
       ssr: true,
-      webvisor: false,
+      webvisor: true,
       clickmap: true,
       ecommerce: "dataLayer",
       referrer: document.referrer,
