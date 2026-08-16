@@ -1483,6 +1483,26 @@ html {
   list-style: decimal;
 }
 
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0 1.75rem;
+  font-size: 0.95rem;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--line);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  font-family: var(--font-display);
+  font-weight: 650;
+}
+
 .info-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

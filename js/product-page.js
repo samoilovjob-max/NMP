@@ -357,7 +357,11 @@
         }
       </div>
 
-      <p class="form-note">Смотрите также: <a href="/kostrovye-chashi.html">каталог костровых чаш Northern Magical Place</a></p>
+      <p class="form-note">Смотрите также:
+        <a href="/kostrovye-chashi.html">каталог</a> ·
+        <a href="/kostrovaya-chasha-dlya-avtoputeshestviy.html">для автопутешествий</a> ·
+        <a href="/kostrovaya-chasha-ili-mangal.html">чаша или мангал</a>
+      </p>
       <p><a href="/kostrovye-chashi.html">← Все изделия</a></p>
     </div>
   `;

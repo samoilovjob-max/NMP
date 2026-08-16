@@ -97,6 +97,8 @@ function buildSitemapXml(cmsApi) {
     { loc: `${SITE}/pokhodnaya-kostrovaya-chasha.html`, priority: "0.9", changefreq: "weekly" },
     { loc: `${SITE}/razbornaya-kostrovaya-chasha.html`, priority: "0.9", changefreq: "weekly" },
     { loc: `${SITE}/kostrovaya-chasha-dlya-kempinga.html`, priority: "0.9", changefreq: "weekly" },
+    { loc: `${SITE}/kostrovaya-chasha-dlya-avtoputeshestviy.html`, priority: "0.9", changefreq: "weekly" },
+    { loc: `${SITE}/kostrovaya-chasha-ili-mangal.html`, priority: "0.85", changefreq: "weekly" },
     { loc: `${SITE}/buyers.html`, priority: "0.6", changefreq: "monthly" },
     { loc: `${SITE}/usage.html`, priority: "0.5", changefreq: "monthly" },
     { loc: `${SITE}/privacy.html`, priority: "0.3", changefreq: "yearly" }
