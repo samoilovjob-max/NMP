@@ -1754,6 +1754,27 @@ html {
   align-items: start;
 }
 
+.product-breadcrumbs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.86rem;
+  color: var(--frost-dim);
+}
+
+.product-breadcrumbs a {
+  color: var(--frost-dim);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.product-breadcrumbs a:hover {
+  color: var(--frost);
+}
+
 .product-stage {
   background: linear-gradient(160deg, #efeee9, #d9d6cf);
   aspect-ratio: 1;

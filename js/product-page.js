@@ -51,74 +51,175 @@
   }
 
   const pageUrl = `${siteUrl}/product.html?slug=${encodeURIComponent(product.slug || product.id)}`;
-  const absoluteImage = product.image.startsWith("http")
-    ? product.image
-    : `${siteUrl}/${product.image.replace(/^\//, "")}`;
+  const abs = (src) => {
+    const raw = String(src || "").trim();
+    if (!raw) return `${siteUrl}/images/main-product.webp`;
+    return raw.startsWith("http") ? raw : `${siteUrl}/${raw.replace(/^\//, "")}`;
+  };
+  const absoluteImage = abs(product.image);
+  const gallery = product.gallery || [product.image];
+  const galleryAbs = [...new Set([absoluteImage, ...gallery.map(abs)])];
+  const displayName = product.cardTitle || product.h1 || product.name;
+  const pageTitle = product.seoTitle || `${displayName} | Northern Magical Place`;
+  const pageDesc =
+    product.seoDescription ||
+    String(product.short || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const available = product.availableForOrder !== false;
+  const priceNum = Number(product.price || product.effectivePrice || 0);
+  const priceValidUntil = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
 
-  document.title = product.seoTitle || `${product.name} — Northern Magical Place`;
-  upsertMeta("name", "description", product.seoDescription || product.short);
+  document.title = pageTitle;
+  upsertMeta("name", "description", pageDesc);
   upsertMeta("name", "keywords", (product.keywords || []).join(", "));
   upsertMeta("property", "og:type", "product");
   upsertMeta("property", "og:site_name", "Northern Magical Place");
   upsertMeta("property", "og:locale", "ru_RU");
-  upsertMeta("property", "og:title", product.seoTitle || product.name);
-  upsertMeta("property", "og:description", product.seoDescription || product.short);
+  upsertMeta("property", "og:title", pageTitle);
+  upsertMeta("property", "og:description", pageDesc);
   upsertMeta("property", "og:url", pageUrl);
   upsertMeta("property", "og:image", absoluteImage);
+  upsertMeta("property", "og:image:alt", product.imageAlt || displayName);
+  upsertMeta("property", "product:brand", "Northern Magical Place");
+  upsertMeta("property", "product:availability", available ? "in stock" : "preorder");
+  upsertMeta("property", "product:condition", "new");
+  upsertMeta("property", "product:retailer_item_id", product.sku || product.id);
+  if (priceNum > 0) {
+    upsertMeta("property", "product:price:amount", priceNum.toFixed(2));
+    upsertMeta("property", "product:price:currency", "RUB");
+  }
   upsertMeta("name", "twitter:card", "summary_large_image");
-  upsertMeta("name", "twitter:title", product.seoTitle || product.name);
-  upsertMeta("name", "twitter:description", product.seoDescription || product.short);
+  upsertMeta("name", "twitter:title", pageTitle);
+  upsertMeta("name", "twitter:description", pageDesc);
   upsertMeta("name", "twitter:image", absoluteImage);
   upsertLink("canonical", pageUrl);
 
-  const available = product.availableForOrder !== false;
+  const cmsReviews = Array.isArray(window.NMP_CMS?.reviews) ? window.NMP_CMS.reviews : [];
+  const matchedReviews = cmsReviews.filter((review) => {
+    const pid = String(review.productId || "").trim();
+    if (pid) return pid === String(product.id) || pid === String(product.slug);
+    const meta = String(review.meta || "").toLowerCase();
+    return meta.includes(String(product.name || "").toLowerCase());
+  });
 
-  const productSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.h1 || product.name,
-    sku: product.sku,
-    mpn: product.sku,
-    image: [absoluteImage],
-    description: product.seoDescription || product.description,
-    brand: {
-      "@type": "Brand",
-      name: "Northern Magical Place"
+  const offer = {
+    "@type": "Offer",
+    url: pageUrl,
+    priceCurrency: "RUB",
+    price: priceNum > 0 ? priceNum.toFixed(2) : "0.00",
+    priceValidUntil,
+    availability: available
+      ? "https://schema.org/InStock"
+      : "https://schema.org/PreOrder",
+    itemCondition: "https://schema.org/NewCondition",
+    seller: {
+      "@type": "Organization",
+      name: "Northern Magical Place",
+      url: `${siteUrl}/`
     },
-    category: (product.keywords || [])[0] || "Костровые чаши",
-    offers: {
-      "@type": "Offer",
-      url: pageUrl,
-      priceCurrency: "RUB",
-      price: String(product.price),
-      availability: available
-        ? "https://schema.org/InStock"
-        : "https://schema.org/PreOrder",
-      itemCondition: "https://schema.org/NewCondition",
-      seller: {
-        "@type": "Organization",
-        name: "Northern Magical Place"
+    hasMerchantReturnPolicy: {
+      "@type": "MerchantReturnPolicy",
+      applicableCountry: "RU",
+      returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+      merchantReturnDays: 14,
+      returnMethod: "https://schema.org/ReturnByMail",
+      returnFees: "https://schema.org/ReturnFeesCustomerResponsibility",
+      merchantReturnLink: `${siteUrl}/buyers.html#return`
+    },
+    shippingDetails: {
+      "@type": "OfferShippingDetails",
+      shippingRate: { "@type": "MonetaryAmount", value: "0", currency: "RUB" },
+      shippingDestination: { "@type": "DefinedRegion", addressCountry: "RU" },
+      deliveryTime: {
+        "@type": "ShippingDeliveryTime",
+        handlingTime: {
+          "@type": "QuantitativeValue",
+          minValue: 1,
+          maxValue: 4,
+          unitCode: "DAY"
+        },
+        transitTime: {
+          "@type": "QuantitativeValue",
+          minValue: 2,
+          maxValue: 14,
+          unitCode: "DAY"
+        }
       }
     }
   };
 
-  const faqSchema =
-    product.faq?.length
-      ? {
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          mainEntity: product.faq.map((item) => ({
-            "@type": "Question",
-            name: item.q,
-            acceptedAnswer: {
-              "@type": "Answer",
-              text: item.a
-            }
-          }))
-        }
-      : null;
+  const productNode = {
+    "@type": "Product",
+    "@id": `${pageUrl}#product`,
+    name: displayName,
+    sku: product.sku,
+    mpn: product.sku,
+    image: galleryAbs,
+    description: pageDesc,
+    brand: { "@type": "Brand", name: "Northern Magical Place" },
+    category: (product.keywords || [])[0] || "Костровые чаши",
+    material: "Конструкционная сталь",
+    offers: offer
+  };
 
-  document.querySelectorAll("script[data-seo-jsonld]").forEach((node) => node.remove());
+  if (matchedReviews.length) {
+    const ratings = matchedReviews.map((r) => Number(r.rating || 5));
+    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+    productNode.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: Number(avg.toFixed(1)),
+      reviewCount: matchedReviews.length,
+      bestRating: 5,
+      worstRating: 1
+    };
+    productNode.review = matchedReviews.slice(0, 5).map((review) => ({
+      "@type": "Review",
+      reviewBody: String(review.text || "")
+        .replace(/<[^>]+>/g, " ")
+        .trim(),
+      author: {
+        "@type": "Person",
+        name: String(review.author || review.name || review.meta || "Покупатель").trim()
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: String(Number(review.rating || 5)),
+        bestRating: "5",
+        worstRating: "1"
+      }
+    }));
+  }
+
+  const graph = [
+    {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Главная", item: `${siteUrl}/` },
+        { "@type": "ListItem", position: 2, name: "Каталог", item: `${siteUrl}/#catalog` },
+        { "@type": "ListItem", position: 3, name: displayName, item: pageUrl }
+      ]
+    },
+    productNode
+  ];
+
+  if (product.faq?.length) {
+    graph.push({
+      "@type": "FAQPage",
+      mainEntity: product.faq.map((item) => ({
+        "@type": "Question",
+        name: item.q,
+        acceptedAnswer: { "@type": "Answer", text: item.a }
+      }))
+    });
+  }
+
+  document.querySelectorAll('script[type="application/ld+json"]').forEach((node) => node.remove());
   const injectJsonLd = (data) => {
     const script = document.createElement("script");
     script.type = "application/ld+json";
@@ -126,10 +227,8 @@
     script.textContent = JSON.stringify(data);
     document.head.appendChild(script);
   };
-  injectJsonLd(productSchema);
-  if (faqSchema) injectJsonLd(faqSchema);
+  injectJsonLd({ "@context": "https://schema.org", "@graph": graph });
 
-  const gallery = product.gallery || [product.image];
   const galleryAlts = product.galleryAlts || [];
   const useCases = Array.isArray(product.useCases) ? product.useCases : [];
   const specs = Array.isArray(product.specs) ? product.specs : [];
@@ -148,6 +247,13 @@
       .slice(0, 180);
 
   root.innerHTML = `
+    <nav class="product-breadcrumbs reveal visible" aria-label="Хлебные крошки">
+      <a href="index.html">Главная</a>
+      <span aria-hidden="true">/</span>
+      <a href="index.html#catalog">Каталог</a>
+      <span aria-hidden="true">/</span>
+      <span>${escAttr(displayName)}</span>
+    </nav>
     <div class="product-gallery reveal visible">
       <div class="product-stage">
         <img id="mainImage" src="${product.image}" alt="${escAttr(product.imageAlt || product.name)}" />

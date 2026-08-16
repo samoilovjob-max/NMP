@@ -1,10 +1,16 @@
 const fs = require("fs");
 const path = require("path");
+const {
+  SITE,
+  stripHtml,
+  absoluteUrl,
+  buildProductGraph,
+  formatRub
+} = require("./product-rich");
 
 const CANONICAL_HOST = String(process.env.CANONICAL_HOST || "northmp.su")
   .trim()
   .toLowerCase();
-const SITE = `https://${CANONICAL_HOST}`;
 
 function requestHostname(req) {
   const raw = String(req.headers["x-forwarded-host"] || req.headers.host || "")
@@ -22,16 +28,9 @@ function esc(value) {
     .replace(/"/g, "&quot;");
 }
 
-function stripHtml(value) {
-  return String(value || "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function jsonLdScript(data) {
   const json = JSON.stringify(data).replace(/</g, "\\u003c");
-  return `<script type="application/ld+json">${json}</script>`;
+  return `<script type="application/ld+json" data-seo-jsonld="1">${json}</script>`;
 }
 
 /**
@@ -60,7 +59,7 @@ function indexHtmlRedirect(req, res, next) {
   return res.redirect(301, `/${qs}`);
 }
 
-function productBodyHtml(product) {
+function productBodyHtml(product, rich) {
   const h1 = product.h1 || product.name;
   const short = product.short || "";
   const description = product.description || "";
@@ -69,12 +68,46 @@ function productBodyHtml(product) {
   const faq = Array.isArray(product.faq) ? product.faq : [];
   const image = product.image || "";
   const alt = product.imageAlt || product.name;
+  const available = product.availableForOrder !== false;
+  const price = Number(product.price || product.effectivePrice || 0);
 
   return `
-    <article class="product-info">
-      ${image ? `<p><img src="${esc(image)}" alt="${esc(alt)}" width="800" height="600" /></p>` : ""}
-      <h1>${esc(h1)}</h1>
-      ${short ? `<p class="lead">${short}</p>` : ""}
+    <nav class="product-breadcrumbs" aria-label="Хлебные крошки">
+      <a href="/">Главная</a>
+      <span aria-hidden="true">/</span>
+      <a href="/#catalog">Каталог</a>
+      <span aria-hidden="true">/</span>
+      <span>${esc(h1)}</span>
+    </nav>
+    <article class="product-info" itemscope itemtype="https://schema.org/Product">
+      <meta itemprop="sku" content="${esc(product.sku || "")}" />
+      <meta itemprop="brand" content="Northern Magical Place" />
+      ${
+        image
+          ? `<p><img src="${esc(image)}" alt="${esc(alt)}" width="800" height="600" itemprop="image" /></p>`
+          : ""
+      }
+      <h1 itemprop="name">${esc(h1)}</h1>
+      <p class="sku-label">Артикул ${esc(product.sku || "")}</p>
+      ${
+        price > 0
+          ? `<p class="price-lg" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+              <meta itemprop="priceCurrency" content="RUB" />
+              <meta itemprop="price" content="${price.toFixed(2)}" />
+              <meta itemprop="availability" content="${
+                available ? "https://schema.org/InStock" : "https://schema.org/PreOrder"
+              }" />
+              <meta itemprop="url" content="${esc(rich.canonical)}" />
+              <span>${available ? "" : "от "}${esc(formatRub(price))}</span>
+            </p>`
+          : `<p class="price-lg price-soon">Цена по запросу</p>`
+      }
+      <p class="form-note">${
+        available
+          ? "В наличии · Доставка СДЭК по России · самовывоз и адресная доставка по Петрозаводску"
+          : "Скоро в продаже · можно оставить заявку на оповещение"
+      }</p>
+      ${short ? `<p class="lead" itemprop="description">${short}</p>` : ""}
       ${description ? `<div class="rich-text lead">${description}</div>` : ""}
       ${
         specs.length
@@ -100,86 +133,84 @@ function productBodyHtml(product) {
               .join("")}</section>`
           : ""
       }
-      <p>Костровая чаша Northern Magical Place из конструкционной стали, производство в Карелии. Доставка СДЭК по России, самовывоз и адресная доставка по Петрозаводску. Оплата через ЮKassa.</p>
+      <p>Костровая чаша Northern Magical Place из конструкционной стали, производство в Карелии. Доставка СДЭК по России, самовывоз и адресная доставка по Петрозаводску. Оплата через ЮKassa. Возврат надлежащего качества — 14 дней.</p>
     </article>`;
 }
 
-function injectProductSeo(html, product) {
+function injectProductSeo(html, product, reviews = []) {
   const pub = product;
-  const title = pub.seoTitle || `${pub.name} — костровая чаша | Northern Magical Place`;
-  const desc =
-    pub.seoDescription ||
-    stripHtml(pub.short) ||
-    stripHtml(pub.description).slice(0, 160);
-  const canonical = `${SITE}/product.html?slug=${encodeURIComponent(pub.slug)}`;
-  const image = pub.image
-    ? pub.image.startsWith("http")
-      ? pub.image
-      : `${SITE}/${String(pub.image).replace(/^\//, "")}`
-    : `${SITE}/images/main-product.webp`;
+  const rich = buildProductGraph(pub, reviews);
+  const title =
+    pub.seoTitle || `${rich.name} | Northern Magical Place`;
+  const desc = rich.description || stripHtml(pub.short) || "";
+  const canonical = rich.canonical;
+  const image = rich.images[0];
 
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(title)}</title>`);
   html = html.replace(
     /<meta name="description" content="[^"]*"\s*\/?>/,
     `<meta name="description" content="${esc(desc)}" />`
   );
+  if (/<meta name="keywords"/.test(html)) {
+    html = html.replace(
+      /<meta name="keywords" content="[^"]*"\s*\/?>/,
+      `<meta name="keywords" content="${esc((pub.keywords || []).join(", "))}" />`
+    );
+  } else if ((pub.keywords || []).length) {
+    html = html.replace(
+      /<meta name="description" content="[^"]*"\s*\/?>/,
+      (m) =>
+        `${m}\n  <meta name="keywords" content="${esc((pub.keywords || []).join(", "))}" />`
+    );
+  }
   html = html.replace(
     /<link rel="canonical" href="[^"]*"\s*\/?>/,
     `<link rel="canonical" href="${esc(canonical)}" />`
   );
 
-  const ogBlock = [
+  const metaExtra = [
+    `<meta property="og:type" content="product" />`,
+    `<meta property="og:site_name" content="Northern Magical Place" />`,
+    `<meta property="og:locale" content="ru_RU" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(desc)}" />`,
     `<meta property="og:url" content="${esc(canonical)}" />`,
-    `<meta property="og:image" content="${esc(image)}" />`
-  ].join("\n  ");
-  if (/<meta property="og:title"/.test(html)) {
-    html = html.replace(/<meta property="og:title" content="[^"]*"\s*\/?>/, ogBlock.split("\n  ")[0]);
-    html = html.replace(
-      /<meta property="og:description" content="[^"]*"\s*\/?>/,
-      `<meta property="og:description" content="${esc(desc)}" />`
-    );
-    html = html.replace(
-      /<meta property="og:url" content="[^"]*"\s*\/?>/,
-      `<meta property="og:url" content="${esc(canonical)}" />`
-    );
-    html = html.replace(
-      /<meta property="og:image" content="[^"]*"\s*\/?>/,
-      `<meta property="og:image" content="${esc(image)}" />`
-    );
-  } else {
-    html = html.replace(
-      /<meta property="og:locale" content="ru_RU"\s*\/?>/,
-      `<meta property="og:locale" content="ru_RU" />\n  ${ogBlock}`
-    );
-  }
+    `<meta property="og:image" content="${esc(image)}" />`,
+    `<meta property="og:image:alt" content="${esc(pub.imageAlt || rich.name)}" />`,
+    `<meta property="product:brand" content="Northern Magical Place" />`,
+    `<meta property="product:availability" content="${
+      rich.available ? "in stock" : "preorder"
+    }" />`,
+    `<meta property="product:condition" content="new" />`,
+    `<meta property="product:retailer_item_id" content="${esc(pub.sku || pub.id || "")}" />`,
+    rich.price > 0
+      ? `<meta property="product:price:amount" content="${rich.price.toFixed(2)}" />`
+      : "",
+    rich.price > 0 ? `<meta property="product:price:currency" content="RUB" />` : "",
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${esc(title)}" />`,
+    `<meta name="twitter:description" content="${esc(desc)}" />`,
+    `<meta name="twitter:image" content="${esc(image)}" />`
+  ]
+    .filter(Boolean)
+    .join("\n  ");
 
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: pub.h1 || pub.name,
-    sku: pub.sku,
-    image: [image],
-    description: desc,
-    brand: { "@type": "Brand", name: "Northern Magical Place" },
-    category: "Костровые чаши",
-    offers: {
-      "@type": "Offer",
-      url: canonical,
-      priceCurrency: "RUB",
-      price: String(pub.price || 0),
-      availability:
-        pub.availableForOrder !== false
-          ? "https://schema.org/InStock"
-          : "https://schema.org/PreOrder"
-    }
-  };
-  html = html.replace("</head>", `  ${jsonLdScript(schema)}\n</head>`);
+  // Replace/augment existing OG block cleanly before </head>
+  html = html.replace(
+    /\s*<meta property="og:type"[^>]*>[\s\S]*?(?=<link rel="icon"|<link rel="preconnect"|<link rel="stylesheet"|<\/head>)/,
+    `\n  ${metaExtra}\n  `
+  );
+
+  // Remove any previous JSON-LD then inject one graph
+  html = html.replace(
+    /<script type="application\/ld\+json"[\s\S]*?<\/script>\s*/g,
+    ""
+  );
+  html = html.replace("</head>", `  ${jsonLdScript(rich.jsonLd)}\n</head>`);
 
   html = html.replace(
     /<!--NMP_PRODUCT_BODY_START-->[\s\S]*?<!--NMP_PRODUCT_BODY_END-->/,
-    `<!--NMP_PRODUCT_BODY_START-->${productBodyHtml(pub)}<!--NMP_PRODUCT_BODY_END-->`
+    `<!--NMP_PRODUCT_BODY_START-->${productBodyHtml(pub, rich)}<!--NMP_PRODUCT_BODY_END-->`
   );
   return html;
 }
@@ -226,7 +257,10 @@ function productPageMiddleware(root, cms) {
       return res.redirect(301, `/product.html?slug=${encodeURIComponent(product.slug)}`);
     }
 
-    const html = injectProductSeo(readTemplate(), product);
+    const reviews = typeof cms.listCollection === "function"
+      ? cms.listCollection("reviews", { publishedOnly: true })
+      : [];
+    const html = injectProductSeo(readTemplate(), product, reviews);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache");
     return res.send(html);
@@ -238,5 +272,7 @@ module.exports = {
   CANONICAL_HOST,
   canonicalHostMiddleware,
   indexHtmlRedirect,
-  productPageMiddleware
+  productPageMiddleware,
+  absoluteUrl,
+  stripHtml
 };
