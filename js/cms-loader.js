@@ -40,65 +40,82 @@
   const renderProductCard = (p, { available, imageLoading, fetchPriority }) => {
     const href = productHref(p);
     const buyHref = `checkout.html?buy=${encodeURIComponent(p.id)}`;
+    const name = String(p.name || "").trim() || "Модель";
     const priceLabel = !available
-      ? Number(p.price || p.basePrice || p.effectivePrice) > 0
-        ? `<span class="price">от ${money(p.price || p.basePrice || p.effectivePrice)}</span>`
-        : `<span class="price price-soon">Цена по запросу</span>`
+      ? ""
       : p.hasPromo
         ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
         : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
-    const badge = available && p.promoActive && p.promoLabel ? p.promoLabel : p.badge;
+    const badge = available
+      ? p.promoActive && p.promoLabel
+        ? p.promoLabel
+        : p.badge || "В наличии"
+      : p.badge || "Скоро в продаже";
     const specs = Array.isArray(p.specs) ? p.specs.filter(Boolean).slice(0, 4) : [];
     const useCases = Array.isArray(p.useCases) ? p.useCases.filter(Boolean).slice(0, 3) : [];
-    const benefits =
-      specs.length || useCases.length
-        ? `<div class="product-value">
-            ${
-              specs.length
-                ? `<ul class="product-benefits" aria-label="Преимущества">
-                    ${specs.map((item) => `<li>${item}</li>`).join("")}
-                  </ul>`
-                : ""
-            }
-            ${
-              useCases.length
-                ? `<p class="product-usecases-line"><span>Где применять:</span> ${useCases.join(" · ")}</p>`
-                : ""
-            }
-          </div>`
-        : "";
+    const subtitle = String(p.cardSubtitle || "").trim();
+    const audience = String(p.audience || "").trim() || (useCases.length ? useCases.join(", ") : "");
+    const highlight = String(p.highlight || "").trim();
+    const packageIncludes = String(p.packageIncludes || "").trim();
+    const shortFallback = String(p.short || "").trim();
+    const facts = [];
+    if (audience) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">Для кого</span><p>${escAttr(audience)}</p></div>`
+      );
+    }
+    if (highlight) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">Главное</span><p>${escAttr(highlight)}</p></div>`
+      );
+    } else if (shortFallback) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">О модели</span><div class="rich-text product-short">${shortFallback}</div></div>`
+      );
+    }
+    if (specs.length) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">Характеристики</span><ul class="product-benefits" aria-label="Характеристики">${specs
+          .map((item) => `<li>${escAttr(item)}</li>`)
+          .join("")}</ul></div>`
+      );
+    }
+    if (packageIncludes) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">В комплекте</span><p>${escAttr(packageIncludes)}</p></div>`
+      );
+    }
     const action = available
       ? `<div class="product-meta-actions">
-              <a class="btn btn-primary" href="${buyHref}">Купить</a>
-              <button class="btn btn-ghost" type="button" data-add-cart="${escAttr(p.id)}">В корзину</button>
-              <a class="btn btn-ghost" href="${href}">Подробнее</a>
+              <a class="btn btn-primary" href="${buyHref}">Купить «${escAttr(name)}»</a>
+              <a class="btn btn-ghost" href="${href}">Подробнее о модели</a>
             </div>`
-      : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
-          p.id
-        )}" data-notify-name="${escAttr(p.name)}">Сообщить о поступлении</button>
-            <a class="btn btn-ghost" href="${href}">Подробнее</a>`;
+      : `<div class="product-meta-actions">
+              <button class="btn btn-primary" type="button" data-notify-product="${escAttr(
+                p.id
+              )}" data-notify-name="${escAttr(name)}">Узнать о поступлении</button>
+              <a class="btn btn-ghost" href="${href}">Подробнее о модели</a>
+            </div>`;
     const loadingAttr = imageLoading === "eager" ? 'loading="eager"' : 'loading="lazy"';
     const priorityAttr = fetchPriority ? ` fetchpriority="${fetchPriority}"` : "";
     return `
-        <article class="product reveal visible ${available ? "" : "product-soon"}" id="product-${p.id}">
+        <article class="product reveal visible ${available ? "" : "product-soon"}" id="product-${escAttr(p.id)}">
           <a class="product-media" href="${href}">
-            <img src="${p.image}" alt="${escAttr(p.imageAlt || p.name)}" ${loadingAttr}${priorityAttr} />
+            <img src="${escAttr(p.image)}" alt="${escAttr(p.imageAlt || name)}" ${loadingAttr}${priorityAttr} />
           </a>
           <div class="product-body">
-            ${badge ? `<div class="badge">${badge}</div>` : ""}
-            <h3><a href="${href}">${escAttr(p.cardTitle || p.h1 || p.name)}</a></h3>
-            <p class="sku-label">Артикул ${p.sku || ""}</p>
-            <div class="product-price-row">${priceLabel}</div>
+            ${badge ? `<div class="badge">${escAttr(badge)}</div>` : ""}
+            <h3><a href="${href}">${escAttr(name)}</a></h3>
+            ${subtitle ? `<p class="product-card-sub">${escAttr(subtitle)}</p>` : ""}
+            ${
+              available
+                ? `<div class="product-price-row">${priceLabel}</div>`
+                : `<p class="product-status-line">Скоро в продаже</p>`
+            }
+            ${facts.length ? `<div class="product-facts">${facts.join("")}</div>` : ""}
             <div class="product-meta">
               ${action}
             </div>
-            <div class="rich-text product-short">${p.short || ""}</div>
-            ${benefits}
-            ${
-              available
-                ? ""
-                : `<p class="form-note product-soon-note">Пока в подготовке — можно оставить заявку на оповещение</p>`
-            }
           </div>
         </article>`;
   };
@@ -127,7 +144,7 @@
       parts.push(`
         <div class="catalog-soon-divider reveal visible">
           <h3>Скоро в продаже</h3>
-          <p class="form-note">Модели в подготовке — оставьте заявку</p>
+          <p class="form-note">Модели для дачи, сада и загородного дома — оставьте заявку на оповещение</p>
         </div>`);
       soon.forEach((p) => {
         parts.push(
