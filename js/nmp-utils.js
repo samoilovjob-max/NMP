@@ -10,9 +10,9 @@ window.NMP_productHref = (productOrId, productMaybe) => {
     typeof productOrId === "object" && productOrId
       ? productOrId
       : productMaybe || window.NMP_getProduct?.(productOrId);
-  if (product?.slug) return `product.html?slug=${encodeURIComponent(product.slug)}`;
+  if (product?.slug) return `/product/${encodeURIComponent(product.slug)}`;
   const id = product?.id || productOrId;
-  return `product.html?id=${encodeURIComponent(id || "")}`;
+  return id ? `/product.html?id=${encodeURIComponent(id)}` : "/kostrovye-chashi.html";
 };
 
 window.NMP_normalizePhone = (value) => {

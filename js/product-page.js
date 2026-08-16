@@ -2,7 +2,9 @@
   const boot = async () => {
   if (window.NMP_cmsReady) await window.NMP_cmsReady;
   const params = new URLSearchParams(window.location.search);
-  const id = params.get("id") || params.get("slug") || "1";
+  const pathMatch = window.location.pathname.match(/^\/product\/([^/]+)\/?$/);
+  const slugFromPath = pathMatch ? decodeURIComponent(pathMatch[1]) : "";
+  const id = params.get("id") || params.get("slug") || slugFromPath || "1";
   const getProduct =
     window.NMP_getProduct ||
     ((key) =>
@@ -44,13 +46,13 @@
 
   if (!product || !root) {
     if (root) {
-      root.innerHTML = `<p class="lead">Товар не найден. <a href="index.html#catalog">Вернуться в каталог</a></p>`;
+      root.innerHTML = `<p class="lead">Товар не найден. <a href="/kostrovye-chashi.html">Вернуться в каталог</a></p>`;
     }
     document.title = "Товар не найден — Северное магическое место";
     return;
   }
 
-  const pageUrl = `${siteUrl}/product.html?slug=${encodeURIComponent(product.slug || product.id)}`;
+  const pageUrl = `${siteUrl}/product/${encodeURIComponent(product.slug || product.id)}`;
   const abs = (src) => {
     const raw = String(src || "").trim();
     if (!raw) return `${siteUrl}/images/main-product.webp`;
@@ -206,7 +208,7 @@
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Главная", item: `${siteUrl}/` },
-        { "@type": "ListItem", position: 2, name: "Каталог", item: `${siteUrl}/#catalog` },
+        { "@type": "ListItem", position: 2, name: "Костровые чаши", item: `${siteUrl}/kostrovye-chashi.html` },
         { "@type": "ListItem", position: 3, name: displayName, item: pageUrl }
       ]
     },
@@ -253,9 +255,9 @@
 
   root.innerHTML = `
     <nav class="product-breadcrumbs reveal visible" aria-label="Хлебные крошки">
-      <a href="index.html">Главная</a>
+      <a href="/">Главная</a>
       <span aria-hidden="true">/</span>
-      <a href="index.html#catalog">Каталог</a>
+      <a href="/kostrovye-chashi.html">Костровые чаши</a>
       <span aria-hidden="true">/</span>
       <span>${escAttr(displayName)}</span>
     </nav>
@@ -292,7 +294,7 @@
         <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>
         <a class="btn btn-ghost" href="#product-details">Подробнее</a>`
             : `<button class="btn btn-primary" type="button" data-notify-product="${product.id}" data-notify-name="${product.name}">Сообщить о поступлении</button>
-        <a class="btn btn-ghost" href="index.html#catalog">Смотреть каталог</a>`
+        <a class="btn btn-ghost" href="/kostrovye-chashi.html">Смотреть каталог</a>`
         }
       </div>
       ${shortLead ? `<p class="product-pitch">${shortLead}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
@@ -355,8 +357,8 @@
         }
       </div>
 
-      <p class="form-note">Смотрите также: <a href="index.html#catalog">каталог костровых чаш Northern Magical Place</a></p>
-      <p><a href="index.html#catalog">← Все изделия</a></p>
+      <p class="form-note">Смотрите также: <a href="/kostrovye-chashi.html">каталог костровых чаш Northern Magical Place</a></p>
+      <p><a href="/kostrovye-chashi.html">← Все изделия</a></p>
     </div>
   `;
 

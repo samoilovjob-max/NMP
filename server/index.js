@@ -2288,6 +2288,8 @@ app.use((req, res, next) => {
       if (value == null) continue;
       params.set(key, key === "slug" ? String(value).replace(/_/g, "-") : String(value));
     }
+    const fixed = params.get("slug") || "";
+    if (fixed) return res.redirect(301, `/product/${encodeURIComponent(fixed)}`);
     return res.redirect(301, `/product.html?${params.toString()}`);
   }
   next();

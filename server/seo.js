@@ -4,6 +4,7 @@ const {
   SITE,
   stripHtml,
   absoluteUrl,
+  productPath,
   buildProductGraph,
   formatRub
 } = require("./product-rich");
@@ -75,7 +76,7 @@ function productBodyHtml(product, rich) {
     <nav class="product-breadcrumbs" aria-label="Хлебные крошки">
       <a href="/">Главная</a>
       <span aria-hidden="true">/</span>
-      <a href="/#catalog">Каталог</a>
+      <a href="/kostrovye-chashi.html">Костровые чаши</a>
       <span aria-hidden="true">/</span>
       <span>${esc(h1)}</span>
     </nav>
@@ -226,8 +227,46 @@ function productPageMiddleware(root, cms) {
     return cache.html;
   };
 
+  const renderProduct = (req, res, key, { redirectIfMismatch = true } = {}) => {
+    const raw = cms.getProduct(key);
+    const product = raw ? cms.publicProduct(raw) : null;
+    if (!product) {
+      res.status(404);
+      const html = readTemplate()
+        .replace(/<title>[^<]*<\/title>/, "<title>Товар не найден — Северное магическое место</title>")
+        .replace(
+          /<!--NMP_PRODUCT_BODY_START-->[\s\S]*?<!--NMP_PRODUCT_BODY_END-->/,
+          `<!--NMP_PRODUCT_BODY_START--><h1>Товар не найден</h1><p class="lead">Такой модели нет в каталоге. <a href="/kostrovye-chashi.html">Вернуться к костровым чашам</a>.</p><!--NMP_PRODUCT_BODY_END-->`
+        );
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache");
+      return res.send(html);
+    }
+
+    if (redirectIfMismatch && key !== product.slug) {
+      return res.redirect(301, productPath(product.slug));
+    }
+
+    const reviews =
+      typeof cms.listCollection === "function"
+        ? cms.listCollection("reviews", { publishedOnly: true })
+        : [];
+    const html = injectProductSeo(readTemplate(), product, reviews);
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache");
+    return res.send(html);
+  };
+
   return (req, res, next) => {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
+
+    const pretty = req.path.match(/^\/product\/([^/]+)\/?$/);
+    if (pretty) {
+      const slug = decodeURIComponent(pretty[1]).trim();
+      if (!slug) return res.redirect(301, "/kostrovye-chashi.html");
+      return renderProduct(req, res, slug);
+    }
+
     if (req.path !== "/product.html") return next();
 
     const slug = typeof req.query.slug === "string" ? req.query.slug.trim() : "";
@@ -235,35 +274,16 @@ function productPageMiddleware(root, cms) {
     const key = slug || id;
 
     if (!key) {
-      return res.redirect(301, "/#catalog");
+      return res.redirect(301, "/kostrovye-chashi.html");
     }
 
     const raw = cms.getProduct(key);
     const product = raw ? cms.publicProduct(raw) : null;
-    if (!product) {
-      res.status(404);
-      const html = readTemplate()
-        .replace(/<title>[^<]*<\/title>/, "<title>Товар не найден — Northern Magical Place</title>")
-        .replace(
-          /<!--NMP_PRODUCT_BODY_START-->[\s\S]*?<!--NMP_PRODUCT_BODY_END-->/,
-          `<!--NMP_PRODUCT_BODY_START--><h1>Товар не найден</h1><p class="lead">Такой модели нет в каталоге. <a href="/#catalog">Вернуться к костровым чашам</a>.</p><!--NMP_PRODUCT_BODY_END-->`
-        );
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.setHeader("Cache-Control", "no-cache");
-      return res.send(html);
+    if (product) {
+      return res.redirect(301, productPath(product.slug));
     }
 
-    if (!slug || slug !== product.slug) {
-      return res.redirect(301, `/product.html?slug=${encodeURIComponent(product.slug)}`);
-    }
-
-    const reviews = typeof cms.listCollection === "function"
-      ? cms.listCollection("reviews", { publishedOnly: true })
-      : [];
-    const html = injectProductSeo(readTemplate(), product, reviews);
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "no-cache");
-    return res.send(html);
+    return renderProduct(req, res, key, { redirectIfMismatch: false });
   };
 }
 

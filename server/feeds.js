@@ -1,4 +1,4 @@
-const { SITE, absoluteUrl, stripHtml, productDisplayName, productDescription } = require("./product-rich");
+const { SITE, absoluteUrl, stripHtml, productDisplayName, productDescription, productCanonical } = require("./product-rich");
 
 function xmlEsc(value) {
   return String(value ?? "")
@@ -26,7 +26,7 @@ function buildYmlFeed(cmsApi) {
       const available = product.availableForOrder !== false;
       const price = Number(product.price || product.effectivePrice || 0);
       if (!(price > 0)) return "";
-      const url = `${SITE}/product.html?slug=${encodeURIComponent(product.slug)}`;
+      const url = productCanonical(product);
       const pictures = [product.image, ...(product.gallery || [])]
         .filter(Boolean)
         .slice(0, 8)
@@ -94,6 +94,9 @@ function buildSitemapXml(cmsApi) {
   const staticPages = [
     { loc: `${SITE}/`, priority: "1.0", changefreq: "daily" },
     { loc: `${SITE}/kostrovye-chashi.html`, priority: "0.95", changefreq: "weekly" },
+    { loc: `${SITE}/pokhodnaya-kostrovaya-chasha.html`, priority: "0.9", changefreq: "weekly" },
+    { loc: `${SITE}/razbornaya-kostrovaya-chasha.html`, priority: "0.9", changefreq: "weekly" },
+    { loc: `${SITE}/kostrovaya-chasha-dlya-kempinga.html`, priority: "0.9", changefreq: "weekly" },
     { loc: `${SITE}/buyers.html`, priority: "0.6", changefreq: "monthly" },
     { loc: `${SITE}/usage.html`, priority: "0.5", changefreq: "monthly" },
     { loc: `${SITE}/privacy.html`, priority: "0.3", changefreq: "yearly" }
@@ -109,7 +112,7 @@ function buildSitemapXml(cmsApi) {
   </url>`
     ),
     ...products.map((product) => {
-      const loc = `${SITE}/product.html?slug=${encodeURIComponent(product.slug)}`;
+      const loc = productCanonical(product);
       const image = absoluteUrl(product.image);
       return `  <url>
     <loc>${xmlEsc(loc)}</loc>

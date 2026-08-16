@@ -2,6 +2,22 @@ const SITE = `https://${String(process.env.CANONICAL_HOST || "northmp.su")
   .trim()
   .toLowerCase()}`;
 
+/** Canonical storefront path for a product card: /product/:slug */
+function productPath(slugOrProduct) {
+  const slug =
+    typeof slugOrProduct === "object" && slugOrProduct
+      ? String(slugOrProduct.slug || slugOrProduct.id || "").trim()
+      : String(slugOrProduct || "").trim();
+  if (!slug) return "/#catalog";
+  return `/product/${encodeURIComponent(slug)}`;
+}
+
+function productCanonical(slugOrProduct) {
+  const path = productPath(slugOrProduct);
+  if (path.startsWith("http")) return path;
+  return `${SITE}${path}`;
+}
+
 function stripHtml(value) {
   return String(value || "")
     .replace(/<[^>]+>/g, " ")
@@ -126,7 +142,7 @@ function buildOffer(product, canonical) {
 }
 
 function buildProductGraph(product, reviews = []) {
-  const canonical = `${SITE}/product.html?slug=${encodeURIComponent(product.slug)}`;
+  const canonical = productCanonical(product);
   const name = productDisplayName(product);
   const description = productDescription(product);
   const images = productImages(product);
@@ -197,8 +213,8 @@ function buildProductGraph(product, reviews = []) {
         {
           "@type": "ListItem",
           position: 2,
-          name: "Каталог",
-          item: `${SITE}/#catalog`
+          name: "Костровые чаши",
+          item: `${SITE}/kostrovye-chashi.html`
         },
         {
           "@type": "ListItem",
@@ -246,6 +262,8 @@ module.exports = {
   SITE,
   stripHtml,
   absoluteUrl,
+  productPath,
+  productCanonical,
   productDisplayName,
   productDescription,
   productImages,
