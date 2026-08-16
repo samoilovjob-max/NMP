@@ -1690,6 +1690,14 @@ html {
     padding-bottom: 2rem;
   }
 
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-brand {
+    grid-column: auto;
+  }
+
   .hero-actions {
     display: grid;
     grid-template-columns: 1fr;
