@@ -133,6 +133,9 @@ function saveProduct(input, { isNew = false } = {}) {
     slug: normalizeSlug(input.slug || base.slug, `product-${id}`),
     name: String(input.name || base.name || "Новый товар").trim(),
     h1: String(input.h1 || input.name || base.h1 || "").trim(),
+    cardTitle: String(
+      input.cardTitle != null ? input.cardTitle : base.cardTitle || input.h1 || input.name || ""
+    ).trim(),
     price: Math.max(0, Number(input.price ?? base.price ?? 0)),
     promoPrice:
       input.promoPrice === "" || input.promoPrice == null

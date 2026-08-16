@@ -86,7 +86,7 @@
           </a>
           <div class="product-body">
             ${badge ? `<div class="badge">${badge}</div>` : ""}
-            <h3><a href="${href}">${p.name}</a></h3>
+            <h3><a href="${href}">${escAttr(p.cardTitle || p.h1 || p.name)}</a></h3>
             <p class="sku-label">Артикул ${p.sku || ""}</p>
             <div class="product-price-row">${priceLabel}</div>
             <div class="product-meta">

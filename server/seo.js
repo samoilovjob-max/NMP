@@ -158,11 +158,12 @@ function injectProductSeo(html, product) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: pub.name,
+    name: pub.h1 || pub.name,
     sku: pub.sku,
     image: [image],
     description: desc,
     brand: { "@type": "Brand", name: "Northern Magical Place" },
+    category: "Костровые чаши",
     offers: {
       "@type": "Offer",
       url: canonical,
