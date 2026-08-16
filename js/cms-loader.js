@@ -94,7 +94,6 @@
               <button class="btn btn-primary" type="button" data-notify-product="${escAttr(
                 p.id
               )}" data-notify-name="${escAttr(name)}">Узнать о поступлении</button>
-              <a class="btn btn-ghost" href="${href}">Подробнее о модели</a>
             </div>`;
     const loadingAttr = imageLoading === "eager" ? 'loading="eager"' : 'loading="lazy"';
     const priorityAttr = fetchPriority ? ` fetchpriority="${fetchPriority}"` : "";
