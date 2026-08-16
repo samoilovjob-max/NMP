@@ -780,10 +780,8 @@ html {
 }
 
 .catalog-why {
-  margin-top: clamp(2.5rem, 5vw, 3.5rem);
+  margin: 1.25rem auto clamp(2rem, 4vw, 2.75rem);
   max-width: 48rem;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .catalog-why h3 {
