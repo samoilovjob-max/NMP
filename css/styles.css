@@ -1444,6 +1444,15 @@ html {
   word-break: break-word;
 }
 
+.page-hero-wide h1 {
+  max-width: min(34ch, 100%);
+}
+
+.prose .text-muted {
+  color: var(--steel);
+  font-weight: 500;
+}
+
 @media (max-width: 640px) {
   .page-hero h1 {
     font-size: clamp(1.45rem, 6vw, 1.85rem);
