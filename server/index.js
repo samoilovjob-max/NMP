@@ -19,6 +19,7 @@ const tgClients = require("./telegram-clients");
 const delivery = require("./delivery");
 const { jsBundleMiddleware } = require("./js-bundles");
 const seo = require("./seo");
+const feeds = require("./feeds");
 
 notify.attachStore(store);
 
@@ -869,6 +870,20 @@ app.get("/api/products", (_req, res) => {
 
 app.get("/api/cms", (_req, res) => {
   res.json(cms.getPublicCms());
+});
+
+app.get(["/feed.yml", "/feeds/yandex.yml", "/yandex-feed.yml"], (_req, res) => {
+  res
+    .type("application/xml; charset=utf-8")
+    .set("Cache-Control", "public, max-age=300")
+    .send(feeds.buildYmlFeed(cms));
+});
+
+app.get("/sitemap.xml", (_req, res) => {
+  res
+    .type("application/xml; charset=utf-8")
+    .set("Cache-Control", "public, max-age=300")
+    .send(feeds.buildSitemapXml(cms));
 });
 
 const publicFormAttempts = new Map();
