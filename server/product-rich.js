@@ -83,6 +83,7 @@ function formatRub(value) {
 }
 
 function reviewsForProduct(product, reviews = []) {
+  if (!product || product.availableForOrder === false) return [];
   const id = String(product.id || "");
   const slug = String(product.slug || "");
   const name = String(product.name || "").toLowerCase();

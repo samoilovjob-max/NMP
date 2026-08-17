@@ -278,7 +278,7 @@ function publicReviews() {
     .filter((review) => {
       const product = resolveReviewProduct(review, products);
       if (!product) return true;
-      return product.active !== false;
+      return product.active !== false && product.availableForOrder !== false;
     })
     .map((review) => ({
       ...review,

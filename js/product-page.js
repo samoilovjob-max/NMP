@@ -123,13 +123,15 @@
   upsertLink("canonical", pageUrl);
 
   const cmsReviews = Array.isArray(window.NMP_CMS?.reviews) ? window.NMP_CMS.reviews : [];
-  const matchedReviews = cmsReviews.filter((review) => {
-    if (review.published === false) return false;
-    const pid = String(review.productId || "").trim();
-    if (pid) return pid === String(product.id) || pid === String(product.slug);
-    const meta = String(review.meta || "").toLowerCase();
-    return meta.includes(String(product.name || "").toLowerCase());
-  });
+  const matchedReviews = available
+    ? cmsReviews.filter((review) => {
+        if (review.published === false) return false;
+        const pid = String(review.productId || "").trim();
+        if (pid) return pid === String(product.id) || pid === String(product.slug);
+        const meta = String(review.meta || "").toLowerCase();
+        return meta.includes(String(product.name || "").toLowerCase());
+      })
+    : [];
   const reviewTitle = (review) => {
     const body = String(review.text || "")
       .replace(/<[^>]+>/g, " ")
@@ -305,7 +307,7 @@
       ? matchedReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / matchedReviews.length
       : 0;
   const ratingHtml = matchedReviews.length
-    ? `<a class="product-rating product-rating-link product-rating-inline" href="${sectionHref("product-reviews")}" aria-label="Читать отзывы покупателей">
+    ? `<a class="product-rating product-rating-link product-rating-inline product-rating-highlight" href="${sectionHref("product-reviews")}" aria-label="Читать отзывы покупателей">
         <span class="stars" aria-hidden="true">${stars(reviewAvg)}</span>
         <span>${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(matchedReviews.length)}</span>
       </a>`
@@ -457,7 +459,7 @@
       }
       ${
         matchedReviews.length
-          ? `<section class="product-panel product-reviews-panel" id="product-reviews" aria-label="Отзывы покупателей">
+          ? `<section class="product-panel product-reviews-panel is-orderable" id="product-reviews" aria-label="Отзывы покупателей">
               <div class="product-panel-head">
                 <h2>Отзывы покупателей</h2>
                 <p class="product-panel-meta">${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(

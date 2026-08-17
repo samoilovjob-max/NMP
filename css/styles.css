@@ -1985,6 +1985,22 @@ html {
   font-size: 0.88rem;
 }
 
+.product-rating-highlight {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(196, 92, 38, 0.38);
+  background: rgba(196, 92, 38, 0.1);
+}
+
+.product-reviews-panel.is-orderable {
+  border-color: rgba(196, 92, 38, 0.42);
+  background: linear-gradient(165deg, rgba(196, 92, 38, 0.09), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(212, 120, 58, 0.12);
+}
+
+.product-reviews-panel.is-orderable .product-panel-head h2 {
+  color: var(--frost);
+}
+
 .product-pitch {
   margin: 0.65rem 0 0;
   color: var(--frost-dim);

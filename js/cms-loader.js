@@ -161,11 +161,13 @@
   const reviewsForSale = (reviews, products = []) => {
     const list = Array.isArray(products) ? products : [];
     if (!list.length) return reviews || [];
-    const activeIds = new Set(list.map((p) => String(p.id)));
+    const orderableIds = new Set(
+      list.filter((p) => p.availableForOrder !== false).map((p) => String(p.id))
+    );
     return (reviews || []).filter((review) => {
       const pid = String(review.productId || "").trim();
       if (!pid) return true;
-      return activeIds.has(pid);
+      return orderableIds.has(pid);
     });
   };
 
