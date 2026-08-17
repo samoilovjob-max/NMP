@@ -2057,6 +2057,7 @@ html {
   padding: 1.15rem 1.2rem;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.02);
+  scroll-margin-top: calc(var(--header-h) + 1rem);
 }
 
 .product-panel h2 {

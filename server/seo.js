@@ -65,12 +65,13 @@ function productReviewsHtml(reviews) {
     </section>`;
 }
 
-function productRatingHtml(reviews) {
+function productRatingHtml(reviews, canonicalPath) {
   if (!Array.isArray(reviews) || !reviews.length) return "";
   const ratings = reviews.map((r) => Number(r.rating || 5)).filter((n) => n > 0);
   const avg = ratings.reduce((sum, n) => sum + n, 0) / Math.max(1, ratings.length);
   const avgLabel = avg.toFixed(1).replace(".", ",");
-  return `<a class="product-rating product-rating-link" href="#product-reviews" aria-label="Читать отзывы покупателей">
+  const path = String(canonicalPath || "").trim() || "/";
+  return `<a class="product-rating product-rating-link" href="${esc(path)}#product-reviews" aria-label="Читать отзывы покупателей">
       <span class="stars" aria-hidden="true">${stars(avg)}</span>
       <span>${esc(avgLabel)} · ${esc(reviewCountLabel(reviews.length))}</span>
     </a>`;
@@ -138,7 +139,10 @@ function productBodyHtml(product, rich) {
             </p>`
           : `<p class="price-lg price-soon">Цена по запросу</p>`
       }
-      ${productRatingHtml(reviews)}
+      ${productRatingHtml(
+        reviews,
+        rich.canonical ? new URL(rich.canonical).pathname : productPath(product.slug || product.id)
+      )}
       <p class="form-note">${
         available
           ? "В наличии · Доставка СДЭК по России · самовывоз и адресная доставка по Петрозаводску"

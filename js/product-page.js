@@ -52,7 +52,30 @@
     return;
   }
 
-  const pageUrl = `${siteUrl}/product/${encodeURIComponent(product.slug || product.id)}`;
+  const pagePath = `/product/${encodeURIComponent(product.slug || product.id)}`;
+  const pageUrl = `${siteUrl}${pagePath}`;
+  const sectionHref = (id) => `${pagePath}#${id}`;
+  const scrollToProductSection = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return false;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const hash = `#${encodeURIComponent(id)}`;
+    if (window.location.hash !== hash) {
+      history.replaceState(null, "", `${pagePath}${hash}`);
+    }
+    return true;
+  };
+  const bindProductSectionLinks = (container) => {
+    container.querySelectorAll(".product-jump-nav a, .product-rating-link").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const raw = (link.getAttribute("href") || "").split("#")[1];
+        if (!raw) return;
+        const id = decodeURIComponent(raw);
+        if (!scrollToProductSection(id)) return;
+        event.preventDefault();
+      });
+    });
+  };
   const abs = (src) => {
     const raw = String(src || "").trim();
     if (!raw) return `${siteUrl}/images/main-product.webp`;
@@ -282,7 +305,7 @@
       ? matchedReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / matchedReviews.length
       : 0;
   const ratingHtml = matchedReviews.length
-    ? `<a class="product-rating product-rating-link product-rating-inline" href="#product-reviews" aria-label="Читать отзывы покупателей">
+    ? `<a class="product-rating product-rating-link product-rating-inline" href="${sectionHref("product-reviews")}" aria-label="Читать отзывы покупателей">
         <span class="stars" aria-hidden="true">${stars(reviewAvg)}</span>
         <span>${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(matchedReviews.length)}</span>
       </a>`
@@ -398,7 +421,7 @@
         ${
           jumpSections.length
             ? `<nav class="product-jump-nav" aria-label="Разделы страницы">${jumpSections
-                .map((s) => `<a href="#${s.id}">${s.label}</a>`)
+                .map((s) => `<a href="${sectionHref(s.id)}">${s.label}</a>`)
                 .join("")}</nav>`
             : ""
         }
@@ -510,6 +533,13 @@
         </div>
       </div>`;
     document.body.appendChild(stickyEl);
+  }
+
+  bindProductSectionLinks(root);
+  const initialHash = String(window.location.hash || "").replace(/^#/, "");
+  if (initialHash) {
+    window.requestAnimationFrame(() => scrollToProductSection(decodeURIComponent(initialHash)));
+    window.setTimeout(() => scrollToProductSection(decodeURIComponent(initialHash)), 350);
   }
 
   const mainImage = document.getElementById("mainImage");
