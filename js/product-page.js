@@ -359,7 +359,7 @@
     product.faq?.length && { id: "product-faq", label: "Вопросы" }
   ].filter(Boolean);
 
-  root.innerHTML = `
+  const pageHtml = `
     <nav class="product-breadcrumbs reveal visible" aria-label="Хлебные крошки">
       <a href="/">Главная</a>
       <span aria-hidden="true">/</span>
@@ -517,6 +517,20 @@
       </footer>
     </div>
   `;
+
+  const ssrProductId =
+    root.querySelector("[data-add-cart]")?.getAttribute("data-add-cart") ||
+    root.querySelector("[data-notify-product]")?.getAttribute("data-notify-product") ||
+    "";
+  const useSsrLayout = root.querySelector(".product-hero") && String(ssrProductId) === String(product.id);
+
+  if (useSsrLayout) {
+    root.querySelectorAll(".product-breadcrumbs, .product-hero, .product-lower").forEach((el) => {
+      el.classList.add("reveal", "visible");
+    });
+  } else {
+    root.innerHTML = pageHtml;
+  }
 
   document.getElementById("productStickyBuy")?.remove();
   if (available) {

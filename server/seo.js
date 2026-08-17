@@ -1,14 +1,12 @@
 const fs = require("fs");
 const path = require("path");
+const { buildProductPageBody } = require("./product-page-body");
 const {
   SITE,
   stripHtml,
   absoluteUrl,
   productPath,
-  buildProductGraph,
-  formatRub,
-  stars,
-  reviewCountLabel
+  buildProductGraph
 } = require("./product-rich");
 
 const CANONICAL_HOST = String(process.env.CANONICAL_HOST || "northmp.su")
@@ -40,43 +38,6 @@ function jsonLdScripts(blocks) {
   return (Array.isArray(blocks) ? blocks : [blocks]).filter(Boolean).map(jsonLdScript).join("\n  ");
 }
 
-function productReviewsHtml(reviews) {
-  if (!Array.isArray(reviews) || !reviews.length) return "";
-  const cards = reviews
-    .slice(0, 5)
-    .map((review) => {
-      const rating = Number(review.rating || 5);
-      const body = stripHtml(review.text || review.body || "").replace(/^«|»$/g, "");
-      const author = String(review.author || review.name || "Покупатель").trim();
-      const meta = String(review.meta || "").trim();
-      return `<article class="review">
-        <div class="stars" aria-label="${rating} из 5">${stars(rating)}</div>
-        <p>«${esc(body)}»</p>
-        <footer>
-          <strong>${esc(author)}</strong>
-          ${meta ? `<span>${esc(meta)}</span>` : ""}
-        </footer>
-      </article>`;
-    })
-    .join("");
-  return `<section class="seo-block product-reviews" aria-label="Отзывы покупателей">
-      <h2>Отзывы покупателей</h2>
-      <div class="reviews-grid product-reviews-grid">${cards}</div>
-    </section>`;
-}
-
-function productRatingHtml(reviews, canonicalPath) {
-  if (!Array.isArray(reviews) || !reviews.length) return "";
-  const ratings = reviews.map((r) => Number(r.rating || 5)).filter((n) => n > 0);
-  const avg = ratings.reduce((sum, n) => sum + n, 0) / Math.max(1, ratings.length);
-  const avgLabel = avg.toFixed(1).replace(".", ",");
-  const path = String(canonicalPath || "").trim() || "/";
-  return `<a class="product-rating product-rating-link" href="${esc(path)}#product-reviews" aria-label="Читать отзывы покупателей">
-      <span class="stars" aria-hidden="true">${stars(avg)}</span>
-      <span>${esc(avgLabel)} · ${esc(reviewCountLabel(reviews.length))}</span>
-    </a>`;
-}
-
 /**
  * Collapse www and keep a single host in the index.
  * Localhost / IP / tunnels are left untouched.
@@ -104,84 +65,7 @@ function indexHtmlRedirect(req, res, next) {
 }
 
 function productBodyHtml(product, rich) {
-  const h1 = product.h1 || product.name;
-  const short = product.short || "";
-  const description = product.description || "";
-  const specs = Array.isArray(product.specs) ? product.specs : [];
-  const useCases = Array.isArray(product.useCases) ? product.useCases : [];
-  const faq = Array.isArray(product.faq) ? product.faq : [];
-  const image = product.image || "";
-  const alt = product.imageAlt || product.name;
-  const available = product.availableForOrder !== false;
-  const price = Number(product.price || product.effectivePrice || 0);
-  const reviews = Array.isArray(rich.matchedReviews) ? rich.matchedReviews : [];
-
-  return `
-    <nav class="product-breadcrumbs" aria-label="Хлебные крошки">
-      <a href="/">Главная</a>
-      <span aria-hidden="true">/</span>
-      <a href="/kostrovye-chashi.html">Костровые чаши</a>
-      <span aria-hidden="true">/</span>
-      <span>${esc(h1)}</span>
-    </nav>
-    <article class="product-info">
-      ${
-        image
-          ? `<p><img src="${esc(image)}" alt="${esc(alt)}" width="800" height="600" /></p>`
-          : ""
-      }
-      <h1>${esc(h1)}</h1>
-      <p class="sku-label">Артикул ${esc(product.sku || "")}</p>
-      ${
-        price > 0
-          ? `<p class="price-lg">
-              <span>${available ? "" : "от "}${esc(formatRub(price))}</span>
-            </p>`
-          : `<p class="price-lg price-soon">Цена по запросу</p>`
-      }
-      ${productRatingHtml(
-        reviews,
-        rich.canonical ? new URL(rich.canonical).pathname : productPath(product.slug || product.id)
-      )}
-      <p class="form-note">${
-        available
-          ? "В наличии · Доставка СДЭК по России · самовывоз и адресная доставка по Петрозаводску"
-          : "Скоро в продаже · можно оставить заявку на оповещение"
-      }</p>
-      ${short ? `<p class="lead">${short}</p>` : ""}
-      ${description ? `<div class="rich-text lead">${description}</div>` : ""}
-      ${
-        specs.length
-          ? `<section class="seo-block"><h2>Характеристики</h2><ul class="spec-list">${specs
-              .map((item) => `<li>${esc(item)}</li>`)
-              .join("")}</ul></section>`
-          : ""
-      }
-      ${
-        useCases.length
-          ? `<section class="seo-block"><h2>Где применять</h2><ul class="spec-list">${useCases
-              .map((item) => `<li>${esc(item)}</li>`)
-              .join("")}</ul></section>`
-          : ""
-      }
-      ${
-        faq.length
-          ? `<section class="seo-block"><h2>Частые вопросы</h2>${faq
-              .map(
-                (item) =>
-                  `<h3>${esc(item.q)}</h3><p>${esc(item.a)}</p>`
-              )
-              .join("")}</section>`
-          : ""
-      }
-      ${productReviewsHtml(reviews)}
-      <p>Костровая чаша Northern Magical Place из конструкционной стали, производство в Карелии. Доставка СДЭК по России, самовывоз и адресная доставка по Петрозаводску. Оплата через ЮKassa. Возврат надлежащего качества — 14 дней.</p>
-      <p>Смотрите также:
-        <a href="/kostrovaya-chasha-dlya-avtoputeshestviy.html">костровая чаша для автопутешествий</a> ·
-        <a href="/kostrovaya-chasha-ili-mangal.html">костровая чаша или мангал</a> ·
-        <a href="/kostrovye-chashi.html">каталог</a>
-      </p>
-    </article>`;
+  return buildProductPageBody(product, rich);
 }
 
 function injectProductSeo(html, product, reviews = []) {
