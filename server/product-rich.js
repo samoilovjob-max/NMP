@@ -96,6 +96,56 @@ function reviewsForProduct(product, reviews = []) {
   });
 }
 
+function reviewTitle(review, productName) {
+  const body = stripHtml(review.text || review.body || "");
+  const sentence = body.split(/[.!?]/)[0].trim();
+  if (sentence.length >= 12 && sentence.length <= 80) return sentence;
+  if (sentence.length > 80) return `${sentence.slice(0, 77).trim()}…`;
+  return `Отзыв о ${productName}`;
+}
+
+function stars(value) {
+  const n = Math.max(1, Math.min(5, Math.round(Number(value) || 5)));
+  return "★".repeat(n);
+}
+
+function reviewCountLabel(count) {
+  const n = Number(count) || 0;
+  const abs = Math.abs(n) % 100;
+  const d = abs % 10;
+  if (abs > 10 && abs < 20) return `${n} отзывов`;
+  if (d === 1) return `${n} отзыв`;
+  if (d >= 2 && d <= 4) return `${n} отзыва`;
+  return `${n} отзывов`;
+}
+
+function buildReviewNodes(matchedReviews, canonical, productName) {
+  return matchedReviews.slice(0, 5).map((review) => {
+    const body = stripHtml(review.text || review.body || "");
+    const date = String(review.publishedAt || review.updatedAt || "").slice(0, 10);
+    const node = {
+      "@type": "Review",
+      name: reviewTitle(review, productName),
+      reviewBody: body,
+      author: {
+        "@type": "Person",
+        name: String(review.author || review.name || review.meta || "Покупатель").trim()
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: Number(review.rating || 5),
+        bestRating: 5,
+        worstRating: 1
+      },
+      itemReviewed: {
+        "@id": `${canonical}#product`
+      }
+    };
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) node.datePublished = date;
+    return node;
+  });
+}
+
 function buildOffer(product, canonical) {
   const available = product.availableForOrder !== false;
   const price = Number(product.price || product.effectivePrice || 0);
@@ -194,69 +244,59 @@ function buildProductGraph(product, reviews = []) {
     productNode.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: Number(avg.toFixed(1)),
-      reviewCount: matchedReviews.length,
       bestRating: 5,
-      worstRating: 1
+      worstRating: 1,
+      ratingCount: matchedReviews.length,
+      reviewCount: matchedReviews.length
     };
-    productNode.review = matchedReviews.slice(0, 5).map((review) => ({
-      "@type": "Review",
-      reviewBody: stripHtml(review.text || review.body || ""),
-      author: {
-        "@type": "Person",
-        name: String(review.author || review.name || review.meta || "Покупатель").trim()
-      },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: String(Number(review.rating || 5)),
-        bestRating: "5",
-        worstRating: "1"
-      },
-      datePublished: String(review.publishedAt || review.updatedAt || "2026-01-01").slice(0, 10)
-    }));
+    productNode.review = buildReviewNodes(matchedReviews, canonical, name);
   }
 
-  const graph = [
-    {
-      "@type": "BreadcrumbList",
-      "@id": `${canonical}#breadcrumb`,
-      itemListElement: [
-        {
-          "@type": "ListItem",
-          position: 1,
-          name: "Главная",
-          item: `${SITE}/`
-        },
-        {
-          "@type": "ListItem",
-          position: 2,
-          name: "Костровые чаши",
-          item: `${SITE}/kostrovye-chashi.html`
-        },
-        {
-          "@type": "ListItem",
-          position: 3,
-          name,
-          item: canonical
-        }
-      ]
-    },
-    productNode
-  ];
+  const withContext = (node) => ({ "@context": "https://schema.org", ...node });
+
+  const breadcrumb = {
+    "@type": "BreadcrumbList",
+    "@id": `${canonical}#breadcrumb`,
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Главная",
+        item: `${SITE}/`
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Костровые чаши",
+        item: `${SITE}/kostrovye-chashi.html`
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name,
+        item: canonical
+      }
+    ]
+  };
+
+  const jsonLdBlocks = [withContext(productNode), withContext(breadcrumb)];
 
   const faq = Array.isArray(product.faq) ? product.faq : [];
   if (faq.length) {
-    graph.push({
-      "@type": "FAQPage",
-      "@id": `${canonical}#faq`,
-      mainEntity: faq.map((item) => ({
-        "@type": "Question",
-        name: String(item.q || "").trim(),
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: String(item.a || "").trim()
-        }
-      }))
-    });
+    jsonLdBlocks.push(
+      withContext({
+        "@type": "FAQPage",
+        "@id": `${canonical}#faq`,
+        mainEntity: faq.map((item) => ({
+          "@type": "Question",
+          name: String(item.q || "").trim(),
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: String(item.a || "").trim()
+          }
+        }))
+      })
+    );
   }
 
   return {
@@ -267,10 +307,9 @@ function buildProductGraph(product, reviews = []) {
     available: product.availableForOrder !== false,
     price: Number(product.price || product.effectivePrice || 0),
     priceLabel: formatRub(product.price || product.effectivePrice || 0),
-    jsonLd: {
-      "@context": "https://schema.org",
-      "@graph": graph
-    }
+    matchedReviews,
+    jsonLd: withContext(productNode),
+    jsonLdBlocks
   };
 }
 
@@ -284,6 +323,8 @@ module.exports = {
   productDescription,
   productImages,
   formatRub,
+  stars,
+  reviewCountLabel,
   reviewsForProduct,
   buildProductGraph
 };

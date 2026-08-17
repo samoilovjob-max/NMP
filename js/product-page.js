@@ -107,6 +107,25 @@
     const meta = String(review.meta || "").toLowerCase();
     return meta.includes(String(product.name || "").toLowerCase());
   });
+  const reviewTitle = (review) => {
+    const body = String(review.text || "")
+      .replace(/<[^>]+>/g, " ")
+      .trim();
+    const sentence = body.split(/[.!?]/)[0].trim();
+    if (sentence.length >= 12 && sentence.length <= 80) return sentence;
+    if (sentence.length > 80) return `${sentence.slice(0, 77).trim()}…`;
+    return `Отзыв о ${displayName}`;
+  };
+  const stars = (value) => "★".repeat(Math.max(1, Math.min(5, Math.round(Number(value) || 5))));
+  const reviewCountLabel = (count) => {
+    const n = Number(count) || 0;
+    const abs = Math.abs(n) % 100;
+    const d = abs % 10;
+    if (abs > 10 && abs < 20) return `${n} отзывов`;
+    if (d === 1) return `${n} отзыв`;
+    if (d >= 2 && d <= 4) return `${n} отзыва`;
+    return `${n} отзывов`;
+  };
 
   const offer = {
     "@type": "Offer",
@@ -188,43 +207,52 @@
     productNode.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: Number(avg.toFixed(1)),
-      reviewCount: matchedReviews.length,
       bestRating: 5,
-      worstRating: 1
+      worstRating: 1,
+      ratingCount: matchedReviews.length,
+      reviewCount: matchedReviews.length
     };
-    productNode.review = matchedReviews.slice(0, 5).map((review) => ({
-      "@type": "Review",
-      reviewBody: String(review.text || "")
-        .replace(/<[^>]+>/g, " ")
-        .trim(),
-      author: {
-        "@type": "Person",
-        name: String(review.author || review.name || review.meta || "Покупатель").trim()
-      },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: String(Number(review.rating || 5)),
-        bestRating: "5",
-        worstRating: "1"
-      },
-      datePublished: String(review.publishedAt || review.updatedAt || "2026-01-01").slice(0, 10)
-    }));
+    productNode.review = matchedReviews.slice(0, 5).map((review) => {
+      const date = String(review.publishedAt || review.updatedAt || "").slice(0, 10);
+      const node = {
+        "@type": "Review",
+        name: reviewTitle(review),
+        reviewBody: String(review.text || "")
+          .replace(/<[^>]+>/g, " ")
+          .trim(),
+        author: {
+          "@type": "Person",
+          name: String(review.author || review.name || review.meta || "Покупатель").trim()
+        },
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: Number(review.rating || 5),
+          bestRating: 5,
+          worstRating: 1
+        },
+        itemReviewed: { "@id": `${pageUrl}#product` }
+      };
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) node.datePublished = date;
+      return node;
+    });
   }
 
-  const graph = [
+  const jsonLdBlocks = [
+    { "@context": "https://schema.org", ...productNode },
     {
+      "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Главная", item: `${siteUrl}/` },
         { "@type": "ListItem", position: 2, name: "Костровые чаши", item: `${siteUrl}/kostrovye-chashi.html` },
         { "@type": "ListItem", position: 3, name: displayName, item: pageUrl }
       ]
-    },
-    productNode
+    }
   ];
 
   if (product.faq?.length) {
-    graph.push({
+    jsonLdBlocks.push({
+      "@context": "https://schema.org",
       "@type": "FAQPage",
       mainEntity: product.faq.map((item) => ({
         "@type": "Question",
@@ -234,20 +262,33 @@
     });
   }
 
-  document.querySelectorAll('script[type="application/ld+json"]').forEach((node) => node.remove());
-  const injectJsonLd = (data) => {
-    const script = document.createElement("script");
-    script.type = "application/ld+json";
-    script.dataset.seoJsonld = "1";
-    script.textContent = JSON.stringify(data);
-    document.head.appendChild(script);
-  };
-  injectJsonLd({ "@context": "https://schema.org", "@graph": graph });
+  const hasServerJsonLd = document.querySelector('script[data-seo-jsonld="1"]');
+  if (!hasServerJsonLd) {
+    document.querySelectorAll('script[type="application/ld+json"]').forEach((node) => node.remove());
+    jsonLdBlocks.forEach((data) => {
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.dataset.seoJsonld = "1";
+      script.textContent = JSON.stringify(data);
+      document.head.appendChild(script);
+    });
+  }
 
   const galleryAlts = product.galleryAlts || [];
   const useCases = Array.isArray(product.useCases) ? product.useCases : [];
   const specs = Array.isArray(product.specs) ? product.specs : [];
   const highlightSpecs = specs.slice(0, 4);
+  const reviewAvg =
+    matchedReviews.length > 0
+      ? matchedReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / matchedReviews.length
+      : 0;
+  const ratingHtml = matchedReviews.length
+    ? `<p class="product-rating"><span class="stars" aria-hidden="true">${stars(
+        reviewAvg
+      )}</span> <span>${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(
+        matchedReviews.length
+      )}</span></p>`
+    : "";
 
   const priceLabel = product.hasPromo
     ? `<s class="price-old">${window.NMP_formatPrice(product.basePrice || product.price)}</s> ${window.NMP_formatPrice(product.price)}`
@@ -295,6 +336,7 @@
             ? `<p class="price-lg">от ${window.NMP_formatPrice(product.price)}</p>`
             : `<p class="price-lg price-soon">Цена по запросу</p>`
       }
+      ${ratingHtml}
       <div class="product-actions">
         ${
           available
@@ -358,6 +400,34 @@
                       <p>${item.a}</p>
                     </details>`
                     )
+                    .join("")}
+                </div>
+              </section>`
+            : ""
+        }
+
+        ${
+          matchedReviews.length
+            ? `<section class="seo-block product-reviews" aria-label="Отзывы покупателей">
+                <h2>Отзывы покупателей</h2>
+                <div class="reviews-grid product-reviews-grid">
+                  ${matchedReviews
+                    .slice(0, 5)
+                    .map((review) => {
+                      const rating = Number(review.rating || 5);
+                      const body = String(review.text || "")
+                        .replace(/<[^>]+>/g, " ")
+                        .replace(/^«|»$/g, "")
+                        .trim();
+                      return `<article class="review">
+                        <div class="stars" aria-label="${rating} из 5">${stars(rating)}</div>
+                        <p>«${escAttr(body)}»</p>
+                        <footer>
+                          <strong>${escAttr(review.author || "Покупатель")}</strong>
+                          ${review.meta ? `<span>${escAttr(review.meta)}</span>` : ""}
+                        </footer>
+                      </article>`;
+                    })
                     .join("")}
                 </div>
               </section>`

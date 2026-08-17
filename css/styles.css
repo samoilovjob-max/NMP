@@ -2194,6 +2194,28 @@ html {
   line-height: 1.55;
 }
 
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: -0.35rem 0 0.9rem;
+  color: var(--frost-dim);
+  font-size: 0.92rem;
+}
+
+.product-rating .stars {
+  letter-spacing: 0.12em;
+  color: var(--ember-soft);
+}
+
+.product-reviews-grid {
+  grid-template-columns: 1fr;
+}
+
+.product-reviews .review {
+  padding: 1.15rem 1.1rem;
+}
+
 .page-hero.compact {
   padding-bottom: 1.2rem;
 }

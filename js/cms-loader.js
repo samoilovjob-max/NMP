@@ -160,19 +160,12 @@
 
   const reviewsForSale = (reviews, products = []) => {
     const list = Array.isArray(products) ? products : [];
-    const availableIds = new Set(
-      list.filter((p) => p.availableForOrder !== false).map((p) => String(p.id))
-    );
-    const unavailableNames = list
-      .filter((p) => p.availableForOrder === false)
-      .map((p) => String(p.name || "").trim().toLowerCase())
-      .filter(Boolean);
+    if (!list.length) return reviews || [];
+    const activeIds = new Set(list.map((p) => String(p.id)));
     return (reviews || []).filter((review) => {
       const pid = String(review.productId || "").trim();
-      if (pid) return availableIds.has(pid);
-      const meta = String(review.meta || "").toLowerCase();
-      if (!meta || !unavailableNames.length) return true;
-      return !unavailableNames.some((name) => meta.includes(name));
+      if (!pid) return true;
+      return activeIds.has(pid);
     });
   };
 

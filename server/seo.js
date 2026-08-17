@@ -6,7 +6,9 @@ const {
   absoluteUrl,
   productPath,
   buildProductGraph,
-  formatRub
+  formatRub,
+  stars,
+  reviewCountLabel
 } = require("./product-rich");
 
 const CANONICAL_HOST = String(process.env.CANONICAL_HOST || "northmp.su")
@@ -32,6 +34,46 @@ function esc(value) {
 function jsonLdScript(data) {
   const json = JSON.stringify(data).replace(/</g, "\\u003c");
   return `<script type="application/ld+json" data-seo-jsonld="1">${json}</script>`;
+}
+
+function jsonLdScripts(blocks) {
+  return (Array.isArray(blocks) ? blocks : [blocks]).filter(Boolean).map(jsonLdScript).join("\n  ");
+}
+
+function productReviewsHtml(reviews) {
+  if (!Array.isArray(reviews) || !reviews.length) return "";
+  const cards = reviews
+    .slice(0, 5)
+    .map((review) => {
+      const rating = Number(review.rating || 5);
+      const body = stripHtml(review.text || review.body || "").replace(/^«|»$/g, "");
+      const author = String(review.author || review.name || "Покупатель").trim();
+      const meta = String(review.meta || "").trim();
+      return `<article class="review">
+        <div class="stars" aria-label="${rating} из 5">${stars(rating)}</div>
+        <p>«${esc(body)}»</p>
+        <footer>
+          <strong>${esc(author)}</strong>
+          ${meta ? `<span>${esc(meta)}</span>` : ""}
+        </footer>
+      </article>`;
+    })
+    .join("");
+  return `<section class="seo-block product-reviews" aria-label="Отзывы покупателей">
+      <h2>Отзывы покупателей</h2>
+      <div class="reviews-grid product-reviews-grid">${cards}</div>
+    </section>`;
+}
+
+function productRatingHtml(reviews) {
+  if (!Array.isArray(reviews) || !reviews.length) return "";
+  const ratings = reviews.map((r) => Number(r.rating || 5)).filter((n) => n > 0);
+  const avg = ratings.reduce((sum, n) => sum + n, 0) / Math.max(1, ratings.length);
+  const avgLabel = avg.toFixed(1).replace(".", ",");
+  return `<p class="product-rating">
+      <span class="stars" aria-hidden="true">${stars(avg)}</span>
+      <span>${esc(avgLabel)} · ${esc(reviewCountLabel(reviews.length))}</span>
+    </p>`;
 }
 
 /**
@@ -71,6 +113,7 @@ function productBodyHtml(product, rich) {
   const alt = product.imageAlt || product.name;
   const available = product.availableForOrder !== false;
   const price = Number(product.price || product.effectivePrice || 0);
+  const reviews = Array.isArray(rich.matchedReviews) ? rich.matchedReviews : [];
 
   return `
     <nav class="product-breadcrumbs" aria-label="Хлебные крошки">
@@ -95,6 +138,7 @@ function productBodyHtml(product, rich) {
             </p>`
           : `<p class="price-lg price-soon">Цена по запросу</p>`
       }
+      ${productRatingHtml(reviews)}
       <p class="form-note">${
         available
           ? "В наличии · Доставка СДЭК по России · самовывоз и адресная доставка по Петрозаводску"
@@ -126,6 +170,7 @@ function productBodyHtml(product, rich) {
               .join("")}</section>`
           : ""
       }
+      ${productReviewsHtml(reviews)}
       <p>Костровая чаша Northern Magical Place из конструкционной стали, производство в Карелии. Доставка СДЭК по России, самовывоз и адресная доставка по Петрозаводску. Оплата через ЮKassa. Возврат надлежащего качества — 14 дней.</p>
       <p>Смотрите также:
         <a href="/kostrovaya-chasha-dlya-avtoputeshestviy.html">костровая чаша для автопутешествий</a> ·
@@ -204,7 +249,10 @@ function injectProductSeo(html, product, reviews = []) {
     /<script type="application\/ld\+json"[\s\S]*?<\/script>\s*/g,
     ""
   );
-  html = html.replace("</head>", `  ${jsonLdScript(rich.jsonLd)}\n</head>`);
+  html = html.replace(
+    "</head>",
+    `  ${jsonLdScripts(rich.jsonLdBlocks || [rich.jsonLd])}\n</head>`
+  );
 
   html = html.replace(
     /<!--NMP_PRODUCT_BODY_START-->[\s\S]*?<!--NMP_PRODUCT_BODY_END-->/,
