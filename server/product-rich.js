@@ -58,9 +58,23 @@ function productImages(product) {
 }
 
 function priceValidUntil() {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() + 1);
-  return d.toISOString().slice(0, 10);
+  return "2027-12-31";
+}
+
+function priceValidFrom() {
+  return "2026-01-01";
+}
+
+function googleProductCategory() {
+  return [
+    {
+      "@type": "CategoryCode",
+      name: "Home & Garden > Fireplaces",
+      inCodeSet: "https://www.google.com/basepages/producttype/taxonomy-with-ids.en-US.txt",
+      codeValue: "6792"
+    },
+    "Костровые чаши"
+  ];
 }
 
 function formatRub(value) {
@@ -91,6 +105,7 @@ function buildOffer(product, canonical) {
     priceCurrency: "RUB",
     price: price > 0 ? price.toFixed(2) : "0.00",
     priceValidUntil: priceValidUntil(),
+    validFrom: priceValidFrom(),
     availability: available
       ? "https://schema.org/InStock"
       : "https://schema.org/PreOrder",
@@ -161,7 +176,7 @@ function buildProductGraph(product, reviews = []) {
       name: "Northern Magical Place",
       alternateName: "Северное магическое место"
     },
-    category: "Костровые чаши",
+    category: googleProductCategory(),
     material: "Конструкционная сталь",
     countryOfOrigin: {
       "@type": "Country",
@@ -195,7 +210,8 @@ function buildProductGraph(product, reviews = []) {
         ratingValue: String(Number(review.rating || 5)),
         bestRating: "5",
         worstRating: "1"
-      }
+      },
+      datePublished: String(review.publishedAt || review.updatedAt || "2026-01-01").slice(0, 10)
     }));
   }
 

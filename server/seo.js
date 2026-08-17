@@ -80,25 +80,17 @@ function productBodyHtml(product, rich) {
       <span aria-hidden="true">/</span>
       <span>${esc(h1)}</span>
     </nav>
-    <article class="product-info" itemscope itemtype="https://schema.org/Product">
-      <meta itemprop="sku" content="${esc(product.sku || "")}" />
-      <meta itemprop="brand" content="Northern Magical Place" />
+    <article class="product-info">
       ${
         image
-          ? `<p><img src="${esc(image)}" alt="${esc(alt)}" width="800" height="600" itemprop="image" /></p>`
+          ? `<p><img src="${esc(image)}" alt="${esc(alt)}" width="800" height="600" /></p>`
           : ""
       }
-      <h1 itemprop="name">${esc(h1)}</h1>
+      <h1>${esc(h1)}</h1>
       <p class="sku-label">Артикул ${esc(product.sku || "")}</p>
       ${
         price > 0
-          ? `<p class="price-lg" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-              <meta itemprop="priceCurrency" content="RUB" />
-              <meta itemprop="price" content="${price.toFixed(2)}" />
-              <meta itemprop="availability" content="${
-                available ? "https://schema.org/InStock" : "https://schema.org/PreOrder"
-              }" />
-              <meta itemprop="url" content="${esc(rich.canonical)}" />
+          ? `<p class="price-lg">
               <span>${available ? "" : "от "}${esc(formatRub(price))}</span>
             </p>`
           : `<p class="price-lg price-soon">Цена по запросу</p>`
@@ -108,7 +100,7 @@ function productBodyHtml(product, rich) {
           ? "В наличии · Доставка СДЭК по России · самовывоз и адресная доставка по Петрозаводску"
           : "Скоро в продаже · можно оставить заявку на оповещение"
       }</p>
-      ${short ? `<p class="lead" itemprop="description">${short}</p>` : ""}
+      ${short ? `<p class="lead">${short}</p>` : ""}
       ${description ? `<div class="rich-text lead">${description}</div>` : ""}
       ${
         specs.length
