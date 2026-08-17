@@ -70,10 +70,10 @@ function productRatingHtml(reviews) {
   const ratings = reviews.map((r) => Number(r.rating || 5)).filter((n) => n > 0);
   const avg = ratings.reduce((sum, n) => sum + n, 0) / Math.max(1, ratings.length);
   const avgLabel = avg.toFixed(1).replace(".", ",");
-  return `<p class="product-rating">
+  return `<a class="product-rating product-rating-link" href="#product-reviews" aria-label="Читать отзывы покупателей">
       <span class="stars" aria-hidden="true">${stars(avg)}</span>
       <span>${esc(avgLabel)} · ${esc(reviewCountLabel(reviews.length))}</span>
-    </p>`;
+    </a>`;
 }
 
 /**

@@ -2431,6 +2431,22 @@ html {
   font-size: 0.92rem;
 }
 
+.product-rating-link {
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+  border-bottom: 1px solid transparent;
+}
+
+.product-rating-link:hover {
+  color: var(--frost);
+  border-bottom-color: rgba(196, 92, 38, 0.45);
+}
+
+.product-rating-link:focus-visible {
+  outline: 2px solid rgba(196, 92, 38, 0.85);
+  outline-offset: 3px;
+}
+
 .product-rating .stars {
   letter-spacing: 0.12em;
   color: var(--ember-soft);

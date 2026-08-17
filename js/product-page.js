@@ -282,11 +282,10 @@
       ? matchedReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / matchedReviews.length
       : 0;
   const ratingHtml = matchedReviews.length
-    ? `<p class="product-rating"><span class="stars" aria-hidden="true">${stars(
-        reviewAvg
-      )}</span> <span>${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(
-        matchedReviews.length
-      )}</span></p>`
+    ? `<a class="product-rating product-rating-link product-rating-inline" href="#product-reviews" aria-label="Читать отзывы покупателей">
+        <span class="stars" aria-hidden="true">${stars(reviewAvg)}</span>
+        <span>${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(matchedReviews.length)}</span>
+      </a>`
     : "";
 
   const priceLabel = product.hasPromo
@@ -373,7 +372,7 @@
                   ? `<p class="price-lg">от ${window.NMP_formatPrice(product.price)}</p>`
                   : `<p class="price-lg price-soon">Цена по запросу</p>`
             }
-            ${ratingHtml ? ratingHtml.replace("product-rating", "product-rating product-rating-inline") : ""}
+            ${ratingHtml || ""}
           </div>
           <div class="product-actions">
             ${
