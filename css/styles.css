@@ -1915,6 +1915,234 @@ html {
   align-items: start;
 }
 
+.product-hero {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.product-lower {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: calc(var(--header-h) + 0.75rem);
+}
+
+@media (min-width: 900px) {
+  .product-lower {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+  }
+
+  .product-reviews-panel,
+  .product-page-footer {
+    grid-column: 1 / -1;
+  }
+}
+
+.product-buy-panel {
+  min-width: 0;
+}
+
+@media (min-width: 981px) {
+  .product-buy-panel {
+    position: sticky;
+    top: calc(var(--header-h) + 1rem);
+  }
+
+  .product-page .product-stage {
+    aspect-ratio: 4 / 3;
+    max-height: min(420px, 52vh);
+  }
+}
+
+.product-buy-card {
+  padding: 1.2rem 1.25rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.product-buy-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.15rem;
+}
+
+.product-buy-price-row .price-lg {
+  margin: 0.2rem 0 0;
+}
+
+.product-rating-inline {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.product-pitch {
+  margin: 0.65rem 0 0;
+  color: var(--frost-dim);
+  font-size: 0.94rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-spec-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-spec-chips li {
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  padding: 0.32rem 0.55rem;
+  border: 1px solid var(--line);
+  color: var(--frost-dim);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.product-service-grid {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--frost-dim);
+}
+
+.product-service-grid a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.product-jump-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.product-jump-nav a {
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  padding: 0.38rem 0.65rem;
+  border: 1px solid var(--line);
+  color: var(--frost-dim);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.product-jump-nav a:hover {
+  color: var(--frost);
+  border-color: rgba(196, 92, 38, 0.55);
+}
+
+.product-panel {
+  padding: 1.15rem 1.2rem;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.product-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.05rem, 2vw, 1.25rem);
+}
+
+.product-panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.product-panel-head h2 {
+  margin: 0;
+}
+
+.product-panel-meta {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--frost-dim);
+}
+
+.product-desc-text {
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--frost-dim);
+}
+
+.spec-list-compact {
+  margin: 0;
+}
+
+.product-use-block {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.product-use-block h3 {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.product-use-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product-use-chips li {
+  font-size: 0.8rem;
+  padding: 0.32rem 0.55rem;
+  border: 1px solid var(--line);
+  color: var(--frost-dim);
+}
+
+.review-compact {
+  padding: 1rem 0.95rem;
+}
+
+.review-compact p {
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-page-footer {
+  padding-top: 0.35rem;
+}
+
+.product-page-footer p {
+  margin: 0.35rem 0;
+}
+
 .product-breadcrumbs {
   grid-column: 1 / -1;
   display: flex;
@@ -3804,7 +4032,15 @@ body.nav-lock {
 }
 
 @media (max-width: 980px) {
-  .product-layout,
+  .product-hero,
+  .product-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .product-service-grid {
+    grid-template-columns: 1fr;
+  }
+
   .checkout-grid,
   .account-layout,
   .field-row,

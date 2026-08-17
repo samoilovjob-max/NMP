@@ -277,7 +277,6 @@
   const galleryAlts = product.galleryAlts || [];
   const useCases = Array.isArray(product.useCases) ? product.useCases : [];
   const specs = Array.isArray(product.specs) ? product.specs : [];
-  const highlightSpecs = specs.slice(0, 4);
   const reviewAvg =
     matchedReviews.length > 0
       ? matchedReviews.reduce((sum, r) => sum + Number(r.rating || 5), 0) / matchedReviews.length
@@ -302,145 +301,196 @@
       .trim()
       .slice(0, 180);
 
+  const titleName = String(product.cardTitle || product.name || displayName).trim();
+  let titleSub = String(product.cardSubtitle || "").trim();
+  if (!titleSub && product.h1 && product.h1 !== titleName) {
+    const h1 = String(product.h1).trim();
+    if (h1.startsWith(titleName) && h1.includes("—")) {
+      titleSub = h1.slice(titleName.length).replace(/^[\s—–-]+/, "").trim();
+    } else if (h1 !== titleName) {
+      titleSub = h1;
+    }
+  }
+  const badgeLabel = product.badge || (available ? "" : "Скоро в продаже");
+  const specChips = specs.slice(0, 4);
+  const serviceNotes = available
+    ? [
+        "Оплата через ЮKassa",
+        "Сборка 1–2 дня · отгрузка до 48 ч",
+        "СДЭК по России · Петрозаводск",
+        "Гарантия 90 дней · <a href=\"usage.html\">эксплуатация</a>"
+      ]
+    : [
+        product.availabilityNote ||
+          "Модель готовится к продаже — оставьте заявку на оповещение.",
+        "СДЭК по России · Петрозаводск",
+        "Оплата через ЮKassa после запуска продаж",
+        "<a href=\"/kostrovye-chashi.html\">Другие модели в каталоге</a>"
+      ];
+
+  const jumpSections = [
+    product.description && { id: "product-desc", label: "Описание" },
+    (specs.length || useCases.length) && { id: "product-specs", label: "Характеристики" },
+    matchedReviews.length && { id: "product-reviews", label: "Отзывы" },
+    product.faq?.length && { id: "product-faq", label: "Вопросы" }
+  ].filter(Boolean);
+
   root.innerHTML = `
     <nav class="product-breadcrumbs reveal visible" aria-label="Хлебные крошки">
       <a href="/">Главная</a>
       <span aria-hidden="true">/</span>
       <a href="/kostrovye-chashi.html">Костровые чаши</a>
       <span aria-hidden="true">/</span>
-      <span>${escAttr(displayName)}</span>
+      <span>${escAttr(titleName)}</span>
     </nav>
-    <div class="product-gallery reveal visible">
-      <div class="product-stage">
-        <img id="mainImage" src="${product.image}" alt="${escAttr(product.imageAlt || product.name)}" />
+    <div class="product-hero reveal visible">
+      <div class="product-gallery">
+        <div class="product-stage">
+          <img id="mainImage" src="${product.image}" alt="${escAttr(product.imageAlt || product.name)}" />
+        </div>
+        <div class="thumbs">
+          ${gallery
+            .map(
+              (src, index) =>
+                `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}" data-alt="${escAttr(
+                  galleryAlts[index] || product.imageAlt || product.name
+                )}"><img src="${src}" alt="${escAttr(galleryAlts[index] || product.imageAlt || product.name)}" loading="lazy" /></button>`
+            )
+            .join("")}
+        </div>
       </div>
-      <div class="thumbs">
-        ${gallery
-          .map(
-            (src, index) =>
-              `<button type="button" class="thumb ${index === 0 ? "active" : ""}" data-src="${src}" data-alt="${escAttr(
-                galleryAlts[index] || product.imageAlt || product.name
-              )}"><img src="${src}" alt="${escAttr(galleryAlts[index] || product.imageAlt || product.name)}" loading="lazy" /></button>`
-          )
-          .join("")}
+      <div class="product-buy-panel product-info">
+        <div class="product-buy-card">
+          ${badgeLabel ? `<div class="badge">${escAttr(badgeLabel)}</div>` : ""}
+          <h1>${escAttr(titleName)}</h1>
+          ${titleSub ? `<p class="product-h1-sub">${escAttr(titleSub)}</p>` : ""}
+          <p class="sku-label">Артикул ${escAttr(product.sku || "")}</p>
+          <div class="product-buy-price-row">
+            ${
+              available
+                ? `<p class="price-lg">${priceLabel}</p>`
+                : Number(product.price) > 0
+                  ? `<p class="price-lg">от ${window.NMP_formatPrice(product.price)}</p>`
+                  : `<p class="price-lg price-soon">Цена по запросу</p>`
+            }
+            ${ratingHtml ? ratingHtml.replace("product-rating", "product-rating product-rating-inline") : ""}
+          </div>
+          <div class="product-actions">
+            ${
+              available
+                ? `<a class="btn btn-primary" href="checkout.html?buy=${encodeURIComponent(product.id)}">Купить</a>
+            <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>`
+                : `<button class="btn btn-primary" type="button" data-notify-product="${product.id}" data-notify-name="${escAttr(product.name)}">Сообщить о поступлении</button>
+            <a class="btn btn-ghost" href="/kostrovye-chashi.html">Каталог</a>`
+            }
+          </div>
+          ${shortLead ? `<p class="product-pitch">${escAttr(shortLead)}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
+          ${
+            specChips.length
+              ? `<ul class="product-spec-chips" aria-label="Ключевые особенности">${specChips
+                  .map((item) => `<li>${escAttr(item)}</li>`)
+                  .join("")}</ul>`
+              : ""
+          }
+          <ul class="product-service-grid" aria-label="Доставка и оплата">
+            ${serviceNotes.map((item) => `<li>${item}</li>`).join("")}
+          </ul>
+        </div>
+        ${
+          jumpSections.length
+            ? `<nav class="product-jump-nav" aria-label="Разделы страницы">${jumpSections
+                .map((s) => `<a href="#${s.id}">${s.label}</a>`)
+                .join("")}</nav>`
+            : ""
+        }
       </div>
     </div>
-    <div class="product-info reveal visible">
-      <div class="badge">${product.badge || (available ? "" : "Скоро в продаже")}</div>
-      <h1>${product.h1 || product.name}</h1>
-      <p class="sku-label">Артикул ${product.sku}</p>
+    <div id="product-details" class="product-lower reveal visible">
       ${
-        available
-          ? `<p class="price-lg">${priceLabel}</p>`
-          : Number(product.price) > 0
-            ? `<p class="price-lg">от ${window.NMP_formatPrice(product.price)}</p>`
-            : `<p class="price-lg price-soon">Цена по запросу</p>`
-      }
-      ${ratingHtml}
-      <div class="product-actions">
-        ${
-          available
-            ? `<a class="btn btn-primary" href="checkout.html?buy=${encodeURIComponent(product.id)}">Купить</a>
-        <button class="btn btn-ghost" type="button" data-add-cart="${product.id}">В корзину</button>
-        <a class="btn btn-ghost" href="#product-details">Подробнее</a>`
-            : `<button class="btn btn-primary" type="button" data-notify-product="${product.id}" data-notify-name="${product.name}">Сообщить о поступлении</button>
-        <a class="btn btn-ghost" href="/kostrovye-chashi.html">Смотреть каталог</a>`
-        }
-      </div>
-      ${shortLead ? `<p class="product-pitch">${shortLead}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
-      ${
-        highlightSpecs.length
-          ? `<ul class="product-benefits product-benefits-page" aria-label="Ключевые преимущества">
-              ${highlightSpecs.map((item) => `<li>${item}</li>`).join("")}
-            </ul>`
+        product.description
+          ? `<section class="product-panel" id="product-desc">
+              <h2>О модели</h2>
+              <div class="rich-text product-desc-text">${product.description}</div>
+            </section>`
           : ""
       }
-      <ul class="trust-list">
-        <li>Оплата через ЮKassa</li>
-        <li>Сборка 1–2 рабочих дня · отгрузка до 48 ч</li>
-        <li>СДЭК по России · самовывоз в Петрозаводске</li>
-        <li>Статус заказа — в личном кабинете или Telegram</li>
-        <li><a href="usage.html">Правила эксплуатации и гарантия 3 мес. (90 дней)</a></li>
-      </ul>
-      <p class="form-note">${
-        available
-          ? "Доставка СДЭК, самовывоз или адресная доставка по Петрозаводску · Оплата через ЮKassa · статусы — в кабинете или Telegram"
-          : product.availabilityNote ||
-            "Модель ещё готовится к продаже. Оставьте контакты — сообщим, когда можно будет заказать."
-      }</p>
-
-      <div id="product-details" class="product-details">
-        <div class="lead rich-text">${product.description || ""}</div>
-        ${
-          specs.length
-            ? `<section class="seo-block">
-                <h2>Характеристики</h2>
-                <ul class="spec-list">${specs.map((item) => `<li>${item}</li>`).join("")}</ul>
-              </section>`
-            : ""
-        }
-        ${
-          useCases.length
-            ? `<section class="seo-block product-usecases"><h2>Где применять</h2><ul class="spec-list">${useCases
-                .map((item) => `<li>${item}</li>`)
-                .join("")}</ul></section>`
-            : ""
-        }
-
-        ${
-          product.faq?.length
-            ? `<section class="seo-block">
-                <h2>Частые вопросы</h2>
-                <div class="product-faq">
-                  ${product.faq
-                    .map(
-                      (item) => `
-                    <details class="product-faq-item">
-                      <summary>${item.q}</summary>
-                      <p>${item.a}</p>
-                    </details>`
-                    )
-                    .join("")}
-                </div>
-              </section>`
-            : ""
-        }
-
-        ${
-          matchedReviews.length
-            ? `<section class="seo-block product-reviews" aria-label="Отзывы покупателей">
+      ${
+        specs.length || useCases.length
+          ? `<section class="product-panel" id="product-specs">
+              ${specs.length ? `<h2>Характеристики</h2><ul class="spec-list spec-list-compact">${specs
+                  .map((item) => `<li>${escAttr(item)}</li>`)
+                  .join("")}</ul>` : ""}
+              ${
+                useCases.length
+                  ? `<div class="product-use-block">
+                      <h3>Где применять</h3>
+                      <ul class="product-use-chips">${useCases
+                        .map((item) => `<li>${escAttr(item)}</li>`)
+                        .join("")}</ul>
+                    </div>`
+                  : ""
+              }
+            </section>`
+          : ""
+      }
+      ${
+        matchedReviews.length
+          ? `<section class="product-panel product-reviews-panel" id="product-reviews" aria-label="Отзывы покупателей">
+              <div class="product-panel-head">
                 <h2>Отзывы покупателей</h2>
-                <div class="reviews-grid product-reviews-grid">
-                  ${matchedReviews
-                    .slice(0, 5)
-                    .map((review) => {
-                      const rating = Number(review.rating || 5);
-                      const body = String(review.text || "")
-                        .replace(/<[^>]+>/g, " ")
-                        .replace(/^«|»$/g, "")
-                        .trim();
-                      return `<article class="review">
-                        <div class="stars" aria-label="${rating} из 5">${stars(rating)}</div>
-                        <p>«${escAttr(body)}»</p>
-                        <footer>
-                          <strong>${escAttr(review.author || "Покупатель")}</strong>
-                          ${review.meta ? `<span>${escAttr(review.meta)}</span>` : ""}
-                        </footer>
-                      </article>`;
-                    })
-                    .join("")}
-                </div>
-              </section>`
-            : ""
-        }
-      </div>
-
-      <p class="form-note">Смотрите также:
-        <a href="/kostrovye-chashi.html">каталог</a> ·
-        <a href="/kostrovaya-chasha-dlya-avtoputeshestviy.html">для автопутешествий</a> ·
-        <a href="/kostrovaya-chasha-ili-mangal.html">чаша или мангал</a>
-      </p>
-      <p><a href="/kostrovye-chashi.html">← Все изделия</a></p>
+                <p class="product-panel-meta">${reviewAvg.toFixed(1).replace(".", ",")} · ${reviewCountLabel(
+                  matchedReviews.length
+                )}</p>
+              </div>
+              <div class="reviews-grid product-reviews-grid">
+                ${matchedReviews
+                  .slice(0, 5)
+                  .map((review) => {
+                    const rating = Number(review.rating || 5);
+                    const body = String(review.text || "")
+                      .replace(/<[^>]+>/g, " ")
+                      .replace(/^«|»$/g, "")
+                      .trim();
+                    return `<article class="review review-compact">
+                      <div class="stars" aria-label="${rating} из 5">${stars(rating)}</div>
+                      <p>«${escAttr(body)}»</p>
+                      <footer>
+                        <strong>${escAttr(review.author || "Покупатель")}</strong>
+                        ${review.meta ? `<span>${escAttr(review.meta)}</span>` : ""}
+                      </footer>
+                    </article>`;
+                  })
+                  .join("")}
+              </div>
+            </section>`
+          : ""
+      }
+      ${
+        product.faq?.length
+          ? `<section class="product-panel" id="product-faq">
+              <h2>Частые вопросы</h2>
+              <div class="product-faq">
+                ${product.faq
+                  .map(
+                    (item) => `
+                  <details class="product-faq-item">
+                    <summary>${escAttr(item.q)}</summary>
+                    <p>${escAttr(item.a)}</p>
+                  </details>`
+                  )
+                  .join("")}
+              </div>
+            </section>`
+          : ""
+      }
+      <footer class="product-page-footer">
+        <p class="form-note">Смотрите также:
+          <a href="/kostrovye-chashi.html">каталог</a> ·
+          <a href="/kostrovaya-chasha-dlya-avtoputeshestviy.html">для автопутешествий</a> ·
+          <a href="/kostrovaya-chasha-ili-mangal.html">чаша или мангал</a>
+        </p>
+        <p><a href="/kostrovye-chashi.html">← Все изделия</a></p>
+      </footer>
     </div>
   `;
 
