@@ -62,6 +62,11 @@
 
   const arrayToLines = (arr) => (Array.isArray(arr) ? arr.join("\n") : "");
 
+  const ordersList = () => {
+    if (Array.isArray(state.orders)) return state.orders;
+    return Array.isArray(state.orders?.orders) ? state.orders.orders : [];
+  };
+
   const statusLabel = (status) =>
     ({
       pending_payment: "Ждёт оплату",
@@ -146,7 +151,7 @@
     ];
     const current = tabMeta[state.tab] || tabMeta.overview;
     const newLeads = (state.leads || []).filter((l) => l.status === "new").length;
-    const waitOrders = (state.orders || []).filter(
+    const waitOrders = ordersList().filter(
       (o) => o.status === "pending_payment" || o.paymentStatus === "pending"
     ).length;
     const counts = {
@@ -2111,7 +2116,7 @@
 
   const renderOverview = () => {
     const products = state.cms?.products || [];
-    const orders = state.orders || [];
+    const orders = ordersList();
     const leads = state.leads || [];
     const reviews = state.cms?.reviews || [];
     const live = products.filter((p) => p.active !== false && p.availableForOrder !== false);
@@ -2244,8 +2249,20 @@
       api("/api/admin/leads")
     ]);
     state.cms = cmsData;
-    state.orders = ordersData;
-    state.leads = leadsData.leads || [];
+    state.orders = {
+      orders: Array.isArray(ordersData?.orders)
+        ? ordersData.orders
+        : Array.isArray(ordersData)
+          ? ordersData
+          : [],
+      shipSlaHours: ordersData?.shipSlaHours,
+      yookassa: ordersData?.yookassa
+    };
+    state.leads = Array.isArray(leadsData?.leads)
+      ? leadsData.leads
+      : Array.isArray(leadsData)
+        ? leadsData
+        : [];
     render();
   };
 
