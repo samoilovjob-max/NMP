@@ -46,11 +46,16 @@
       : p.hasPromo
         ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
         : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
-    const badge = available
-      ? p.promoActive && p.promoLabel
-        ? p.promoLabel
-        : p.badge || "В наличии"
-      : p.badge || "Скоро в продаже";
+    const badge =
+      typeof window.NMP_storefrontBadge === "function"
+        ? window.NMP_storefrontBadge(p, available)
+        : available
+          ? p.promoActive && p.promoLabel
+            ? p.promoLabel
+            : p.badge || "В наличии"
+          : /наличи/i.test(String(p.badge || ""))
+            ? "Скоро в продаже"
+            : p.badge || "Скоро в продаже";
     const specs = Array.isArray(p.specs) ? p.specs.filter(Boolean).slice(0, 4) : [];
     const useCases = Array.isArray(p.useCases) ? p.useCases.filter(Boolean).slice(0, 3) : [];
     const subtitle = String(p.cardSubtitle || "").trim();
@@ -261,11 +266,18 @@
     return;
   };
 
-  const applyHero = (site = {}) => {
+  const applyHero = (site = {}, products = []) => {
     const h1 = document.querySelector(".hero-copy h1");
     const lead = document.querySelector(".hero-copy .lead");
     if (h1 && site.heroTitle) h1.textContent = site.heroTitle;
     if (lead && site.heroLead) lead.textContent = site.heroLead;
+    const orderBtn = document.querySelector(".hero-actions a.btn-ghost");
+    const featured =
+      products.find((p) => p.slug === "severnyy-kochevnik" || String(p.id) === "1") || products[0];
+    if (orderBtn && featured && featured.availableForOrder === false) {
+      orderBtn.textContent = "Узнать о поступлении";
+      orderBtn.setAttribute("href", productHref(featured));
+    }
   };
 
   const applyContacts = (contacts = {}) => {
@@ -335,7 +347,7 @@
       if (!res.ok) throw new Error("CMS unavailable");
       const data = await res.json();
       applyProducts(data.products || []);
-      applyHero(data.site || {});
+      applyHero(data.site || {}, data.products || []);
       applyContacts(data.site?.contacts || {});
       renderCatalog(data.products || [], data.site || {});
       renderReviews(data.reviews || [], data.site || {}, data.products || []);

@@ -36,6 +36,18 @@ function productDisplayName(product) {
   return String(product.cardTitle || product.h1 || product.name || "Костровая чаша").trim();
 }
 
+/** Badge on catalog / PDP: never show “in stock” copy while the model is off sale. */
+function storefrontBadge(product, available) {
+  const raw = String(product?.badge || "").trim();
+  const looksInStock = /наличи/i.test(raw);
+  if (available) {
+    if (product?.promoActive && product?.promoLabel) return String(product.promoLabel).trim();
+    return raw || "В наличии";
+  }
+  if (!raw || looksInStock) return "Скоро в продаже";
+  return raw;
+}
+
 function productDescription(product) {
   return (
     stripHtml(product.seoDescription) ||
@@ -321,6 +333,7 @@ module.exports = {
   productPath,
   productCanonical,
   productDisplayName,
+  storefrontBadge,
   productDescription,
   productImages,
   formatRub,

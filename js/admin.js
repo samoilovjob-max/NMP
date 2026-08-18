@@ -654,11 +654,14 @@
       : p.hasPromo
         ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
         : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
+    const looksInStock = /наличи/i.test(String(p.badge || ""));
     const badge = available
       ? p.promoActive && p.promoLabel
         ? p.promoLabel
         : p.badge || "В наличии"
-      : p.badge || "Скоро в продаже";
+      : !p.badge || looksInStock
+        ? "Скоро в продаже"
+        : p.badge;
     const specs = Array.isArray(p.specs) ? p.specs.filter(Boolean).slice(0, 4) : [];
     const useCases = Array.isArray(p.useCases) ? p.useCases.filter(Boolean).slice(0, 3) : [];
     const subtitle = String(p.cardSubtitle || "").trim();
@@ -724,7 +727,14 @@
   const renderProductPagePreview = (p) => {
     const available = p.available;
     const galleryItems = [p.image, ...(p.gallery || []).filter((src) => src && src !== p.image)].filter(Boolean);
-    const badgeLabel = p.badge || (available ? "" : "Скоро в продаже");
+    const looksInStock = /наличи/i.test(String(p.badge || ""));
+    const badgeLabel = available
+      ? p.promoActive && p.promoLabel
+        ? p.promoLabel
+        : p.badge || ""
+      : !p.badge || looksInStock
+        ? "Скоро в продаже"
+        : p.badge;
     const specChips = (p.specs || []).slice(0, 4);
     const shortLead = stripTags(p.short || p.description || "").slice(0, 180);
     const priceHtml = available

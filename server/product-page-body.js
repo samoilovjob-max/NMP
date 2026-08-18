@@ -3,7 +3,8 @@ const {
   formatRub,
   stars,
   reviewCountLabel,
-  productPath
+  productPath,
+  storefrontBadge
 } = require("./product-rich");
 
 function esc(value) {
@@ -112,7 +113,7 @@ function buildProductPageBody(product, rich) {
   const sectionHref = (id) => `${pagePath}#${id}`;
 
   const { titleName, titleSub } = productTitles(product);
-  const badgeLabel = product.badge || (available ? "" : "Скоро в продаже");
+  const badgeLabel = storefrontBadge(product, available);
   const specChips = specs.slice(0, 4);
 
   const shortLead = String(product.short || stripHtml(product.description || ""))

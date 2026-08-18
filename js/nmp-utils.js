@@ -5,6 +5,18 @@ window.NMP_escAttr = (value) =>
     .replace(/"/g, "&quot;")
     .replace(/</g, "&lt;");
 
+/** Badge on catalog / PDP: never show “in stock” copy while the model is off sale. */
+window.NMP_storefrontBadge = (product, available) => {
+  const raw = String(product?.badge || "").trim();
+  const looksInStock = /наличи/i.test(raw);
+  if (available) {
+    if (product?.promoActive && product?.promoLabel) return String(product.promoLabel).trim();
+    return raw || "В наличии";
+  }
+  if (!raw || looksInStock) return "Скоро в продаже";
+  return raw;
+};
+
 window.NMP_productHref = (productOrId, productMaybe) => {
   const product =
     typeof productOrId === "object" && productOrId

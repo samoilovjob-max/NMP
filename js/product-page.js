@@ -335,7 +335,14 @@
       titleSub = h1;
     }
   }
-  const badgeLabel = product.badge || (available ? "" : "Скоро в продаже");
+  const badgeLabel =
+    typeof window.NMP_storefrontBadge === "function"
+      ? window.NMP_storefrontBadge(product, available)
+      : available
+        ? product.badge || ""
+        : /наличи/i.test(String(product.badge || ""))
+          ? "Скоро в продаже"
+          : product.badge || "Скоро в продаже";
   const specChips = specs.slice(0, 4);
   const serviceNotes = available
     ? [
