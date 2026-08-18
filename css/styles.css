@@ -1221,7 +1221,7 @@ html {
   color: var(--frost-dim);
 }
 
-.field input,
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
 .field textarea {
   width: 100%;
   background: rgba(0, 0, 0, 0.25);
@@ -1230,6 +1230,17 @@ html {
   border-radius: 2px;
   outline: none;
   transition: border-color 0.25s;
+}
+
+.field input[type="checkbox"],
+.field input[type="radio"] {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  accent-color: var(--ember);
+  cursor: pointer;
 }
 
 .field input:focus,
@@ -4334,9 +4345,26 @@ body.nav-lock {
 }
 
 .check-field label {
-  display: flex;
-  gap: 0.5rem;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  gap: 0.6rem;
   align-items: center;
+  cursor: pointer;
+  color: var(--frost);
+  line-height: 1.35;
+}
+
+.admin-form-grid > .check-field {
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 800px) {
+  .admin-form-grid > .check-field {
+    align-items: flex-end;
+    padding-bottom: 0.95rem;
+  }
 }
 
 .admin-form input[type="file"] {
