@@ -2,7 +2,7 @@
   const root = document.getElementById("adminRoot");
   const TOKEN_KEY = "nmp_admin_token";
   let state = {
-    tab: "products",
+    tab: "overview",
     cms: null,
     orders: null,
     leads: null,
@@ -72,6 +72,7 @@
     })[status] || status;
 
   const tabMeta = {
+    overview: { label: "Сводка", group: "overview" },
     products: { label: "Товары", group: "content" },
     news: { label: "Новости", group: "content" },
     reviews: { label: "Отзывы", group: "content" },
@@ -83,6 +84,8 @@
 
   const menuIcon = (name) => {
     const icons = {
+      overview:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h7v7H4zM13 5h7v4h-7zM13 11h7v8h-7zM4 14h7v5H4z"/></svg>',
       products:
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2"/></svg>',
       news:
@@ -121,6 +124,11 @@
   const shell = (inner) => {
     const groups = [
       {
+        id: "overview",
+        title: "Обзор",
+        items: ["overview"]
+      },
+      {
         id: "content",
         title: "Контент",
         items: ["products", "news", "reviews", "site"]
@@ -136,11 +144,25 @@
         items: ["promotions"]
       }
     ];
-    const current = tabMeta[state.tab] || tabMeta.products;
+    const current = tabMeta[state.tab] || tabMeta.overview;
+    const newLeads = (state.leads || []).filter((l) => l.status === "new").length;
+    const waitOrders = (state.orders || []).filter(
+      (o) => o.status === "pending_payment" || o.paymentStatus === "pending"
+    ).length;
     const counts = {
-      orders: Array.isArray(state.orders) ? state.orders.length : 0,
-      leads: Array.isArray(state.leads) ? state.leads.length : 0,
+      orders: waitOrders,
+      leads: newLeads,
       products: Array.isArray(state.cms?.products) ? state.cms.products.length : 0
+    };
+    const pageNotes = {
+      overview: "Что сейчас требует внимания: продажа, заказы и заявки.",
+      products: "«Доступен к заказу» включает покупку, отзывы и звёзды на карточке товара.",
+      reviews: "Отзывы на сайте видны только у товаров, доступных к заказу.",
+      news: "Новости сразу появляются на главной, если включена публикация.",
+      site: "Тексты главной и контакты. Изменения сразу на витрине.",
+      orders: "Статусы заказа и оплаты. Изменения видит покупатель в кабинете.",
+      leads: "Заявки «сообщить о поступлении» и сообщения с формы.",
+      promotions: "Плашки акций на главной. Цену меняйте в карточке товара."
     };
 
     setAdminMode(true);
@@ -208,7 +230,7 @@
         <div class="bx-workspace">
           <div class="bx-page-head">
             <h1>${current.label}</h1>
-            <p class="form-note">Изменения сразу попадают на витрину и в оплату.</p>
+            <p class="form-note">${pageNotes[state.tab] || "Изменения сразу попадают на витрину."}</p>
           </div>
           <div class="admin-panel">${inner}</div>
         </div>
@@ -243,10 +265,21 @@
       btn.addEventListener("click", () => {
         state.tab = btn.getAttribute("data-tab");
         state.editingProductId = null;
+        syncHash();
         closeMenu();
         render();
       });
     });
+  };
+
+  const syncHash = () => {
+    const next = `#${state.tab}`;
+    if (location.hash !== next) history.replaceState(null, "", next);
+  };
+
+  const applyHash = () => {
+    const key = String(location.hash || "").replace(/^#/, "");
+    if (tabMeta[key]) state.tab = key;
   };
 
   const deliveryMethodLabel = (method) =>
@@ -354,71 +387,129 @@
     });
   };
 
+  const productHref = (p) =>
+    p?.slug ? `/product/${encodeURIComponent(p.slug)}` : "/kostrovye-chashi.html";
+
+  const productSelectHtml = (selectedId = "") => {
+    const products = state.cms?.products || [];
+    return [
+      `<option value="">Без привязки к товару</option>`,
+      ...products.map(
+        (p) =>
+          `<option value="${esc(p.id)}" ${String(p.id) === String(selectedId) ? "selected" : ""}>${esc(p.name)}${
+            p.availableForOrder === false ? " (не в продаже)" : ""
+          }</option>`
+      )
+    ].join("");
+  };
+
   /* ---------- Products ---------- */
   const productForm = (p = {}) => {
     const isNew = !p.id;
     return `
       <form class="admin-form" id="productForm">
-        <h3>${isNew ? "Новый товар" : "Редактирование: " + esc(p.name || p.id)}</h3>
-        <div class="admin-form-grid">
-          <div class="field"><label>ID</label><input name="id" value="${esc(p.id || "")}" ${isNew ? "" : "readonly"} required placeholder="5" /></div>
-          <div class="field"><label>Артикул (SKU)</label><input name="sku" value="${esc(p.sku || "")}" required /></div>
-          <div class="field"><label>Slug (латиница и дефисы)</label><input name="slug" value="${esc(p.slug || "")}" required pattern="[a-z0-9]+(-[a-z0-9]+)*" title="Только латиница и дефисы, без подчёркиваний" placeholder="severnyy-kochevnik" /></div>
-          <div class="field"><label>Порядок</label><input name="sortOrder" type="number" value="${esc(p.sortOrder ?? 1)}" /></div>
-          <div class="field"><label>Название</label><input name="name" value="${esc(p.name || "")}" required /></div>
-          <div class="field"><label>Плашка (badge)</label><input name="badge" value="${esc(p.badge || "")}" /></div>
-          <div class="field"><label>Цена, ₽</label><input name="price" type="number" min="0" step="1" value="${esc(p.price ?? "")}" required /></div>
-          <div class="field"><label>Акционная цена, ₽</label><input name="promoPrice" type="number" min="0" step="1" value="${esc(p.promoPrice ?? "")}" /></div>
-          <div class="field"><label>Текст акции на товаре</label><input name="promoLabel" value="${esc(p.promoLabel || "")}" placeholder="−10%" /></div>
-          <div class="field check-field"><label><input name="promoActive" type="checkbox" ${p.promoActive ? "checked" : ""}/> Акционная цена активна</label></div>
-          <div class="field check-field"><label><input name="active" type="checkbox" ${p.active !== false ? "checked" : ""}/> Показывать на сайте</label></div>
-          <div class="field check-field"><label><input name="availableForOrder" type="checkbox" ${
-            p.availableForOrder !== false ? "checked" : ""
-          }/> Доступен к заказу</label></div>
-          <div class="field"><label>Текст, если заказ недоступен</label><input name="availabilityNote" value="${esc(
-            p.availabilityNote || ""
-          )}" placeholder="Скоро в продаже — оставьте контакты" /></div>
+        <div class="admin-form-toolbar">
+          <h3>${isNew ? "Новый товар" : "Редактирование: " + esc(p.name || p.id)}</h3>
+          ${
+            !isNew && p.slug
+              ? `<a class="btn btn-ghost" href="${esc(productHref(p))}" target="_blank" rel="noopener">Открыть на сайте</a>`
+              : ""
+          }
         </div>
-        <div class="field"><label>H1 на странице товара</label><input name="h1" value="${esc(p.h1 || "")}" placeholder="Северный Кочевник — костровая чаша походная разборная" /></div>
-        <div class="field"><label>Заголовок в каталоге</label><input name="cardTitle" value="${esc(p.cardTitle || "")}" placeholder="Северный Кочевник — костровая чаша походная" /></div>
-        <div class="field"><label>Короткое описание</label><textarea name="short" rows="2" data-rich="product-short" data-rich-label="Карточка товара">${esc(p.short || "")}</textarea></div>
-        <div class="field"><label>Полное описание</label><textarea name="description" rows="5" data-rich="product-desc" data-rich-label="Страница товара">${esc(p.description || "")}</textarea></div>
-        <div class="admin-form-grid">
-          <div class="field">
-            <label>Главное фото (URL)</label>
-            <input name="image" id="productImage" value="${esc(p.image || "")}" required />
-            <input type="file" id="productImageFile" accept="image/*" />
+
+        <section class="admin-section">
+          <h4>Продажа</h4>
+          <div class="admin-sale-box ${p.availableForOrder === false ? "is-soon" : "is-live"}">
+            <div class="field check-field">
+              <label>
+                <input name="availableForOrder" type="checkbox" ${p.availableForOrder !== false ? "checked" : ""}/>
+                Доступен к заказу
+              </label>
+            </div>
+            <p class="form-note">Выключено: кнопка «Сообщить о поступлении», без отзывов и звёзд. Включено: «Купить» и отзывы на карточке.</p>
+            <div class="field"><label>Текст, если заказ недоступен</label><input name="availabilityNote" value="${esc(
+              p.availabilityNote || ""
+            )}" placeholder="Скоро в продаже — оставьте контакты" /></div>
           </div>
-          <div class="field"><label>Alt главного фото</label><input name="imageAlt" value="${esc(p.imageAlt || "")}" /></div>
-        </div>
-        <div class="field">
-          <label>Галерея — пути к фото (каждый с новой строки)</label>
-          <textarea name="gallery" rows="3">${esc(arrayToLines(p.gallery || []))}</textarea>
-          <input type="file" id="galleryFile" accept="image/*" />
-          <p class="form-note">Выберите файл — путь добавится в список галереи.</p>
-        </div>
-        <div class="field"><label>Alt галереи (каждый с новой строки)</label><textarea name="galleryAlts" rows="3">${esc(arrayToLines(p.galleryAlts || []))}</textarea></div>
-        <div class="field"><label>Характеристики (каждая с новой строки)</label><textarea name="specs" rows="4">${esc(arrayToLines(p.specs || []))}</textarea></div>
-        <div class="field"><label>Сценарии применения</label><textarea name="useCases" rows="3">${esc(arrayToLines(p.useCases || []))}</textarea></div>
-        <div class="field"><label>Ключевые слова</label><textarea name="keywords" rows="2">${esc(arrayToLines(p.keywords || []))}</textarea></div>
+          <div class="admin-form-grid">
+            <div class="field check-field"><label><input name="active" type="checkbox" ${p.active !== false ? "checked" : ""}/> Показывать в каталоге</label></div>
+            <div class="field"><label>Плашка (badge)</label><input name="badge" value="${esc(p.badge || "")}" placeholder="Флагман в наличии" /></div>
+            <div class="field"><label>Цена, ₽</label><input name="price" type="number" min="0" step="1" value="${esc(p.price ?? "")}" required /></div>
+            <div class="field"><label>Акционная цена, ₽</label><input name="promoPrice" type="number" min="0" step="1" value="${esc(p.promoPrice ?? "")}" /></div>
+            <div class="field"><label>Текст акции</label><input name="promoLabel" value="${esc(p.promoLabel || "")}" placeholder="−10%" /></div>
+            <div class="field check-field"><label><input name="promoActive" type="checkbox" ${p.promoActive ? "checked" : ""}/> Акционная цена активна</label></div>
+          </div>
+        </section>
+
+        <section class="admin-section">
+          <h4>Карточка в каталоге</h4>
+          <div class="admin-form-grid">
+            <div class="field"><label>Название</label><input name="name" value="${esc(p.name || "")}" required /></div>
+            <div class="field"><label>Заголовок в каталоге</label><input name="cardTitle" value="${esc(p.cardTitle || "")}" placeholder="Северный Кочевник" /></div>
+            <div class="field"><label>Подзаголовок карточки</label><input name="cardSubtitle" value="${esc(p.cardSubtitle || "")}" placeholder="Походная разборная костровая чаша" /></div>
+            <div class="field"><label>Порядок</label><input name="sortOrder" type="number" value="${esc(p.sortOrder ?? 1)}" /></div>
+          </div>
+          <div class="field"><label>Для кого</label><input name="audience" value="${esc(p.audience || "")}" placeholder="для автопутешественников, туристов, рыбаков" /></div>
+          <div class="field"><label>Главное (одна фраза)</label><input name="highlight" value="${esc(p.highlight || "")}" placeholder="Компактная костровая система и мангал в одном комплекте" /></div>
+          <div class="field"><label>Что в комплекте</label><input name="packageIncludes" value="${esc(p.packageIncludes || "")}" placeholder="чаша + чехол" /></div>
+          <div class="field"><label>Короткое описание</label><textarea name="short" rows="2" data-rich="product-short" data-rich-label="Карточка товара">${esc(p.short || "")}</textarea></div>
+        </section>
+
+        <section class="admin-section">
+          <h4>Страница товара</h4>
+          <div class="field"><label>H1 на странице товара</label><input name="h1" value="${esc(p.h1 || "")}" placeholder="Северный Кочевник — костровая чаша походная разборная" /></div>
+          <div class="field"><label>Полное описание</label><textarea name="description" rows="5" data-rich="product-desc" data-rich-label="Страница товара">${esc(p.description || "")}</textarea></div>
+          <div class="field"><label>Характеристики (каждая с новой строки)</label><textarea name="specs" rows="4">${esc(arrayToLines(p.specs || []))}</textarea></div>
+          <div class="field"><label>Сценарии применения</label><textarea name="useCases" rows="3">${esc(arrayToLines(p.useCases || []))}</textarea></div>
+          <div class="field">
+            <label>FAQ (формат: вопрос || ответ — каждая пара с новой строки)</label>
+            <textarea name="faq" rows="4">${esc(
+              (p.faq || []).map((f) => `${f.q || ""} || ${f.a || ""}`).join("\n")
+            )}</textarea>
+          </div>
+        </section>
+
+        <section class="admin-section">
+          <h4>Фото</h4>
+          <div class="admin-form-grid">
+            <div class="field">
+              <label>Главное фото (URL)</label>
+              <input name="image" id="productImage" value="${esc(p.image || "")}" required />
+              <input type="file" id="productImageFile" accept="image/*" />
+            </div>
+            <div class="field"><label>Alt главного фото</label><input name="imageAlt" value="${esc(p.imageAlt || "")}" /></div>
+          </div>
+          <div class="field">
+            <label>Галерея — пути к фото (каждый с новой строки)</label>
+            <textarea name="gallery" rows="3">${esc(arrayToLines(p.gallery || []))}</textarea>
+            <input type="file" id="galleryFile" accept="image/*" />
+            <p class="form-note">Выберите файл — путь добавится в список галереи.</p>
+          </div>
+          <div class="field"><label>Alt галереи (каждый с новой строки)</label><textarea name="galleryAlts" rows="3">${esc(arrayToLines(p.galleryAlts || []))}</textarea></div>
+        </section>
+
+        <details class="admin-section admin-section-more">
+          <summary>SEO, артикул и упаковка для СДЭК</summary>
+          <div class="admin-form-grid">
+            <div class="field"><label>ID</label><input name="id" value="${esc(p.id || "")}" ${isNew ? "" : "readonly"} required placeholder="5" /></div>
+            <div class="field"><label>Артикул (SKU)</label><input name="sku" value="${esc(p.sku || "")}" required /></div>
+            <div class="field"><label>Slug (латиница и дефисы)</label><input name="slug" value="${esc(p.slug || "")}" required pattern="[a-z0-9]+(-[a-z0-9]+)*" title="Только латиница и дефисы, без подчёркиваний" placeholder="severnyy-kochevnik" /></div>
+          </div>
           <div class="field"><label>SEO title</label><input name="seoTitle" value="${esc(p.seoTitle || "")}" /></div>
-        <div class="field"><label>SEO description</label><textarea name="seoDescription" rows="2">${esc(p.seoDescription || "")}</textarea></div>
-        <div class="admin-form-grid">
-          <div class="field"><label>Вес упаковки, г</label><input name="packageWeight" type="number" min="0" step="1" value="${esc(p.packageWeight ?? "")}" placeholder="8000" /></div>
-          <div class="field"><label>Длина, см</label><input name="packageLength" type="number" min="0" step="1" value="${esc(p.packageLength ?? "")}" placeholder="60" /></div>
-          <div class="field"><label>Ширина, см</label><input name="packageWidth" type="number" min="0" step="1" value="${esc(p.packageWidth ?? "")}" placeholder="40" /></div>
-          <div class="field"><label>Высота, см</label><input name="packageHeight" type="number" min="0" step="1" value="${esc(p.packageHeight ?? "")}" placeholder="10" /></div>
-        </div>
-        <p class="form-note">Габариты идут в расчёт СДЭК. Если пусто — берутся значения по умолчанию из .env (PACKAGE_*).</p>
-        <div class="field">
-          <label>FAQ (формат: вопрос || ответ — каждая пара с новой строки)</label>
-          <textarea name="faq" rows="4">${esc(
-            (p.faq || []).map((f) => `${f.q || ""} || ${f.a || ""}`).join("\n")
-          )}</textarea>
-        </div>
+          <div class="field"><label>SEO description</label><textarea name="seoDescription" rows="2">${esc(p.seoDescription || "")}</textarea></div>
+          <div class="field"><label>Ключевые слова</label><textarea name="keywords" rows="2">${esc(arrayToLines(p.keywords || []))}</textarea></div>
+          <div class="admin-form-grid">
+            <div class="field"><label>Вес упаковки, г</label><input name="packageWeight" type="number" min="0" step="1" value="${esc(p.packageWeight ?? "")}" placeholder="8000" /></div>
+            <div class="field"><label>Длина, см</label><input name="packageLength" type="number" min="0" step="1" value="${esc(p.packageLength ?? "")}" placeholder="60" /></div>
+            <div class="field"><label>Ширина, см</label><input name="packageWidth" type="number" min="0" step="1" value="${esc(p.packageWidth ?? "")}" placeholder="40" /></div>
+            <div class="field"><label>Высота, см</label><input name="packageHeight" type="number" min="0" step="1" value="${esc(p.packageHeight ?? "")}" placeholder="10" /></div>
+          </div>
+          <p class="form-note">Габариты идут в расчёт СДЭК. Если пусто — берутся значения по умолчанию из .env (PACKAGE_*).</p>
+        </details>
+
         <div class="admin-actions">
           <button class="btn btn-primary" type="submit">Сохранить товар</button>
-          <button class="btn btn-ghost" type="button" id="cancelProduct">Отмена</button>
+          <button class="btn btn-ghost" type="button" id="cancelProduct">К списку</button>
         </div>
       </form>`;
   };
@@ -446,6 +537,10 @@
       availabilityNote: String(fd.get("availabilityNote") || "").trim(),
       h1: String(fd.get("h1") || "").trim(),
       cardTitle: String(fd.get("cardTitle") || "").trim(),
+      cardSubtitle: String(fd.get("cardSubtitle") || "").trim(),
+      audience: String(fd.get("audience") || "").trim(),
+      highlight: String(fd.get("highlight") || "").trim(),
+      packageIncludes: String(fd.get("packageIncludes") || "").trim(),
       short: String(fd.get("short") || "").trim(),
       description: String(fd.get("description") || "").trim(),
       image: String(fd.get("image") || "").trim(),
@@ -465,38 +560,67 @@
     };
   };
 
+  const bindProductEditor = (product, { isNew } = {}) => {
+    bindShell();
+    bindUploader("productImageFile", "productImage");
+    document.getElementById("galleryFile")?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const url = await uploadFile(file);
+        const ta = document.querySelector("#productForm textarea[name=gallery]");
+        ta.value = (ta.value ? ta.value + "\n" : "") + url;
+        window.NMP_toast("Фото добавлено в галерею");
+      } catch (err) {
+        window.NMP_toast(err.message);
+      }
+    });
+    document.getElementById("cancelProduct")?.addEventListener("click", () => {
+      state.editingProductId = null;
+      render();
+    });
+    document.getElementById("productForm")?.addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const btn = ev.target.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+      window.NMP_refreshRichEditors?.(ev.target);
+      try {
+        const payload = readProductForm(ev.target);
+        if (isNew) {
+          await api("/api/admin/products", { method: "POST", body: JSON.stringify(payload) });
+          window.NMP_toast("Товар создан");
+          state.editingProductId = payload.id;
+        } else {
+          await api(`/api/admin/products/${encodeURIComponent(product.id)}`, {
+            method: "PUT",
+            body: JSON.stringify(payload)
+          });
+          window.NMP_toast("Товар сохранён");
+        }
+        await load();
+      } catch (err) {
+        window.NMP_toast(err.message || "Не удалось сохранить товар");
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+    window.NMP_mountRichEditors?.(root);
+  };
+
   const renderProducts = () => {
     const products = state.cms?.products || [];
     if (state.editingProductId === "__new__") {
-      root.innerHTML = shell(productForm({ active: true, availableForOrder: false, sortOrder: products.length + 1, gallery: [], specs: [], faq: [] }));
-      bindShell();
-      bindUploader("productImageFile", "productImage");
-      document.getElementById("galleryFile")?.addEventListener("change", async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-          const url = await uploadFile(file);
-          const ta = document.querySelector("#productForm textarea[name=gallery]");
-          ta.value = (ta.value ? ta.value + "\n" : "") + url;
-          window.NMP_toast("Фото добавлено в галерею");
-        } catch (err) {
-          window.NMP_toast(err.message);
-        }
-      });
-      document.getElementById("cancelProduct")?.addEventListener("click", () => {
-        state.editingProductId = null;
-        render();
-      });
-      document.getElementById("productForm")?.addEventListener("submit", async (ev) => {
-        ev.preventDefault();
-        window.NMP_refreshRichEditors?.(ev.target);
-        const payload = readProductForm(ev.target);
-        await api("/api/admin/products", { method: "POST", body: JSON.stringify(payload) });
-        window.NMP_toast("Товар создан");
-        state.editingProductId = null;
-        await load();
-      });
-      window.NMP_mountRichEditors?.(root);
+      root.innerHTML = shell(
+        productForm({
+          active: true,
+          availableForOrder: false,
+          sortOrder: products.length + 1,
+          gallery: [],
+          specs: [],
+          faq: []
+        })
+      );
+      bindProductEditor(null, { isNew: true });
       return;
     }
 
@@ -506,37 +630,7 @@
         state.editingProductId = null;
       } else {
         root.innerHTML = shell(productForm(p));
-        bindShell();
-        bindUploader("productImageFile", "productImage");
-        document.getElementById("galleryFile")?.addEventListener("change", async (e) => {
-          const file = e.target.files?.[0];
-          if (!file) return;
-          try {
-            const url = await uploadFile(file);
-            const ta = document.querySelector("#productForm textarea[name=gallery]");
-            ta.value = (ta.value ? ta.value + "\n" : "") + url;
-            window.NMP_toast("Фото добавлено в галерею");
-          } catch (err) {
-            window.NMP_toast(err.message);
-          }
-        });
-        document.getElementById("cancelProduct")?.addEventListener("click", () => {
-          state.editingProductId = null;
-          render();
-        });
-        document.getElementById("productForm")?.addEventListener("submit", async (ev) => {
-          ev.preventDefault();
-          window.NMP_refreshRichEditors?.(ev.target);
-          const payload = readProductForm(ev.target);
-          await api(`/api/admin/products/${encodeURIComponent(p.id)}`, {
-            method: "PUT",
-            body: JSON.stringify(payload)
-          });
-          window.NMP_toast("Товар сохранён");
-          state.editingProductId = null;
-          await load();
-        });
-        window.NMP_mountRichEditors?.(root);
+        bindProductEditor(p, { isNew: false });
         return;
       }
     }
@@ -546,35 +640,42 @@
         <button class="btn btn-primary" type="button" id="addProduct">Добавить товар</button>
       </div>
       <div class="admin-table">
-        ${products
-          .map(
-            (p) => `
+        ${
+          products
+            .map((p) => {
+              const sale = p.availableForOrder !== false && p.active !== false;
+              return `
           <article class="admin-card">
             <img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" />
             <div>
-              <div class="badge">${
+              <div class="badge ${sale ? "is-live" : "is-soon"}">${
                 p.active === false
                   ? "Скрыт"
                   : p.availableForOrder === false
-                    ? "Скоро"
+                    ? "В разработке"
                     : p.promoActive
-                      ? "Акция"
-                      : "К заказу"
+                      ? "В продаже · акция"
+                      : "В продаже"
               }</div>
               <h3>${esc(p.name)}</h3>
-              <p class="sku-label">${esc(p.sku)} · id ${esc(p.id)}</p>
+              <p class="sku-label">${esc(p.sku)} · /product/${esc(p.slug || "")}</p>
               <p><strong>${money(p.promoActive && p.promoPrice ? p.promoPrice : p.price)}</strong>
                 ${p.promoActive && p.promoPrice ? `<span class="form-note">база ${money(p.price)}</span>` : ""}
               </p>
-              <p class="form-note">${esc((p.specs || []).slice(0, 2).join(" · "))}</p>
+              <p class="form-note">${esc(p.cardSubtitle || (p.specs || []).slice(0, 2).join(" · "))}</p>
             </div>
             <div class="admin-actions">
-              <button class="btn btn-primary" type="button" data-edit-product="${esc(p.id)}">Изменить</button>
-              <button class="btn btn-ghost" type="button" data-del-product="${esc(p.id)}">Удалить</button>
+              <button class="btn ${sale ? "btn-ghost" : "btn-primary"}" type="button" data-toggle-sale="${esc(p.id)}">
+                ${sale ? "Снять с продажи" : "В продажу"}
+              </button>
+              <a class="btn btn-ghost" href="${esc(productHref(p))}" target="_blank" rel="noopener">На сайте</a>
+              <button class="btn btn-ghost" type="button" data-edit-product="${esc(p.id)}">Изменить</button>
+              <button class="btn btn-ghost admin-danger" type="button" data-del-product="${esc(p.id)}">Удалить</button>
             </div>
-          </article>`
-          )
-          .join("") || "<p class='lead'>Товаров пока нет</p>"}
+          </article>`;
+            })
+            .join("") || "<p class='lead'>Товаров пока нет</p>"
+        }
       </div>`);
     bindShell();
     document.getElementById("addProduct")?.addEventListener("click", () => {
@@ -587,14 +688,38 @@
         render();
       });
     });
+    root.querySelectorAll("[data-toggle-sale]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-toggle-sale");
+        const product = products.find((x) => String(x.id) === String(id));
+        if (!product) return;
+        const next = product.availableForOrder === false;
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/products/${encodeURIComponent(id)}`, {
+            method: "PUT",
+            body: JSON.stringify({ ...product, availableForOrder: next })
+          });
+          window.NMP_toast(next ? `«${product.name}» в продаже — отзывы видны` : `«${product.name}» снят с продажи`);
+          await load();
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось сменить статус");
+          btn.disabled = false;
+        }
+      });
+    });
     root.querySelectorAll("[data-del-product]").forEach((btn) => {
       btn.addEventListener("click", async () => {
         if (!confirm("Удалить товар?")) return;
-        await api(`/api/admin/products/${encodeURIComponent(btn.getAttribute("data-del-product"))}`, {
-          method: "DELETE"
-        });
-        window.NMP_toast("Товар удалён");
-        await load();
+        try {
+          await api(`/api/admin/products/${encodeURIComponent(btn.getAttribute("data-del-product"))}`, {
+            method: "DELETE"
+          });
+          window.NMP_toast("Товар удалён");
+          await load();
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось удалить");
+        }
       });
     });
   };
@@ -713,7 +838,7 @@
         <input name="image" id="newsImage" />
         <input type="file" id="newsImageFile" accept="image/*" />
       </div>
-      <div class="field"><label>ID товара для кнопки «Заказать»</label><input name="productId" placeholder="1" /></div>
+      <div class="field"><label>Товар для кнопки «Заказать»</label><select name="productId">${productSelectHtml()}</select></div>
       <div class="field"><label>Дата публикации</label><input name="publishedAt" type="datetime-local" /></div>
       <div class="field check-field"><label><input name="published" type="checkbox" checked /> Опубликовано</label></div>`,
       (form) => {
@@ -735,18 +860,8 @@
       }
     );
 
-  const renderReviews = () => {
-    const products = state.cms?.products || [];
-    const productOptions = [
-      `<option value="">Без привязки к товару</option>`,
-      ...products.map(
-        (p) =>
-          `<option value="${esc(p.id)}">${esc(p.name)}${
-            p.availableForOrder === false ? " (не в продаже)" : ""
-          }</option>`
-      )
-    ].join("");
-    return renderCollection(
+  const renderReviews = () =>
+    renderCollection(
       "reviews",
       "Отзывы",
       `
@@ -754,7 +869,7 @@
       <div class="field"><label>Подпись (город · товар)</label><input name="meta" /></div>
       <div class="field">
         <label>Товар</label>
-        <select name="productId">${productOptions}</select>
+        <select name="productId">${productSelectHtml()}</select>
         <p class="form-note">Отзывы по товарам не в продаже на витрине не показываются.</p>
       </div>
       <div class="field"><label>Текст отзыва</label><textarea name="text" rows="4" required></textarea></div>
@@ -788,7 +903,6 @@
         };
       }
     );
-  };
 
   const renderPromotions = () =>
     renderCollection(
@@ -798,7 +912,7 @@
       <div class="field"><label>Заголовок акции</label><input name="title" required /></div>
       <div class="field"><label>Текст</label><textarea name="text" rows="3"></textarea></div>
       <div class="field"><label>Плашка</label><input name="badge" value="Акция" /></div>
-      <div class="field"><label>ID товара (если акция к товару)</label><input name="productId" placeholder="1" /></div>
+      <div class="field"><label>Товар (если акция к модели)</label><select name="productId">${productSelectHtml()}</select></div>
       <div class="field"><label>Скидка, %</label><input name="discountPercent" type="number" min="0" max="90" value="0" /></div>
       <div class="field">
         <label>Картинка</label>
@@ -1968,7 +2082,124 @@
     });
   };
 
+  const renderOverview = () => {
+    const products = state.cms?.products || [];
+    const orders = state.orders || [];
+    const leads = state.leads || [];
+    const reviews = state.cms?.reviews || [];
+    const live = products.filter((p) => p.active !== false && p.availableForOrder !== false);
+    const soon = products.filter((p) => p.active !== false && p.availableForOrder === false);
+    const hidden = products.filter((p) => p.active === false);
+    const newLeads = leads.filter((l) => l.status === "new");
+    const waitPay = orders.filter(
+      (o) => o.status === "pending_payment" || o.paymentStatus === "pending"
+    );
+    const assembly = orders.filter((o) => o.status === "assembly");
+    const hiddenReviews = reviews.filter((r) => {
+      if (r.published === false) return false;
+      const product = products.find((p) => String(p.id) === String(r.productId));
+      return product && product.availableForOrder === false;
+    });
+    const go = (tab) => `type="button" class="admin-dash-card" data-tab="${tab}"`;
+    root.innerHTML = shell(`
+      <div class="admin-dash-grid">
+        <button ${go("products")}>
+          <span class="admin-dash-label">В продаже</span>
+          <strong>${live.length}</strong>
+          <span class="form-note">${soon.length} в разработке${hidden.length ? ` · ${hidden.length} скрыты` : ""}</span>
+        </button>
+        <button ${go("orders")}>
+          <span class="admin-dash-label">Ждут оплату</span>
+          <strong>${waitPay.length}</strong>
+          <span class="form-note">${assembly.length} на сборке · всего ${orders.length}</span>
+        </button>
+        <button ${go("leads")}>
+          <span class="admin-dash-label">Новые заявки</span>
+          <strong>${newLeads.length}</strong>
+          <span class="form-note">Всего обращений: ${leads.length}</span>
+        </button>
+        <button ${go("reviews")}>
+          <span class="admin-dash-label">Отзывы скрыты</span>
+          <strong>${hiddenReviews.length}</strong>
+          <span class="form-note">Пока товар не в продаже · всего ${reviews.length}</span>
+        </button>
+      </div>
+      <section class="admin-section">
+        <h4>Товары</h4>
+        <div class="admin-table">
+          ${products
+            .map((p) => {
+              const sale = p.availableForOrder !== false && p.active !== false;
+              return `<article class="admin-card compact">
+                <div>
+                  <div class="badge ${sale ? "is-live" : "is-soon"}">${
+                    sale ? "В продаже" : p.active === false ? "Скрыт" : "В разработке"
+                  }</div>
+                  <h3>${esc(p.name)}</h3>
+                  <p class="form-note">${money(p.promoActive && p.promoPrice ? p.promoPrice : p.price)}</p>
+                </div>
+                <div class="admin-actions">
+                  <button class="btn ${sale ? "btn-ghost" : "btn-primary"}" type="button" data-toggle-sale="${esc(p.id)}">${
+                    sale ? "Снять с продажи" : "В продажу"
+                  }</button>
+                  <button class="btn btn-ghost" type="button" data-edit-from-dash="${esc(p.id)}">Изменить</button>
+                </div>
+              </article>`;
+            })
+            .join("")}
+        </div>
+      </section>
+      ${
+        newLeads.length
+          ? `<section class="admin-section">
+              <h4>Свежие заявки</h4>
+              ${newLeads
+                .slice(0, 5)
+                .map(
+                  (lead) => `<p class="form-note"><strong>${esc(lead.name || "Без имени")}</strong> · ${esc(
+                    lead.phone || ""
+                  )} · ${esc(lead.productName || lead.productId || "форма сайта")} · ${when(lead.createdAt)}</p>`
+                )
+                .join("")}
+              <button class="btn btn-ghost" type="button" data-tab="leads">Все заявки</button>
+            </section>`
+          : ""
+      }
+    `);
+    bindShell();
+    root.querySelectorAll("[data-edit-from-dash]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.tab = "products";
+        state.editingProductId = btn.getAttribute("data-edit-from-dash");
+        syncHash();
+        render();
+      });
+    });
+    root.querySelectorAll("[data-toggle-sale]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.getAttribute("data-toggle-sale");
+        const product = products.find((x) => String(x.id) === String(id));
+        if (!product) return;
+        const next = product.availableForOrder === false;
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/products/${encodeURIComponent(id)}`, {
+            method: "PUT",
+            body: JSON.stringify({ ...product, availableForOrder: next })
+          });
+          window.NMP_toast(next ? `«${product.name}» в продаже` : `«${product.name}» снят с продажи`);
+          await load();
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось сменить статус");
+          btn.disabled = false;
+        }
+      });
+    });
+  };
+
   const render = () => {
+    syncHash();
+    if (state.tab === "overview") return renderOverview();
     if (state.tab === "products") return renderProducts();
     if (state.tab === "news") return renderNews();
     if (state.tab === "reviews") return renderReviews();
@@ -1990,6 +2221,12 @@
     state.leads = leadsData.leads || [];
     render();
   };
+
+  applyHash();
+  window.addEventListener("hashchange", () => {
+    applyHash();
+    if (getToken()) render();
+  });
 
   if (!getToken()) renderLogin();
   else load().catch((err) => renderLogin(err.message || "Нужен вход"));

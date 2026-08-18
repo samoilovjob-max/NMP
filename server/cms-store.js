@@ -136,6 +136,14 @@ function saveProduct(input, { isNew = false } = {}) {
     cardTitle: String(
       input.cardTitle != null ? input.cardTitle : base.cardTitle || input.h1 || input.name || ""
     ).trim(),
+    cardSubtitle: String(
+      input.cardSubtitle != null ? input.cardSubtitle : base.cardSubtitle || ""
+    ).trim(),
+    audience: String(input.audience != null ? input.audience : base.audience || "").trim(),
+    highlight: String(input.highlight != null ? input.highlight : base.highlight || "").trim(),
+    packageIncludes: String(
+      input.packageIncludes != null ? input.packageIncludes : base.packageIncludes || ""
+    ).trim(),
     price: Math.max(0, Number(input.price ?? base.price ?? 0)),
     promoPrice:
       input.promoPrice === "" || input.promoPrice == null
