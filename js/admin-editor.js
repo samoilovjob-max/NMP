@@ -191,6 +191,7 @@
     if (preview) {
       preview.innerHTML = source.value || "<span class='form-note'>Превью текста появится здесь</span>";
     }
+    source.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
   const exec = (command, value = null) => {

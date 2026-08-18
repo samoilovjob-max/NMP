@@ -13,7 +13,8 @@
     exportScope: "paid",
     exportMark: true,
     selectedOrderIds: new Set(),
-    selectedLeadIds: new Set()
+    selectedLeadIds: new Set(),
+    productPreviewTab: "catalog"
   };
 
   const normalizeToken = (value) => {
@@ -161,7 +162,7 @@
     };
     const pageNotes = {
       overview: "Что сейчас требует внимания: продажа, заказы и заявки.",
-      products: "«Доступен к заказу» включает покупку, отзывы и звёзды на карточке товара.",
+      products: "Справа — живое превью карточки. «Доступен к заказу» включает покупку, отзывы и звёзды.",
       reviews: "Отзывы на сайте видны только у товаров, доступных к заказу.",
       news: "Новости сразу появляются на главной, если включена публикация.",
       site: "Тексты главной и контакты. Изменения сразу на витрине.",
@@ -330,6 +331,7 @@
       if (!file) return;
       try {
         target.value = await uploadFile(file);
+        target.dispatchEvent(new Event("input", { bubbles: true }));
       } catch (err) {
         window.NMP_toast(err.message || "Не удалось загрузить");
       }
@@ -438,7 +440,9 @@
   /* ---------- Products ---------- */
   const productForm = (p = {}) => {
     const isNew = !p.id;
+    const previewTab = state.productPreviewTab === "page" ? "page" : "catalog";
     return `
+      <div class="admin-product-editor">
       <form class="admin-form" id="productForm">
         <div class="admin-form-toolbar">
           <h3>${isNew ? "Новый товар" : "Редактирование: " + esc(p.name || p.id)}</h3>
@@ -508,6 +512,7 @@
               <label>Главное фото (URL)</label>
               <input name="image" id="productImage" value="${esc(p.image || "")}" required />
               <input type="file" id="productImageFile" accept="image/*" />
+              <p class="form-note">JPEG, PNG, WebP: сами повернутся, ужмутся до 1600 px по длинной стороне и обычно сохранятся как WebP.</p>
             </div>
             <div class="field"><label>Alt главного фото</label><input name="imageAlt" value="${esc(p.imageAlt || "")}" /></div>
           </div>
@@ -543,7 +548,22 @@
           <button class="btn btn-primary" type="submit">Сохранить товар</button>
           <button class="btn btn-ghost" type="button" id="cancelProduct">К списку</button>
         </div>
-      </form>`;
+      </form>
+      <aside class="admin-product-preview" aria-label="Превью карточки на сайте">
+        <div class="admin-preview-head">
+          <div>
+            <h4>Как на сайте</h4>
+            <p class="form-note note-flush">Меняется сразу. На витрину попадёт после сохранения.</p>
+          </div>
+          <button class="btn btn-primary" type="button" id="saveProductFromPreview">Сохранить</button>
+        </div>
+        <div class="admin-preview-tabs" role="tablist">
+          <button type="button" class="admin-filter ${previewTab === "catalog" ? "active" : ""}" data-preview-tab="catalog" role="tab" aria-selected="${previewTab === "catalog"}">Карточка каталога</button>
+          <button type="button" class="admin-filter ${previewTab === "page" ? "active" : ""}" data-preview-tab="page" role="tab" aria-selected="${previewTab === "page"}">Страница товара</button>
+        </div>
+        <div id="productLivePreview" class="admin-preview-stage"></div>
+      </aside>
+      </div>`;
   };
 
   const readProductForm = (form) => {
@@ -592,9 +612,214 @@
     };
   };
 
+  const stripTags = (html) =>
+    String(html || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const productPreviewModel = (form) => {
+    const data = readProductForm(form);
+    const price = Number(data.price || 0);
+    const promoPrice = data.promoPrice == null ? null : Number(data.promoPrice);
+    const hasPromo = Boolean(data.promoActive && promoPrice != null && promoPrice > 0 && promoPrice < price);
+    const titleName = String(data.cardTitle || data.name || "").trim() || "Модель";
+    let titleSub = String(data.cardSubtitle || "").trim();
+    if (!titleSub && data.h1 && data.h1 !== titleName) {
+      const h1 = String(data.h1).trim();
+      if (h1.startsWith(titleName) && h1.includes("—")) {
+        titleSub = h1.slice(titleName.length).replace(/^[\s—–-]+/, "").trim();
+      } else if (h1 !== titleName) {
+        titleSub = h1;
+      }
+    }
+    return {
+      ...data,
+      name: String(data.name || "").trim() || "Модель",
+      titleName,
+      titleSub,
+      image: String(data.image || "").trim() || "images/logo-mark.webp",
+      basePrice: price,
+      effectivePrice: hasPromo ? promoPrice : price,
+      hasPromo,
+      available: data.availableForOrder !== false
+    };
+  };
+
+  const renderCatalogCardPreview = (p) => {
+    const available = p.available;
+    const name = p.name;
+    const priceLabel = !available
+      ? ""
+      : p.hasPromo
+        ? `<span class="price"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</span>`
+        : `<span class="price">${money(p.effectivePrice || p.price)}</span>`;
+    const badge = available
+      ? p.promoActive && p.promoLabel
+        ? p.promoLabel
+        : p.badge || "В наличии"
+      : p.badge || "Скоро в продаже";
+    const specs = Array.isArray(p.specs) ? p.specs.filter(Boolean).slice(0, 4) : [];
+    const useCases = Array.isArray(p.useCases) ? p.useCases.filter(Boolean).slice(0, 3) : [];
+    const subtitle = String(p.cardSubtitle || "").trim();
+    const audience = String(p.audience || "").trim() || (useCases.length ? useCases.join(", ") : "");
+    const highlight = String(p.highlight || "").trim();
+    const packageIncludes = String(p.packageIncludes || "").trim();
+    const shortFallback = String(p.short || "").trim();
+    const facts = [];
+    if (audience) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">Для кого</span><p>${esc(audience)}</p></div>`
+      );
+    }
+    if (highlight) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">Главное</span><p>${esc(highlight)}</p></div>`
+      );
+    } else if (shortFallback) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">О модели</span><div class="rich-text product-short">${shortFallback}</div></div>`
+      );
+    }
+    if (specs.length) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">Характеристики</span><ul class="product-benefits">${specs
+          .map((item) => `<li>${esc(item)}</li>`)
+          .join("")}</ul></div>`
+      );
+    }
+    if (packageIncludes) {
+      facts.push(
+        `<div class="product-fact"><span class="product-fact-label">В комплекте</span><p>${esc(packageIncludes)}</p></div>`
+      );
+    }
+    const action = available
+      ? `<div class="product-meta-actions">
+              <span class="btn btn-primary">Купить «${esc(name)}»</span>
+              <span class="btn btn-ghost">Подробнее о модели</span>
+            </div>`
+      : `<div class="product-meta-actions">
+              <span class="btn btn-primary">Узнать о поступлении</span>
+            </div>`;
+    return `
+        <article class="product visible ${available ? "" : "product-soon"}">
+          <div class="product-media">
+            <img src="${esc(p.image)}" alt="${esc(p.imageAlt || name)}" />
+          </div>
+          <div class="product-body">
+            ${badge ? `<div class="badge">${esc(badge)}</div>` : ""}
+            <h3>${esc(name)}</h3>
+            ${subtitle ? `<p class="product-card-sub">${esc(subtitle)}</p>` : ""}
+            ${
+              available
+                ? `<div class="product-price-row">${priceLabel}</div>`
+                : `<p class="product-status-line">Скоро в продаже</p>`
+            }
+            ${facts.length ? `<div class="product-facts">${facts.join("")}</div>` : ""}
+            <div class="product-meta">${action}</div>
+          </div>
+        </article>`;
+  };
+
+  const renderProductPagePreview = (p) => {
+    const available = p.available;
+    const galleryItems = [p.image, ...(p.gallery || []).filter((src) => src && src !== p.image)].filter(Boolean);
+    const badgeLabel = p.badge || (available ? "" : "Скоро в продаже");
+    const specChips = (p.specs || []).slice(0, 4);
+    const shortLead = stripTags(p.short || p.description || "").slice(0, 180);
+    const priceHtml = available
+      ? p.hasPromo
+        ? `<p class="price-lg"><s class="price-old">${money(p.basePrice)}</s> ${money(p.effectivePrice)}</p>`
+        : `<p class="price-lg">${money(p.effectivePrice || p.price)}</p>`
+      : p.price > 0
+        ? `<p class="price-lg">от ${money(p.price)}</p>`
+        : `<p class="price-lg price-soon">Цена по запросу</p>`;
+    const note =
+      String(p.availabilityNote || "").trim() ||
+      "Модель готовится к продаже — оставьте заявку на оповещение.";
+    const serviceNotes = available
+      ? ["Оплата через ЮKassa", "Сборка 1–2 дня · отгрузка до 48 ч", "СДЭК по России"]
+      : [note, "СДЭК по России"];
+    return `
+      <div class="admin-preview-pdp">
+        <div class="product-hero">
+          <div class="product-gallery">
+            <div class="product-stage">
+              <img src="${esc(p.image)}" alt="${esc(p.imageAlt || p.name)}" />
+            </div>
+            ${
+              galleryItems.length > 1
+                ? `<div class="thumbs">${galleryItems
+                    .slice(0, 6)
+                    .map(
+                      (src, index) =>
+                        `<button type="button" class="thumb ${index === 0 ? "active" : ""}" tabindex="-1"><img src="${esc(
+                          src
+                        )}" alt="" /></button>`
+                    )
+                    .join("")}</div>`
+                : ""
+            }
+          </div>
+          <div class="product-buy-panel product-info">
+            <div class="product-buy-card">
+              ${badgeLabel ? `<div class="badge">${esc(badgeLabel)}</div>` : ""}
+              <h1>${esc(p.titleName)}</h1>
+              ${p.titleSub ? `<p class="product-h1-sub">${esc(p.titleSub)}</p>` : ""}
+              ${p.sku ? `<p class="sku-label">Артикул ${esc(p.sku)}</p>` : ""}
+              <div class="product-buy-price-row">${priceHtml}</div>
+              <div class="product-actions">
+                ${
+                  available
+                    ? `<span class="btn btn-primary">Купить</span><span class="btn btn-ghost">В корзину</span>`
+                    : `<span class="btn btn-primary">Сообщить о поступлении</span>`
+                }
+              </div>
+              ${shortLead ? `<p class="product-pitch">${esc(shortLead)}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
+              ${
+                specChips.length
+                  ? `<ul class="product-spec-chips">${specChips.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`
+                  : ""
+              }
+              <ul class="product-service-grid">${serviceNotes.map((n) => `<li>${esc(n)}</li>`).join("")}</ul>
+            </div>
+          </div>
+        </div>
+        ${
+          p.description
+            ? `<section class="product-panel"><h2>О модели</h2><div class="rich-text product-desc-text">${p.description}</div></section>`
+            : ""
+        }
+      </div>`;
+  };
+
+  const refreshProductPreview = () => {
+    const form = document.getElementById("productForm");
+    const stage = document.getElementById("productLivePreview");
+    if (!form || !stage) return;
+    const model = productPreviewModel(form);
+    stage.innerHTML =
+      state.productPreviewTab === "page" ? renderProductPagePreview(model) : renderCatalogCardPreview(model);
+    const saleBox = form.querySelector(".admin-sale-box");
+    if (saleBox) {
+      saleBox.classList.toggle("is-soon", !model.available);
+      saleBox.classList.toggle("is-live", model.available);
+    }
+  };
+
+  let previewRaf = 0;
+  const scheduleProductPreview = () => {
+    if (previewRaf) cancelAnimationFrame(previewRaf);
+    previewRaf = requestAnimationFrame(() => {
+      previewRaf = 0;
+      refreshProductPreview();
+    });
+  };
+
   const bindProductEditor = (product, { isNew } = {}) => {
     bindShell();
     bindUploader("productImageFile", "productImage");
+    const form = document.getElementById("productForm");
     document.getElementById("galleryFile")?.addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
@@ -602,6 +827,7 @@
         const url = await uploadFile(file);
         const ta = document.querySelector("#productForm textarea[name=gallery]");
         ta.value = (ta.value ? ta.value + "\n" : "") + url;
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
         window.NMP_toast("Фото добавлено в галерею");
       } catch (err) {
         window.NMP_toast(err.message);
@@ -611,10 +837,28 @@
       state.editingProductId = null;
       render();
     });
-    document.getElementById("productForm")?.addEventListener("submit", async (ev) => {
+    document.getElementById("saveProductFromPreview")?.addEventListener("click", () => {
+      form?.requestSubmit();
+    });
+    document.querySelectorAll(".admin-product-preview [data-preview-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.productPreviewTab = btn.getAttribute("data-preview-tab") === "page" ? "page" : "catalog";
+        document.querySelectorAll(".admin-product-preview [data-preview-tab]").forEach((other) => {
+          const on = other.getAttribute("data-preview-tab") === state.productPreviewTab;
+          other.classList.toggle("active", on);
+          other.setAttribute("aria-selected", on ? "true" : "false");
+        });
+        refreshProductPreview();
+      });
+    });
+    form?.addEventListener("input", scheduleProductPreview);
+    form?.addEventListener("change", scheduleProductPreview);
+    form?.addEventListener("submit", async (ev) => {
       ev.preventDefault();
       const btn = ev.target.querySelector('button[type="submit"]');
+      const previewBtn = document.getElementById("saveProductFromPreview");
       if (btn) btn.disabled = true;
+      if (previewBtn) previewBtn.disabled = true;
       window.NMP_refreshRichEditors?.(ev.target);
       try {
         const payload = readProductForm(ev.target);
@@ -634,9 +878,11 @@
         window.NMP_toast(err.message || "Не удалось сохранить товар");
       } finally {
         if (btn) btn.disabled = false;
+        if (previewBtn) previewBtn.disabled = false;
       }
     });
     window.NMP_mountRichEditors?.(root);
+    refreshProductPreview();
   };
 
   const renderProducts = () => {

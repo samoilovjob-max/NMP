@@ -3269,7 +3269,8 @@ body.admin-app .admin-root {
 
 .bx-workspace .admin-list,
 .bx-workspace .admin-form,
-.bx-workspace .admin-card {
+.bx-workspace .admin-card,
+.bx-workspace .admin-product-editor {
   max-width: 100%;
 }
 
@@ -3979,6 +3980,129 @@ body.nav-lock {
   .admin-split {
     grid-template-columns: 1fr 1fr;
     align-items: start;
+  }
+}
+
+.admin-product-editor {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.admin-product-preview {
+  border: 1px solid rgba(232, 230, 225, 0.12);
+  background: #161c22;
+  padding: 0.9rem 1rem 1rem;
+  min-width: 0;
+}
+
+.admin-preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-preview-head h4 {
+  margin: 0 0 0.2rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.admin-preview-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.admin-preview-stage {
+  min-width: 0;
+}
+
+.admin-preview-stage .product,
+.admin-preview-pdp .product-hero {
+  grid-template-columns: 1fr;
+  max-width: none;
+  width: 100%;
+  gap: 0.85rem;
+}
+
+.admin-preview-stage .product-media,
+.admin-preview-stage .product-stage {
+  max-height: 220px;
+  width: 100%;
+}
+
+.admin-preview-stage .product:hover .product-media img {
+  transform: none;
+}
+
+.admin-preview-stage .product-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.admin-preview-stage .product-meta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-preview-stage .thumb {
+  display: inline-block;
+  width: 56px;
+  height: 56px;
+}
+
+.admin-preview-stage a,
+.admin-preview-stage button.thumb,
+.admin-preview-stage .btn {
+  pointer-events: none;
+}
+
+.admin-preview-pdp .product-panel {
+  margin-top: 0.9rem;
+}
+
+.admin-preview-pdp .product-desc-text {
+  max-height: 12rem;
+  overflow: auto;
+}
+
+.admin-preview-pdp h1 {
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  margin: 0.2rem 0 0.35rem;
+}
+
+@media (max-width: 1099px) {
+  .admin-product-preview {
+    order: -1;
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    max-height: min(46vh, 28rem);
+    overflow: auto;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  }
+}
+
+@media (min-width: 1100px) {
+  .admin-product-editor {
+    grid-template-columns: minmax(22rem, 1.08fr) minmax(20rem, 0.92fr);
+    align-items: start;
+  }
+
+  .admin-product-preview {
+    position: sticky;
+    top: 0.5rem;
+    max-height: calc(100dvh - 7.5rem);
+    overflow: auto;
   }
 }
 
