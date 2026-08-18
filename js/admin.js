@@ -352,13 +352,40 @@
           </div>
           <div class="field">
             <label for="adminPassword">Пароль</label>
-            <input id="adminPassword" name="password" type="password" required autocomplete="current-password" />
+            <div class="password-field">
+              <input id="adminPassword" name="password" type="password" required autocomplete="current-password" />
+              <button class="password-toggle" type="button" id="adminPasswordToggle" aria-label="Показать пароль" aria-pressed="false" title="Показать пароль">
+                <svg class="password-toggle-eye" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Z"/>
+                  <circle cx="12" cy="12" r="3.2"/>
+                </svg>
+                <svg class="password-toggle-off" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Z"/>
+                  <circle cx="12" cy="12" r="3.2"/>
+                  <path d="M4 20 20 4"/>
+                </svg>
+              </button>
+            </div>
           </div>
           ${error ? `<p class="form-note form-note-error">${esc(error)}</p>` : ""}
           <button class="btn btn-primary" type="submit">Войти</button>
           <a class="form-note" href="index.html">← На сайт</a>
         </form>
       </div>`;
+    document.getElementById("adminPasswordToggle")?.addEventListener("click", () => {
+      const input = document.getElementById("adminPassword");
+      const btn = document.getElementById("adminPasswordToggle");
+      if (!input || !btn) return;
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.setAttribute("aria-pressed", show ? "true" : "false");
+      btn.setAttribute("aria-label", show ? "Скрыть пароль" : "Показать пароль");
+      btn.title = show ? "Скрыть пароль" : "Показать пароль";
+      btn.classList.toggle("is-visible", show);
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    });
     document.getElementById("adminLogin").addEventListener("submit", async (event) => {
       event.preventDefault();
       const login = String(event.target.login.value || "").trim();
