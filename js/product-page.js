@@ -318,12 +318,14 @@
     : window.NMP_formatPrice(product.price);
 
   const shortLead =
-    product.short ||
-    String(product.description || "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 180);
+    typeof window.NMP_productPitchText === "function"
+      ? window.NMP_productPitchText(product, available)
+      : product.short ||
+        String(product.description || "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 180);
 
   const titleName = String(product.cardTitle || product.name || displayName).trim();
   let titleSub = String(product.cardSubtitle || "").trim();
@@ -343,7 +345,10 @@
         : /наличи/i.test(String(product.badge || ""))
           ? "Скоро в продаже"
           : product.badge || "Скоро в продаже";
-  const specChips = specs.slice(0, 4);
+  const pitchChips =
+    typeof window.NMP_productPitchChips === "function"
+      ? window.NMP_productPitchChips(product)
+      : [];
   const serviceNotes = available
     ? [
         "Оплата через ЮKassa",
@@ -417,8 +422,8 @@
           </div>
           ${shortLead ? `<p class="product-pitch">${escAttr(shortLead)}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
           ${
-            specChips.length
-              ? `<ul class="product-spec-chips" aria-label="Ключевые особенности">${specChips
+            pitchChips.length
+              ? `<ul class="product-spec-chips" aria-label="Ключевые особенности">${pitchChips
                   .map((item) => `<li>${escAttr(item)}</li>`)
                   .join("")}</ul>`
               : ""

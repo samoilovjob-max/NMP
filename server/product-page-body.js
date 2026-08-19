@@ -4,7 +4,9 @@ const {
   stars,
   reviewCountLabel,
   productPath,
-  storefrontBadge
+  storefrontBadge,
+  productPitchChips,
+  productPitchText
 } = require("./product-rich");
 
 function esc(value) {
@@ -114,12 +116,8 @@ function buildProductPageBody(product, rich) {
 
   const { titleName, titleSub } = productTitles(product);
   const badgeLabel = storefrontBadge(product, available);
-  const specChips = specs.slice(0, 4);
-
-  const shortLead = String(product.short || stripHtml(product.description || ""))
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 180);
+  const pitchChips = productPitchChips(product);
+  const shortLead = productPitchText(product, available);
 
   const serviceNotes = available
     ? [
@@ -194,8 +192,8 @@ function buildProductPageBody(product, rich) {
           </div>
           ${shortLead ? `<p class="product-pitch">${esc(shortLead)}${shortLead.length >= 180 ? "…" : ""}</p>` : ""}
           ${
-            specChips.length
-              ? `<ul class="product-spec-chips" aria-label="Ключевые особенности">${specChips
+            pitchChips.length
+              ? `<ul class="product-spec-chips" aria-label="Ключевые особенности">${pitchChips
                   .map((item) => `<li>${esc(item)}</li>`)
                   .join("")}</ul>`
               : ""

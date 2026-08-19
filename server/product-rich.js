@@ -48,6 +48,28 @@ function storefrontBadge(product, available) {
   return raw;
 }
 
+/** Short bullets under the buy panel — not the full specs list. */
+function productPitchChips(product) {
+  const fromCms = Array.isArray(product?.pitchChips)
+    ? product.pitchChips.map((s) => String(s || "").trim()).filter(Boolean)
+    : [];
+  if (fromCms.length) return fromCms.slice(0, 3);
+  return [];
+}
+
+function productPitchText(product, available) {
+  const pitch = String(product?.short || "").trim();
+  if (pitch) return pitch;
+  const highlight = String(product?.highlight || "").trim();
+  if (highlight) return highlight;
+  const desc = stripHtml(product?.description || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!desc) return "";
+  if (!available) return desc.slice(0, 220);
+  return desc.slice(0, 180);
+}
+
 function productDescription(product) {
   return (
     stripHtml(product.seoDescription) ||
@@ -334,6 +356,8 @@ module.exports = {
   productCanonical,
   productDisplayName,
   storefrontBadge,
+  productPitchChips,
+  productPitchText,
   productDescription,
   productImages,
   formatRub,

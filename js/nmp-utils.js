@@ -17,6 +17,27 @@ window.NMP_storefrontBadge = (product, available) => {
   return raw;
 };
 
+window.NMP_productPitchChips = (product) => {
+  const fromCms = Array.isArray(product?.pitchChips)
+    ? product.pitchChips.map((s) => String(s || "").trim()).filter(Boolean)
+    : [];
+  if (fromCms.length) return fromCms.slice(0, 3);
+  return [];
+};
+
+window.NMP_productPitchText = (product, available) => {
+  const pitch = String(product?.short || "").trim();
+  if (pitch) return pitch;
+  const highlight = String(product?.highlight || "").trim();
+  if (highlight) return highlight;
+  const desc = String(product?.description || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!desc) return "";
+  return desc.slice(0, available ? 180 : 220);
+};
+
 window.NMP_productHref = (productOrId, productMaybe) => {
   const product =
     typeof productOrId === "object" && productOrId
