@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Новый подпроект — Northern Magical Place</title>
+  <meta name="description" content="Новая инициатива бренда Northern Magical Place. Скоро подробности." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="../../images/logo-mark.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../css/styles.css" />
+  <style>
+    .subproject-hero {
+      min-height: calc(100vh - var(--header-h));
+      display: grid;
+      place-items: center;
+      padding: clamp(3rem, 8vw, 6rem) 0;
+    }
+
+    .subproject-card {
+      width: min(100% - 2.5rem, 42rem);
+      padding: clamp(2rem, 5vw, 3rem);
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent 55%), var(--bg-elevated);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+
+    .subproject-card .brand-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .subproject-card .brand-row img {
+      width: 48px;
+      height: 48px;
+    }
+
+    .subproject-card h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      line-height: 1.15;
+      margin: 0 0 1rem;
+    }
+
+    .subproject-card .lead {
+      color: var(--frost-dim);
+      margin: 0 0 1.75rem;
+    }
+
+    .subproject-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .subproject-note {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: var(--steel);
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header scrolled" id="header">
+    <div class="header-inner">
+      <a class="brand" href="../../index.html" aria-label="Northern Magical Place">
+        <img src="../../images/logo-mark.png" alt="" width="42" height="42" />
+        <span class="brand-text">
+          <span>Northern</span>
+          <span>Magical Place</span>
+        </span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Основная навигация">
+        <a href="../../index.html#catalog">Изделия</a>
+        <a href="../../index.html#about">О нас</a>
+        <a href="../../index.html#contact">Контакты</a>
+      </nav>
+      <div class="header-actions">
+        <a class="btn btn-ghost" href="../../index.html" style="padding:0.7rem 1rem;font-size:0.75rem;">На главную</a>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="subproject-hero">
+    <article class="subproject-card reveal">
+      <div class="brand-row">
+        <img src="../../images/logo-mark.png" alt="" width="48" height="48" />
+        <span class="eyebrow">Подпроект</span>
+      </div>
+      <h1>Новый подпроект</h1>
+      <p class="lead">
+        Здесь появится отдельная инициатива бренда Northern Magical Place.
+        Заполните <code>projects/novyy-proekt/README.md</code> и замените этот экран на готовый лендинг.
+      </p>
+      <div class="subproject-actions">
+        <a class="btn btn-primary" href="../../index.html#contact">Связаться с нами</a>
+        <a class="btn btn-ghost" href="../../index.html#catalog">Каталог очагов</a>
+      </div>
+      <p class="subproject-note">Черновик · не индексируется поисковиками</p>
+    </article>
+  </main>
+
+  <script src="../../js/main.js"></script>
+</body>
+</html>
