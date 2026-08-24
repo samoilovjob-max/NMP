@@ -1545,8 +1545,21 @@ html {
 @media (max-width: 719px) {
   .footer-simple-nav,
   .footer-bottom-links {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 0;
     padding-top: 0.75rem;
     border-top: 1px solid var(--line);
+  }
+
+  .footer-simple-nav a,
+  .footer-bottom-links a,
+  .footer-bottom-links .footer-cookie-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.35rem 0;
   }
 }
 
@@ -1663,8 +1676,8 @@ html {
   line-height: 1.15;
   margin-bottom: 0.75rem;
   max-width: min(22ch, 100%);
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .page-hero-wide h1 {
@@ -1677,9 +1690,29 @@ html {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --header-h: 72px;
+  }
+
+  .container {
+    width: min(100% - 1.75rem, var(--max));
+  }
+
+  .header-actions .btn {
+    display: none;
+  }
+
+  .page-hero {
+    padding: calc(var(--header-h) + 1.75rem) 0 1.75rem;
+  }
+
   .page-hero h1 {
     font-size: clamp(1.45rem, 6vw, 1.85rem);
     max-width: 100%;
+  }
+
+  .prose h2 {
+    margin-top: 1.75rem;
   }
 }
 
