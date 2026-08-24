@@ -1966,18 +1966,38 @@ html {
     pointer-events: auto;
   }
 
-  .nav a {
+  .nav a,
+  .nav button {
     font-size: 1.35rem;
     font-family: var(--font-display);
     color: #f3f1ec !important;
     padding: 1rem 0.25rem;
     border-bottom: 1px solid rgba(243, 241, 236, 0.12);
     width: 100%;
+    text-align: left;
+    background: transparent;
+    border-left: 0;
+    border-right: 0;
+    border-top: 0;
   }
 
-  .nav a:first-child {
+  .nav a:first-child,
+  .nav button:first-child {
     font-size: 1.55rem;
     color: #fff !important;
+  }
+
+  .nav a:hover,
+  .nav a:focus-visible,
+  .nav button:hover,
+  .nav button:focus-visible {
+    filter: brightness(1.18);
+  }
+
+  .nav a:focus-visible,
+  .nav button:focus-visible {
+    outline: 2px solid var(--ember-soft);
+    outline-offset: 2px;
   }
 
   .brand-text {
