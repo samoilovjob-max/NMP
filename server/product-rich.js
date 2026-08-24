@@ -199,7 +199,18 @@ function buildOffer(product, canonical) {
       "@type": "Organization",
       name: "Northern Magical Place",
       alternateName: "Северное магическое место",
-      url: `${SITE}/`
+      url: `${SITE}/`,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Петрозаводск",
+        addressRegion: "Республика Карелия",
+        addressCountry: "RU",
+        postalCode: "185031"
+      },
+      areaServed: {
+        "@type": "Country",
+        name: "Россия"
+      }
     },
     hasMerchantReturnPolicy: {
       "@type": "MerchantReturnPolicy",
@@ -260,6 +271,23 @@ function buildProductGraph(product, reviews = []) {
       "@type": "Brand",
       name: "Northern Magical Place",
       alternateName: "Северное магическое место"
+    },
+    manufacturer: {
+      "@type": "Organization",
+      name: "Northern Magical Place",
+      alternateName: "Северное магическое место",
+      url: SITE,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Петрозаводск",
+        addressRegion: "Республика Карелия",
+        addressCountry: "RU",
+        postalCode: "185031"
+      },
+      areaServed: {
+        "@type": "Country",
+        name: "Россия"
+      }
     },
     category: googleProductCategory(),
     material: "Конструкционная сталь",
