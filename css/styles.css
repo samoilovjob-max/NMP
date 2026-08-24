@@ -226,16 +226,41 @@ html {
   margin-left: auto;
 }
 
-.nav a {
+.nav a,
+.nav button {
   font-size: 0.92rem;
   color: var(--frost-dim);
-  transition: color 0.25s;
   position: relative;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    filter 0.2s ease,
+    outline-color 0.2s ease,
+    outline-offset 0.2s ease;
 }
 
 .nav a:hover,
+.nav a:focus-visible,
+.nav button:hover,
+.nav button:focus-visible {
+  color: var(--frost);
+  filter: brightness(1.18);
+}
+
 .nav a.active {
   color: var(--frost);
+}
+
+.nav a:focus-visible,
+.nav button:focus-visible {
+  outline: 2px solid var(--ember-soft);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.nav a:focus:not(:focus-visible),
+.nav button:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .header-actions {
