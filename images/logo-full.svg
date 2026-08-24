@@ -1,14 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200" fill="none" role="img" aria-label="Northern Magical Place">
-  <g fill="currentColor">
-    <!-- Mark -->
+  <g fill="#F3F1EC">
     <path d="M120 78 L146 44 L160 62 L172 38 L184 62 L198 44 L224 78 H120 Z"/>
     <rect x="120" y="78" width="104" height="3.2"/>
     <path d="M172 52 C168 58 166 62 166 66 C166 70 168.5 73 172 73 C175.5 73 178 70 178 66 C178 62 176 58 172 52 Z"/>
     <path d="M158 80 L170 76 L172 79 L160 83 Z"/>
     <path d="M186 80 L174 76 L172 79 L184 83 Z"/>
-    <!-- Wordmark -->
-    <text x="180" y="130" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="28" font-weight="800" letter-spacing="4">NORTHERN</text>
-    <text x="180" y="158" text-anchor="middle" font-family="Arial Black, Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="3.5">MAGICAL PLACE</text>
+    <text x="180" y="130" text-anchor="middle" font-family="Syne, Arial Black, Arial, sans-serif" font-size="28" font-weight="800" letter-spacing="4">NORTHERN</text>
+    <text x="180" y="158" text-anchor="middle" font-family="Syne, Arial Black, Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="3.5">MAGICAL PLACE</text>
   </g>
-  <!-- ridge shadows via dark cutouts when used on light; on dark bg currentColor is light -->
+  <g fill="#0C0D0C" opacity="0.45">
+    <path d="M146 44 L153 56 L148.5 58 L155 68 L160 62 Z"/>
+    <path d="M172 38 L179 52 L174.5 54 L181 63 L184 62 L176 53 L172 48 Z"/>
+    <path d="M198 44 L191 56 L195.5 58 L189 68 L184 62 Z"/>
+  </g>
 </svg>

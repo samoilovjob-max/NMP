@@ -3,19 +3,266 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Northern Magical Place — карельские костровые системы</title>
-  <meta name="description" content="Премиальные разборные костровые системы Flat-Pack из Карелии. Конструкционная сталь от 3 мм. Northern Magical Place." />
-  <link rel="icon" href="images/logo-mark.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <title>Северное магическое место — Northern Magical Place | костровые чаши и чаши для костра из Карелии</title>
+  <meta name="description" content="Северное магическое место (Northern Magical Place, northmp) — стальные костровые чаши и чаши для костра из Карелии: походный очаг «Северный Кочевник», модели для дачи, сада и патио. Доставка СДЭК по России." />
+  <meta name="keywords" content="северное магическое место, Northern Magical Place, northmp, nmp костровая чаша, чаша для костра, костровые чаши, стальная костровая чаша, костровая чаша из стали, костровые системы, северный кочевник костровая чаша, костровой очаг, костровая зона, костровые чаши Карелия" />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <meta name="geo.region" content="RU-KR" />
+  <meta name="geo.placename" content="Петрозаводск, Республика Карелия" />
+  <meta name="geo.position" content="61.7842;34.3452" />
+  <meta name="ICBM" content="61.7842, 34.3452" />
+  <link rel="canonical" href="https://northmp.su/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Северное магическое место — Northern Magical Place" />
+  <meta property="og:locale" content="ru_RU" />
+  <meta property="og:title" content="Северное магическое место — Northern Magical Place | костровые чаши" />
+  <meta property="og:description" content="Северное магическое место (Northern Magical Place): костровые чаши и системы Flat-Pack из Карелии — Северный Кочевник и модели для террасы, сада и загородного дома." />
+  <meta property="og:url" content="https://northmp.su/" />
+  <meta property="og:image" content="https://northmp.su/images/main-product.webp" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="images/favicon.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="images/favicon-16.png" type="image/png" sizes="16x16" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+  <link rel="preload" as="image" type="image/webp" href="images/hero-bg-800.webp" imagesrcset="images/hero-bg-640.webp 640w, images/hero-bg-800.webp 800w, images/hero-bg-1080.webp 1080w, images/hero-bg-1280.webp 1200w" imagesizes="100vw" fetchpriority="high" />
+  <style>
+    :root{--bg:#1c1e1c;--frost:#f3f1ec;--frost-dim:#c9c6bf;--ember:#c45c26;--ember-soft:#d4783a;--line:rgba(243,241,236,.16);--font-display:system-ui,sans-serif;--font-body:system-ui,sans-serif;--header-h:96px;--ease:cubic-bezier(.22,1,.36,1);--max:1180px}
+    *,*::before,*::after{box-sizing:border-box}
+    html{scroll-padding-top:calc(var(--header-h) + .75rem)}
+    body{margin:0;font-family:var(--font-body);font-weight:400;color:var(--frost);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+    img{max-width:100%;display:block}
+    a{color:inherit;text-decoration:none}
+    h1{font-family:var(--font-display);font-weight:700;line-height:1.08;letter-spacing:-.02em;margin:0 0 1rem;font-size:clamp(1.9rem,4.2vw,3.2rem)}
+    .lead{font-size:clamp(1rem,1.5vw,1.15rem);color:var(--frost-dim);margin:0;max-width:38rem}
+    .site-header{position:fixed;inset:0 0 auto;z-index:100;min-height:var(--header-h);display:flex;align-items:center;border-bottom:1px solid transparent}
+    .header-inner{display:flex;align-items:center;gap:1.5rem;width:min(100% - 2rem,1280px);margin-inline:auto;min-height:var(--header-h);padding-block:.85rem}
+    .brand{display:flex;align-items:center;gap:.85rem;flex-shrink:0;z-index:2;color:var(--frost)}
+    .brand-logo{width:auto;height:54px;max-width:118px;aspect-ratio:160/78;object-fit:contain;border-radius:8px}
+    .brand-text{display:flex;flex-direction:column;line-height:1.05;font-family:var(--font-display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:.82rem}
+    .brand-text span:last-child{font-size:.66rem;letter-spacing:.14em;color:var(--frost-dim);font-weight:600}
+    .nav{display:flex;align-items:center;gap:1.6rem;margin-left:auto}
+    .nav a{font-size:.92rem;color:var(--frost-dim)}
+    .header-actions{display:flex;align-items:center;gap:.65rem;margin-left:.5rem}
+    .icon-btn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:transparent;display:grid;place-items:center;color:var(--frost);position:relative}
+    .icon-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .cart-count{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:999px;background:var(--ember);color:#fff;font-size:.65rem;display:grid;place-items:center;padding:0 4px;font-weight:600}
+    .menu-toggle{display:none;width:42px;height:42px;border:1px solid var(--line);background:transparent;border-radius:8px;flex-direction:column;justify-content:center;align-items:center;gap:5px}
+    .menu-toggle span{display:block;width:18px;height:1.5px;background:var(--frost)}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:.95rem 1.55rem;border-radius:2px;border:1px solid transparent;font-family:var(--font-display);font-weight:650;font-size:.92rem;letter-spacing:.04em;text-transform:uppercase}
+    .btn-primary{background:var(--ember);color:#fff}
+    .btn-ghost{background:transparent;border-color:rgba(232,230,225,.35);color:var(--frost)}
+    .hero{min-height:100vh;min-height:100svh;position:relative;display:flex;align-items:flex-end;padding:calc(var(--header-h) + 2rem) 0 4rem;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;z-index:0}
+    .hero-bg img{width:100%;height:100%;object-fit:cover}
+    .hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,30,28,.42) 0%,rgba(28,30,28,.18) 35%,rgba(28,30,28,.72) 100%),linear-gradient(90deg,rgba(28,30,28,.55) 0%,rgba(28,30,28,.12) 55%,rgba(28,30,28,.35) 100%)}
+    .hero-content{position:relative;z-index:1;display:grid;gap:2rem;width:min(100% - 2.5rem,var(--max));margin-inline:auto}
+    .hero-copy{max-width:38rem}
+    .hero-brand{font-family:var(--font-display);font-size:clamp(1.05rem,2.4vw,1.45rem);font-weight:700;letter-spacing:.18em;text-transform:uppercase;margin-bottom:1.1rem}
+    .hero .lead{color:rgba(232,230,225,.88);margin-bottom:1.75rem}
+    .hero-actions{display:flex;flex-wrap:wrap;gap:.85rem}
+    .hero-product{justify-self:start;width:min(100%,340px);background:rgba(12,13,12,.55);border:1px solid var(--line);padding:.85rem;display:grid;grid-template-columns:112px 1fr;gap:.9rem;align-items:center}
+    .hero-product img{width:112px;height:112px;object-fit:cover;background:#fff}
+    .hero-product strong{display:block;font-family:var(--font-display);font-size:1rem;margin-bottom:.25rem}
+    .hero-product p{margin:0 0 .75rem;font-size:.85rem;color:var(--frost-dim)}
+    .hero-product .btn{padding:.55rem .9rem;font-size:.72rem}
+    @media (max-width:980px){
+      .site-header{background:rgba(12,13,12,.96);border-bottom-color:rgba(243,241,236,.12)}
+      .nav{position:fixed;inset:0;opacity:0;visibility:hidden;pointer-events:none}
+      .menu-toggle{display:flex;background:#1a1c1a;border-color:rgba(243,241,236,.35)}
+      .header-actions{margin-left:auto}
+      .brand-text{display:none}
+    }
+    @media (max-width:640px){
+      .hero{padding-bottom:2rem}
+      .hero-actions{display:grid;grid-template-columns:1fr;width:min(100%,22rem)}
+      .hero-actions .btn{width:100%}
+      .hero-product{grid-template-columns:88px 1fr;width:100%}
+      .hero-product img{width:88px;height:88px}
+    }
+    .hp-field{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important;opacity:0;pointer-events:none}
+  </style>
+  <link rel="preload" href="css/styles.css" as="style" />
+  <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="css/styles.css" /></noscript>
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap" /></noscript>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Northern Magical Place",
+    "alternateName": ["Северное магическое место", "NMP"],
+    "legalName": "Самойлов Сергей Сергеевич",
+    "url": "https://northmp.su/",
+    "logo": "https://northmp.su/images/logo-full.jpg",
+    "telephone": "+7-921-011-03-02",
+    "sameAs": [
+      "https://www.instagram.com/northern_magical_place/"
+    ],
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Петрозаводск",
+      "addressCountry": "RU"
+    },
+    "areaServed": "RU",
+    "brand": {
+      "@type": "Brand",
+      "name": "Northern Magical Place",
+      "alternateName": "Северное магическое место"
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Northern Magical Place",
+    "alternateName": "Северное магическое место",
+    "url": "https://northmp.su/",
+    "inLanguage": "ru-RU",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Northern Magical Place",
+      "alternateName": "Северное магическое место",
+      "url": "https://northmp.su/",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://northmp.su/images/logo-mark.webp"
+      },
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Петрозаводск",
+        "addressRegion": "Республика Карелия",
+        "addressCountry": "RU",
+        "postalCode": "185031"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "Россия"
+      },
+      "foundingLocation": {
+        "@type": "Place",
+        "name": "Петрозаводск, Республика Карелия, Россия"
+      }
+    }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Каталог костровых чаш и костровых систем Northern Magical Place",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "url": "https://northmp.su/product/severnyy-kochevnik",
+        "name": "Северный Кочевник — костровая чаша походная"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "url": "https://northmp.su/product/paikula",
+        "name": "Пайкула — костровая чаша для террасы"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "url": "https://northmp.su/product/lesnaya-svecha",
+        "name": "Лесная Свеча — костровой очаг для сада"
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "url": "https://northmp.su/product/severnyy-ochag",
+        "name": "Северный очаг — костровая чаша для загородного дома"
+      },
+      {
+        "@type": "ListItem",
+        "position": 5,
+        "url": "https://northmp.su/kostrovye-chashi.html",
+        "name": "Костровые чаши и костровые системы — каталог"
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Что значит «Северное магическое место»?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Северное магическое место — прямой перевод названия бренда Northern Magical Place. Официальный сайт бренда — https://northmp.su/: костровые чаши и костровые системы из Карелии."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Что такое костровая система Northern Magical Place?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Это разборная костровая чаша Flat-Pack под конкретный сценарий: поход и кемпинг («Северный Кочевник»), терраса и двор («Пайкула»), сад и дача («Лесная Свеча»), загородный дом («Северный очаг»). Сборка без инструментов, сталь от 3 мм."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Чем «Северный Кочевник» отличается от обычной костровой чаши?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "«Северный Кочевник» — походная разборная костровая чаша с чехлом в комплекте. Её удобно возить в багажнике и ставить на дикой стоянке: это костровая система для маршрута, а не тяжёлый стационарный очаг для дачи."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Чаша для костра, очаг для костра и костровая чаша — это одно и то же?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Да. Чаша для костра, очаг для костра и костровая чаша — одни и те же названия стального очага. У Northern Magical Place это разборные стальные чаши из Карелии: походная модель с чехлом и линейка для дачи, сада и патио."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Подойдёт ли вместо походного разборного мангала или мангала в багажник?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Да, если нужен не только шашлык, но и живой огонь. «Северный Кочевник» — выездной очаг Flat-Pack из стали 3 мм: складная чаша для костра с чехлом, которую везут как мангал в багажник, но готовят и греются у открытого пламени."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Ржавеет ли металл?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Мы не используем искусственные покрытия, токсичные при нагреве. Поэтому появление легкого налета или патины — естественный процесс, который никак не снижает прочность стали. Чтобы очаг дольше сохранял аккуратный внешний вид, просто протирайте его насухо после дождя или чистки."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Предоставляется ли гарантия?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Да. Гарантия 3 месяца (90 дней) на заводской и производственный брак при соблюдении правил эксплуатации. Патина, нагар и следы огня — нормальный износ, не брак."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Как узнать, где мой заказ?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Статус смотрите в личном кабинете на сайте: сборка, передача в доставку, трек СДЭК. Там же можно подключить уведомления в Telegram."
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
   <header class="site-header" id="header">
     <div class="header-inner">
       <a class="brand" href="#top" aria-label="Northern Magical Place">
-        <img src="images/logo-mark.png" alt="" width="42" height="42" />
+        <img class="brand-logo" src="images/logo-mark.webp" alt="Northern Magical Place — костровые чаши из Карелии" width="160" height="78" fetchpriority="low" decoding="async" data-cms-media="logo" />
         <span class="brand-text">
           <span>Northern</span>
           <span>Magical Place</span>
@@ -24,20 +271,22 @@
 
       <nav class="nav" id="nav" aria-label="Основная навигация">
         <a href="#catalog">Изделия</a>
+        <a href="kostrovye-chashi.html">Костровые чаши</a>
         <a href="#lifestyle">Где применять</a>
         <a href="#about">О нас</a>
+        <a href="#faq">Вопросы</a>
         <a href="#contact">Обратная связь</a>
-        <a href="buyers.html">Покупателям</a>
+        <a href="buyers.html">Доставка и возврат</a>
       </nav>
 
       <div class="header-actions">
-        <button class="icon-btn" type="button" aria-label="Личный кабинет" title="Личный кабинет">
+        <a class="icon-btn" href="account.html" aria-label="Личный кабинет" title="Личный кабинет">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.8-3.2 4.2-4.8 7-4.8s5.2 1.6 7 4.8"/></svg>
-        </button>
-        <button class="icon-btn" type="button" id="cartBtn" aria-label="Корзина" title="Корзина">
+        </a>
+        <a class="icon-btn" href="checkout.html" aria-label="Корзина" title="Корзина">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h15l-1.5 9h-12z"/><path d="M6 7 5 3H2"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg>
-          <span class="cart-count" id="cartCount">0</span>
-        </button>
+          <span class="cart-count" data-cart-count>0</span>
+        </a>
         <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню" aria-expanded="false">
           <span></span><span></span><span></span>
         </button>
@@ -49,29 +298,40 @@
     <!-- 1. Hero -->
     <section class="hero">
       <div class="hero-bg" aria-hidden="true">
-        <img src="images/shore-lake.jpg" alt="" />
+        <img
+          src="images/hero-bg-800.webp"
+          srcset="images/hero-bg-640.webp 640w, images/hero-bg-800.webp 800w, images/hero-bg-1080.webp 1080w, images/hero-bg-1280.webp 1200w"
+          sizes="100vw"
+          width="800"
+          height="525"
+          alt="Костровая чаша Northern Magical Place на берегу карельского озера"
+          fetchpriority="high"
+          data-cms-media="hero"
+        />
       </div>
       <div class="hero-content">
         <div class="hero-copy">
           <div class="hero-brand">Northern Magical Place</div>
-          <h1>Карельский уют в любой точке мира</h1>
-          <p class="lead">Премиальные разборные костровые системы Flat-Pack от Northern Magical Place из конструкционной стали от 3 мм.</p>
+          <h1>Костровые чаши и костровые системы из Карелии</h1>
+          <p class="lead">Северное магическое место — прямой перевод бренда Northern Magical Place (northmp). Стальные чаши для костра и разборные очаги: походная модель «Северный Кочевник» и линейка для террасы, сада и загородного дома. Сталь от 3&nbsp;мм, производство в Карелии, доставка СДЭК по России.</p>
           <div class="hero-actions">
-            <a class="btn btn-primary" href="#product-1">Оформить заказ</a>
-            <a class="btn btn-ghost" href="#features">Преимущества</a>
+            <a class="btn btn-primary" href="#catalog">Изделия</a>
+            <a class="btn btn-ghost" href="/product/severnyy-kochevnik">Оформить заказ</a>
           </div>
         </div>
 
         <aside class="hero-product">
-          <img src="images/product-1.jpg" alt="Костровая система Flat-Pack" />
+          <img src="images/main-product-thumb.webp" alt="Северный Кочевник — походная костровая чаша" width="112" height="112" decoding="async" fetchpriority="low" />
           <div>
-            <strong>Flat-Pack Очаг</strong>
-            <p>Главный продукт сезона — разборный очаг с зоной для готовки.</p>
-            <button class="btn btn-primary" type="button" data-add-cart="Flat-Pack Очаг">В корзину</button>
+            <strong>Северный Кочевник</strong>
+            <p>Готов к любым маршрутам: компактно в багажнике, выручает в диких местах и создаёт уют на стоянке.</p>
+            <a class="btn btn-primary" href="/product/severnyy-kochevnik">Подробнее</a>
           </div>
         </aside>
       </div>
     </section>
+
+    <div class="promo-strip" id="promoStrip" hidden></div>
 
     <!-- 2. Features -->
     <section class="section features" id="features">
@@ -84,34 +344,34 @@
 
         <div class="features-grid">
           <article class="feature-card reveal">
-            <div class="num">01</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 10V7a4 4 0 0 1 8 0v3"/><rect x="5" y="10" width="14" height="10" rx="1.5"/><path d="M12 14v3"/></svg></div>
             <h3>Сборка без инструментов</h3>
             <p>Никаких отвёрток или ключей. Все элементы конструкции собираются исключительно вручную за считанные секунды.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">02</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 20 7v5c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V7l8-4Z"/><path d="m9 12 2 2 4-4"/></svg></div>
             <h3>Инженерная прочность</h3>
             <p>Продуманная геометрия и надёжные пазовые соединения создают жёсткую, устойчивую конструкцию, которая не «ведёт» от огня.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">03</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21c4-3.2 6-6.2 6-9a6 6 0 1 0-12 0c0 2.8 2 5.8 6 9Z"/><path d="M10 11c.5-2 1.5-3 2-4 1 1.5 1.5 2.8 2 4"/></svg></div>
             <h3>Художественная перфорация</h3>
             <p>Детализированные узоры обеспечивают идеальный приток воздуха для равномерного горения и создают завораживающий вид в темноте.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">04</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="10" rx="1"/><path d="M8 7V5h8v2M7 17v2h10v-2"/></svg></div>
             <h3>Абсолютно плоский формат</h3>
-            <p>В сложенном виде система превращается в компактный плоский пакет — минимум объёма в багажнике и максимум свободы на маршруте.</p>
+            <p>В сложенном виде чаша превращается в компактный плоский пакет — минимум объёма в багажнике и максимум свободы на маршруте.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">05</div>
-            <h3>Чистый багажник</h3>
-            <p>Конструкция убирается в плотный чехол из специального материала и сохраняет чистоту салона после использования.</p>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 8h13l5 4v6H3V8Z"/><path d="M16 8v4h5"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/></svg></div>
+            <h3>Чехол у Северного Кочевника</h3>
+            <p>У модели «Северный Кочевник» конструкция убирается в плотный чехол, чтобы не пачкать багажник после поездки. Остальные модели предназначены для участка, сада или двора.</p>
           </article>
           <article class="feature-card reveal">
-            <div class="num">06</div>
+            <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h16v11H4z"/><path d="M7 8V6.5A2.5 2.5 0 0 1 9.5 4h5A2.5 2.5 0 0 1 17 6.5V8"/><path d="M8 13h8M8 16h5"/></svg></div>
             <h3>Конструкционная сталь</h3>
-            <p>Пластичный и вязкий металл: если на раскалённый очаг попадёт вода, снег или начнётся ливень — чаша не растрескается и не потеряет форму. Она просто остынет.</p>
+            <p>Благодаря пластичности металла чаша легко выдерживает экстремальные нагрузки. Даже если залить раскаленный очаг холодной водой или оставить под проливным дождем, он не лопнет и не поведет форму. Он просто остынет.</p>
           </article>
         </div>
       </div>
@@ -121,70 +381,35 @@
     <section class="section catalog" id="catalog">
       <div class="container">
         <div class="section-head centered reveal">
-          <div class="eyebrow">Изделия</div>
-          <h2>Для тёплых вечеров под открытым небом</h2>
-          <p class="lead">То, без чего не обходится ни один хороший вечер у костра.</p>
+          <h2>Northern Magical Place — костровые чаши из карельской стали</h2>
+          <p class="lead">Компактные очаги, которые собираются за 1 минуту без единого инструмента.</p>
         </div>
 
-        <div class="products">
-          <article class="product reveal" id="product-1">
-            <div class="product-media">
-              <img src="images/product-1.jpg" alt="Товар 1 — разборный очаг с зоной приготовления" />
-            </div>
-            <div class="product-body">
-              <div class="badge">Хит сезона</div>
-              <h3>Flat-Pack Очаг с зоной готовки</h3>
-              <p>Практичная разборная конструкция объединяет в себе прочный очаг и удобную зону для приготовления еды на живом огне. Она легко собирается без инструментов, занимает минимум места в багажнике и создана специально для того, чтобы в любой точке маршрута у вас был свой надёжный и комфортный очаг.</p>
-              <div class="product-meta">
-                <span class="price">от 18 900 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Flat-Pack Очаг с зоной готовки">В корзину</button>
-              </div>
-            </div>
-          </article>
+        <div class="catalog-why reveal">
+          <ul class="catalog-why-list">
+            <li><strong>Ультракомпактность (Flat-Pack):</strong> толщина в чехле — всего 2–3&nbsp;см. Удобно хранить дома и брать в поездки.</li>
+            <li><strong>Сталь от 3&nbsp;мм:</strong> высокая прочность и стойкость к деформации при предельных температурах.</li>
+            <li><strong>Лазерная точность:</strong> карельское производство гарантирует идеальную сборку и плотную подгонку всех деталей.</li>
+            <li><strong>Гарантия качества:</strong> 90 дней полной защиты от заводского брака.</li>
+          </ul>
+        </div>
 
-          <article class="product reveal" id="product-2">
-            <div class="product-media">
-              <img src="images/product-2.jpg" alt="Товар 2 — дизайнерская чаша-гриль" />
-            </div>
-            <div class="product-body">
-              <div class="badge">Дизайн</div>
-              <h3>Чаша-гриль Hi-Tech</h3>
-              <p>Современная дизайнерская костровая чаша-гриль сборно-разборного типа. Это стильное, технологичное и практичное решение в эстетике минимализма и хай-тек.</p>
-              <div class="product-meta">
-                <span class="price">от 21 500 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Чаша-гриль Hi-Tech">В корзину</button>
-              </div>
-            </div>
+        <div class="products" id="catalogProducts">
+          <article class="product">
+            <h3><a href="/product/severnyy-kochevnik">Северный Кочевник</a></h3>
+            <p>Походная разборная костровая чаша. Сталь 3 мм, Flat-Pack, чехол в комплекте.</p>
           </article>
-
-          <article class="product reveal" id="product-3">
-            <div class="product-media">
-              <img src="images/product-3.jpg" alt="Товар 3 — костровая чаша с эстетикой природы" />
-            </div>
-            <div class="product-body">
-              <div class="badge">Природа</div>
-              <h3>Чаша Northern Wild</h3>
-              <p>Стильная сборно-разборная костровая чаша сочетает в себе эстетику дикой природы, продуманную инженерию и абсолютную мобильность. Идеальный выбор для ценителей эстетичного кемпинга, душевных дачных вечеров и практичных подарков для тех, у кого «уже всё есть».</p>
-              <div class="product-meta">
-                <span class="price">от 19 900 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Чаша Northern Wild">В корзину</button>
-              </div>
-            </div>
+          <article class="product">
+            <h3><a href="/product/paikula">Пайкула</a></h3>
+            <p>Чаша-гриль для террасы и двора. Скоро в продаже.</p>
           </article>
-
-          <article class="product reveal" id="product-4">
-            <div class="product-media">
-              <img src="images/product-4.jpg" alt="Товар 4 — шестигранная премиальная чаша" />
-            </div>
-            <div class="product-body">
-              <div class="badge">Арт-объект</div>
-              <h3>Hex Bowl Premium</h3>
-              <p>Премиальный арт-объект для вашей зоны отдыха. Шестигранная разборная чаша, сочетающая архитектурный дизайн, высокую надёжность и максимальный комфорт в эксплуатации.</p>
-              <div class="product-meta">
-                <span class="price">от 24 900 ₽</span>
-                <button class="btn btn-primary" type="button" data-add-cart="Hex Bowl Premium">В корзину</button>
-              </div>
-            </div>
+          <article class="product">
+            <h3><a href="/product/lesnaya-svecha">Лесная Свеча</a></h3>
+            <p>Вертикальный костровой очаг с резными орнаментами. Скоро в продаже.</p>
+          </article>
+          <article class="product">
+            <h3><a href="/product/severnyy-ochag">Северный очаг</a></h3>
+            <p>Премиальная костровая система для загородного дома. Скоро в продаже.</p>
           </article>
         </div>
       </div>
@@ -194,7 +419,6 @@
     <section class="section lifestyle" id="lifestyle">
       <div class="container">
         <div class="section-head reveal">
-          <div class="eyebrow">Где применять</div>
           <h2>Стиль жизни — это не просто набор привычек, это отражение вашей индивидуальности, статус и энергия, которые вы транслируете миру.</h2>
           <p class="lead">Создавайте тренды, окружайте себя эстетикой и выбирайте только лучшее для своей неповторимой жизни.</p>
         </div>
@@ -202,40 +426,40 @@
         <div class="lifestyle-grid">
           <article class="life-item reveal">
             <figure>
-              <img src="images/mountain-river.jpg" alt="Вечер у быстрой реки" />
+              <img src="images/mountain-river.webp" alt="Вечер у костра на берегу горной реки" width="1363" height="768" loading="lazy" decoding="async" data-cms-media="lifeRiver" />
             </figure>
             <div>
-              <strong>Идеальный вечер у быстрой реки</strong>
+              <h3>Идеальный вечер у быстрой реки</h3>
               <p>Забудьте о цивилизации и позвольте себе роскошь настоящего приключения.</p>
             </div>
           </article>
 
           <article class="life-item reveal">
             <figure>
-              <img src="images/country-house.jpg" alt="Загородный дом" />
+              <img src="images/country-house.webp" alt="Костровая чаша у загородного дома в Карелии" width="1024" height="577" loading="lazy" decoding="async" data-cms-media="lifeHouse" />
             </figure>
             <div>
-              <strong>Стиль. Вкус. Свобода. Комфорт. Эстетика.</strong>
+              <h3>Стиль. Вкус. Свобода. Комфорт. Эстетика.</h3>
               <p>Наблюдение за языками пламени гипнотизирует, расслабляет и создаёт ту самую «хюгге»-атмосферу, которой так не хватает в городе.</p>
             </div>
           </article>
 
           <article class="life-item reveal">
             <figure>
-              <img src="images/shore-lake.jpg" alt="Ужин на берегу озера" />
+              <img src="images/shore-lake.webp" alt="Ужин у костровой чаши на берегу озера" width="1269" height="832" loading="lazy" decoding="async" data-cms-media="lifeLake" />
             </figure>
             <div>
-              <strong>Идеальный ужин на берегу озера</strong>
+              <h3>Идеальный ужин на берегу озера</h3>
               <p>Начните планировать своё путешествие к тишине и природе уже сегодня. Ваш идеальный пикник ждёт!</p>
             </div>
           </article>
 
-          <article class="life-item life-wide reveal">
+          <article class="life-item reveal">
             <figure>
-              <img src="images/camping.jpg" alt="Кемпинг с друзьями" />
+              <img src="images/camping.webp" alt="Кемпинг с костровой чашей Northern Magical Place" width="1363" height="768" loading="lazy" decoding="async" data-cms-media="lifeCamp" />
             </figure>
             <div>
-              <strong>Центр притяжения вашего вечера</strong>
+              <h3>Центр притяжения вашего вечера</h3>
               <p>Огонь надёжно локализован в чаше: никаких хаотичных углей, лишнего дыма и выжженной земли в лагере.</p>
             </div>
           </article>
@@ -247,9 +471,8 @@
     <section class="section about" id="about">
       <div class="container about-layout">
         <div class="about-text reveal">
-          <div class="eyebrow">О нас</div>
           <h2>Мы не изобретали костровую чашу. Мы сделали её такой, какой она должна быть.</h2>
-          <p>Давайте будем честны: костровые системы и мангалы существовали задолго до нас. Мы не открывали Америку и не притворяемся, что придумали концепцию очага с нуля.</p>
+          <p>Давайте будем честны: костровые чаши и мангалы существовали задолго до нас. Мы не открывали Америку и не притворяемся, что придумали концепцию очага с нуля.</p>
           <p>Мы видели сотни подобных изделий: от простых туристических мангалов за 399 рублей до массивных технологичных костровых чаш. То, что начиналось как поиск идеального компактного очага для походов и автотуризма, переросло в глобальную идею.</p>
           <p>Сегодня мы создаём Northern Magical Place как универсальную экосистему очагов. Мы разрабатываем решения под разные сценарии жизни: от ультракомпактных разборных чаш для диких путешествий до эстетичных стационарных костровых зон для загородных домов, дач и уютных террас.</p>
           <p>Данные модели сейчас в разработке и совсем скоро вы увидите их. Музыка огня у каждого своя. Но какой бы маршрут вы ни выбрали — походную романтику у карельской реки или тихий вечер в собственном саду — мы создаём очаг, который станет надёжным центром притяжения вашей компании.</p>
@@ -257,57 +480,40 @@
 
         <div class="about-gallery reveal">
           <figure class="wide">
-            <img src="images/winter-cabin.jpg" alt="Зимний вечер у костровой системы" />
+            <img src="images/country-house.webp" alt="Костровая чаша у загородного дома" width="1024" height="577" loading="lazy" decoding="async" data-cms-media="about" />
           </figure>
           <figure>
-            <img src="images/model-01.jpg" alt="Модель в разработке 01" />
+            <img src="images/model-01.webp" alt="Костровая чаша Northern Magical Place — модель в разработке" width="1043" height="1024" loading="lazy" decoding="async" />
           </figure>
           <figure>
-            <img src="images/model-02.jpg" alt="Модель в разработке 02" />
+            <img src="images/model-02.webp" alt="Очаг Northern Magical Place у современного дома — модель в разработке" width="1076" height="992" loading="lazy" decoding="async" />
           </figure>
           <figure class="wide">
-            <img src="images/model-03.jpg" alt="Модель в разработке 03" />
+            <img src="images/main-product.webp" alt="Северный Кочевник в сборе" width="1110" height="944" loading="lazy" decoding="async" />
           </figure>
-          <p class="about-note">Пример_модель_01 · 02 · 03 — скоро в каталоге</p>
         </div>
       </div>
     </section>
 
-    <!-- 6. Reviews -->
+    <!-- 6. News -->
+    <section class="section news" id="news" hidden>
+      <div class="container">
+        <div class="section-head centered reveal">
+          <h2>Новости и обновления</h2>
+          <p class="lead">Анонсы моделей и новости Northern Magical Place.</p>
+        </div>
+        <div class="news-grid" id="newsGrid"></div>
+      </div>
+    </section>
+
+    <!-- 7. Reviews -->
     <section class="section reviews" id="reviews">
       <div class="container">
         <div class="section-head centered reveal">
-          <div class="eyebrow">Отзывы</div>
-          <h2>Что говорят о Flat-Pack Очаге</h2>
-          <p class="lead">Первые впечатления владельцев нашего основного изделия.</p>
+          <h2>Что говорят о наших очагах</h2>
+          <p class="lead">Первые впечатления владельцев с маршрутов и с террасы у дома.</p>
         </div>
-
-        <div class="reviews-grid">
-          <article class="review reveal">
-            <div class="stars" aria-label="5 из 5">★★★★★</div>
-            <p>«Собрал за минуту на берегу Сямозера. Решётка держит жаром, рыба получилась лучше, чем дома. В чехле занимает место как ноутбук — для автопутешествий идеально.»</p>
-            <footer>
-              <strong>Андрей К.</strong>
-              <span>Карелия · Flat-Pack Очаг</span>
-            </footer>
-          </article>
-          <article class="review reveal">
-            <div class="stars" aria-label="5 из 5">★★★★★</div>
-            <p>«Искали подарок человеку, у которого «уже всё есть». Теперь каждое воскресенье — костёр во дворе. Перфорация вечером выглядит как маленький северный театр.»</p>
-            <footer>
-              <strong>Мария и Игорь</strong>
-              <span>Санкт-Петербург · Flat-Pack Очаг</span>
-            </footer>
-          </article>
-          <article class="review reveal">
-            <div class="stars" aria-label="5 из 5">★★★★★</div>
-            <p>«После дождя просто вытерли насухо — геометрия как новая. Никакого «повело», никаких болтов. Чувствуется, что делали инженеры, а не копировали чужой мангал.»</p>
-            <footer>
-              <strong>Денис В.</strong>
-              <span>Москва · Flat-Pack Очаг</span>
-            </footer>
-          </article>
-        </div>
+        <div class="reviews-grid" id="reviewsGrid"></div>
       </div>
     </section>
 
@@ -315,67 +521,110 @@
     <section class="section faq" id="faq">
       <div class="container">
         <div class="section-head centered reveal">
-          <div class="eyebrow">FAQ</div>
           <h2>Ответы на вопросы</h2>
         </div>
 
-        <div class="faq-list reveal">
+        <div class="faq-panel reveal">
+          <div class="faq-list">
           <div class="faq-item open">
-            <button type="button">Нужен ли сложный уход после использования?</button>
+            <button type="button" aria-expanded="true">Нужен ли сложный уход после использования?</button>
             <div class="faq-answer">Нет, всё максимально просто. Достаточно вытряхнуть золу и убрать остатки углей. При сильном нагаре просто почистите поверхность сухой щёткой.</div>
           </div>
           <div class="faq-item">
-            <button type="button">Подвержен ли металл ржавчине?</button>
-            <div class="faq-answer">Очаг выполнен из честной стали без искусственных покрытий, поэтому появление лёгкой патины со временем — естественный процесс для предметов, контактирующих с огнём. На прочность и характеристики чаши это никак не влияет. Чтобы она как можно дольше сохраняла первозданный вид, достаточно просто протирать её насухо после использования.</div>
+            <button type="button" aria-expanded="false">Ржавеет ли металл?</button>
+            <div class="faq-answer">Мы не используем искусственные покрытия, токсичные при нагреве. Поэтому появление легкого налета или патины — естественный процесс, который никак не снижает прочность стали. Чтобы очаг дольше сохранял аккуратный внешний вид, просто протирайте его насухо после дождя или чистки.</div>
           </div>
           <div class="faq-item">
-            <button type="button">Удобно ли перевозить в машине?</button>
-            <div class="faq-answer">Да, максимально удобно. В защитном чехле чашу можно спокойно класть в багажник или рюкзак — она не испачкает салон и вещи сажей.</div>
+            <button type="button" aria-expanded="false">Удобно ли перевозить в машине?</button>
+            <div class="faq-answer">Да — особенно модель «Северный Кочевник»: в защитном чехле её удобно класть в багажник, она не испачкает салон. Чехол входит в комплект именно этой походной модели; остальные изделия рассчитаны на сценарий у дома, в саду и на террасе.</div>
           </div>
           <div class="faq-item">
-            <button type="button">Что можно приготовить?</button>
+            <button type="button" aria-expanded="false">Что можно приготовить?</button>
             <div class="faq-answer">Практически всё! Чаша легко заменяет мангал и полевую кухню: классика на углях — сочное мясо, рыба, птица и овощи. Шашлык и казан: фирменная насадка позволяет удобно разложить шампуры или надёжно установить казан. Походная кулинария: конструкция отлично подходит для работы со сковородами, котелками и другой походной посудой.</div>
           </div>
           <div class="faq-item">
-            <button type="button">Подойдёт ли для дикой природы?</button>
+            <button type="button" aria-expanded="false">Подойдёт ли для дикой природы?</button>
             <div class="faq-answer">Идеальному отдыху не нужен идеальный газон! Чаша максимально устойчива, поэтому вы сможете без опасений развести огонь где угодно — будь то галька на берегу реки, сугроб, лесная подстилка или неровная земля.</div>
           </div>
           <div class="faq-item">
-            <button type="button">Предоставляется ли гарантия?</button>
-            <div class="faq-answer">Да, мы уверены в качестве наших изделий и даём гарантию на целостность конструкции. Если у вас возникнут вопросы к качеству или вы обнаружите недочёт, просто напишите нам через раздел «Контакты» — мы оперативно разберёмся в ситуации и предложим решение.</div>
+            <button type="button" aria-expanded="false">Что значит «Северное магическое место»?</button>
+            <div class="faq-answer"><strong>Северное магическое место</strong> — прямой перевод названия бренда <strong>Northern Magical Place</strong>. Официальный сайт бренда — <a href="https://northmp.su/">northmp.su</a>: костровые чаши и костровые системы из Карелии.</div>
+          </div>
+          <div class="faq-item">
+            <button type="button" aria-expanded="false">Что такое костровая система Northern Magical Place?</button>
+            <div class="faq-answer">Это разборная костровая чаша Flat-Pack под конкретный сценарий: поход и кемпинг («Северный Кочевник»), терраса и двор («Пайкула»), сад и дача («Лесная Свеча»), загородный дом («Северный очаг»). Сборка без инструментов, сталь от 3 мм. Полный обзор — на странице <a href="kostrovye-chashi.html">«Костровые чаши и системы»</a>.</div>
+          </div>
+          <div class="faq-item">
+            <button type="button" aria-expanded="false">Чем «Северный Кочевник» отличается от обычной костровой чаши?</button>
+            <div class="faq-answer">«Северный Кочевник» — походная разборная костровая чаша с чехлом в комплекте. Её удобно возить в багажнике и ставить на дикой стоянке: это костровая система для маршрута, а не тяжёлый стационарный очаг для дачи.</div>
+          </div>
+          <div class="faq-item">
+            <button type="button" aria-expanded="false">Чаша для костра, очаг для костра и костровая чаша — это одно и то же?</button>
+            <div class="faq-answer">Да. <strong>Чаша для костра</strong>, <strong>очаг для костра</strong> и <strong>костровая чаша</strong> — одни и те же названия стального очага. У нас это разборные стальные чаши из Карелии: походная модель с чехлом и линейка для дачи, сада и патио. Каталог — на странице <a href="kostrovye-chashi.html">«Костровые чаши»</a>.</div>
+          </div>
+          <div class="faq-item">
+            <button type="button" aria-expanded="false">Подойдёт ли вместо походного разборного мангала или мангала в багажник?</button>
+            <div class="faq-answer">Да, если нужен не только шашлык, но и живой огонь. «Северный Кочевник» — выездной очаг Flat-Pack из стали 3&nbsp;мм: складная чаша для костра с чехлом. Её везут как мангал в багажник, но у огня можно и готовить, и греться. Сравнение — в гиде <a href="kostrovaya-chasha-ili-mangal.html">«Костровая чаша или мангал»</a>.</div>
+          </div>
+          <div class="faq-item">
+            <button type="button" aria-expanded="false">Предоставляется ли гарантия?</button>
+            <div class="faq-answer">Да. Мы даём <strong>гарантию 3 месяца (90 дней)</strong> на заводской / производственный брак при соблюдении <a href="usage.html">правил эксплуатации</a>. Патина, нагар и следы огня — нормальный износ, не брак. Независимо от гарантии действуют права потребителя по закону. Вопросы по качеству — через «Контакты» с номером заказа.</div>
+          </div>
+          <div class="faq-item">
+            <button type="button" aria-expanded="false">Как узнать, где мой заказ?</button>
+            <div class="faq-answer">Статус смотрите в личном кабинете на сайте: сборка, передача в доставку, трек СДЭК. Там же можно подключить уведомления в Telegram — бот напишет о перемещении заказа. Для посылок СДЭК дополнительно работают приложение и СМС перевозчика.</div>
+          </div>
           </div>
         </div>
-
-        <p class="centered" style="text-align:center;margin-top:2rem;">
-          <a class="btn btn-ghost" href="buyers.html">Информация покупателям</a>
-        </p>
       </div>
     </section>
 
     <!-- 8. Contact -->
-    <section class="section contact" id="contact">
+    <section class="section contact" id="contact" data-section="feedback">
       <div class="container contact-grid">
         <div class="reveal">
           <div class="eyebrow">Обратная связь</div>
-          <h2>Напишите нам</h2>
+          <h2 id="contact-title">Напишите нам</h2>
           <p class="lead">Ответим по заказу, доставке и подбору модели под ваш сценарий.</p>
 
-          <div class="contact-details" style="margin-top:2rem;">
+          <div class="contact-details">
             <div>
-              <strong>E-mail</strong>
-              <a href="mailto:info@northmp.su">info@northmp.su</a>
+              <strong>Почта</strong>
+              <a class="email-safe" href="#contact" data-user="ofni" data-host="us.pmhtron">написать письмо</a>
             </div>
             <div>
               <strong>Телефон</strong>
               <a href="tel:+79210110302">+7 (921) 011-03-02</a>
+              <div class="messenger-links" role="group" aria-label="Мессенджеры и соцсети">
+                <a class="messenger-link" href="https://t.me/+79210110302" target="_blank" rel="noopener" aria-label="Написать в Telegram" title="Telegram">
+                  <img src="images/telegram-logo.svg?v=2" alt="Telegram" width="28" height="28" />
+                </a>
+                <a class="messenger-link" href="https://wa.me/79210110302" target="_blank" rel="noopener" aria-label="Написать в WhatsApp" title="WhatsApp">
+                  <img src="images/whatsapp-logo.svg?v=2" alt="WhatsApp" width="28" height="28" />
+                </a>
+                <a class="messenger-link messenger-max" href="images/max-ss.webp" data-max-card="images/max-ss.webp" aria-label="Написать в MAX" title="MAX — Сергей Самойлов">
+                  <img src="images/max-logo.svg?v=2" alt="MAX" width="28" height="28" />
+                </a>
+                <a class="messenger-link messenger-instagram" href="https://www.instagram.com/northern_magical_place/" target="_blank" rel="noopener" aria-label="Instagram Northern Magical Place" title="Instagram">
+                  <img src="images/instagram-logo.svg?v=2" alt="Instagram" width="28" height="28" />
+                </a>
+              </div>
             </div>
             <div>
               <strong>Сайт</strong>
-              <a href="http://northmp.su/" target="_blank" rel="noopener">http://northmp.su/</a>
+              <a href="https://northmp.su/" target="_blank" rel="noopener">https://northmp.su/</a>
+            </div>
+            <div>
+              <strong>Instagram</strong>
+              <a href="https://www.instagram.com/northern_magical_place/" target="_blank" rel="noopener" class="contact-instagram-text">@northern_magical_place</a>
             </div>
             <div>
               <strong>ИНН</strong>
               <p>101390104984</p>
+            </div>
+            <div>
+              <strong>Производство</strong>
+              <p>Петрозаводск, Республика Карелия.<br />Мы — производитель костровых чаш Northern Magical Place (Северное магическое место).<br />Отгрузка и доставка СДЭК по России.</p>
             </div>
           </div>
         </div>
@@ -397,7 +646,11 @@
             <label for="message">Сообщение</label>
             <textarea id="message" name="message" required placeholder="Расскажите, какая модель вас интересует"></textarea>
           </div>
-          <p class="form-note">Нажимая кнопку, вы соглашаетесь с <a href="privacy.html">политикой конфиденциальности</a>.</p>
+          <input class="hp-field" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" />
+          <label class="check-line form-consent">
+            <input type="checkbox" id="contactConsent" name="consent" required />
+            <span>Я даю согласие на обработку персональных данных в соответствии с <a href="privacy.html">Политикой конфиденциальности</a> (152-ФЗ)</span>
+          </label>
           <button class="btn btn-primary" type="submit">Отправить</button>
         </form>
       </div>
@@ -408,35 +661,70 @@
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <img src="images/logo-mark.png" alt="" />
+          <img class="footer-logo" src="images/logo-mark.webp" alt="Northern Magical Place" width="160" height="78" loading="lazy" decoding="async" data-cms-media="logo" />
           <div>
-            <strong style="font-family:var(--font-display);letter-spacing:0.08em;text-transform:uppercase;">Northern Magical Place</strong>
-            <p>Карельские костровые системы Flat-Pack</p>
+            <p>Карельские костровые чаши Flat-Pack</p>
+            <p>Производитель: Петрозаводск, Республика Карелия</p>
+            <p><a href="account.html">Личный кабинет</a></p>
           </div>
         </div>
         <div class="footer-col">
-          <h4>Разделы</h4>
+          <h3>Разделы</h3>
           <a href="#catalog">Изделия</a>
           <a href="#lifestyle">Где применять</a>
           <a href="#about">О нас</a>
-          <a href="#contact">Контакты</a>
         </div>
         <div class="footer-col">
-          <h4>Покупателям</h4>
-          <a href="buyers.html">Доставка и возврат</a>
+          <h3>Гайды</h3>
+          <a href="kostrovye-chashi.html">Костровые чаши</a>
+          <a href="pokhodnaya-kostrovaya-chasha.html">Походная чаша</a>
+          <a href="razbornaya-kostrovaya-chasha.html">Разборная чаша</a>
+          <a href="kostrovaya-chasha-dlya-kempinga.html">Для кемпинга</a>
+          <a href="kostrovaya-chasha-dlya-avtoputeshestviy.html">Автопутешествия</a>
+          <a href="kostrovaya-chasha-ili-mangal.html">Чаша или мангал</a>
+        </div>
+        <div class="footer-col">
+          <h3>Покупателям</h3>
+          <a href="buyers.html">Доставка, сборка и возврат</a>
+          <a href="usage.html">Правила эксплуатации</a>
           <a href="privacy.html">Политика конфиденциальности</a>
-          <a href="mailto:info@northmp.su">info@northmp.su</a>
+          <a href="#contact">Обратная связь</a>
+          <a class="email-safe" href="#contact" data-user="ofni" data-host="us.pmhtron">написать письмо</a>
           <p>+7 (921) 011-03-02</p>
         </div>
       </div>
       <div class="footer-bottom">
-        <span>© 2026 Northern Magical Place</span>
-        <span>ИНН 101390104984</span>
+        <div class="footer-simple-meta">
+          <p class="footer-simple-brand">© 2026 Northern Magical Place</p>
+          <p>Северное магическое место</p>
+          <p>Производитель: Петрозаводск, Республика Карелия</p>
+          <p>ИНН 101390104984</p>
+        </div>
+        <div class="footer-bottom-links">
+          <a href="privacy.html">Персональные данные</a>
+        </div>
       </div>
     </div>
   </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="js/main.js"></script>
+  <script>
+    document.querySelectorAll("a.email-safe").forEach(function (link) {
+      var user = String(link.getAttribute("data-user") || "").split("").reverse().join("");
+      var host = String(link.getAttribute("data-host") || "").split("").reverse().join("");
+      if (!user || !host) return;
+      var email = user + "@" + host;
+      link.textContent = email;
+      link.setAttribute("title", email);
+    });
+    window.addEventListener("load", function () {
+      var href = "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap";
+      var l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = href;
+      document.head.appendChild(l);
+    });
+  </script>
+  <script src="js/nmp-storefront.js" defer></script>
 </body>
 </html>
