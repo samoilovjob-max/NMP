@@ -308,7 +308,7 @@
           <h2>Пока нет заказов</h2>
           <p class="lead">Личный кабинет появится после оформления заказа. Здесь же статусы доставки и подключение уведомлений в Telegram.</p>
           ${lookupFormHtml()}
-          <a class="btn btn-primary" href="index.html#catalog">Выбрать изделие</a>
+          <a class="btn btn-primary" href="/#catalog">Выбрать изделие</a>
         </div>`;
       bindLookupForm();
       return;

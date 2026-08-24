@@ -188,7 +188,7 @@
   const renderSummary = () => {
     const lines = cartLines();
     if (!lines.length) {
-      summaryEl.innerHTML = `<h2>Корзина пуста</h2><p class="lead">Выберите изделие в каталоге.</p><a class="btn btn-primary" href="index.html#catalog">К изделиям</a>`;
+      summaryEl.innerHTML = `<h2>Корзина пуста</h2><p class="lead">Выберите изделие в каталоге.</p><a class="btn btn-primary" href="/#catalog">К изделиям</a>`;
       syncPayButton();
       return;
     }

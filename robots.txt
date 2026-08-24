@@ -6,6 +6,7 @@ Sitemap: https://northmp.su/sitemap.xml
 # Товарный фид для Яндекс Товары / маркетплейсов
 # https://northmp.su/feed.yml
 
+Disallow: /index.html
 Disallow: /admin.html
 Disallow: /account.html
 Disallow: /checkout.html

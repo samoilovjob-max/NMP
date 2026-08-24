@@ -205,7 +205,7 @@
             .join("")}
         </nav>
         <div class="bx-sidebar-footer">
-          <a class="bx-menu-item bx-menu-link" href="index.html" target="_blank" rel="noopener">
+          <a class="bx-menu-item bx-menu-link" href="/" target="_blank" rel="noopener">
             <span class="bx-menu-icon">${menuIcon("home")}</span>
             <span class="bx-menu-label">Открыть сайт</span>
           </a>
@@ -230,7 +230,7 @@
               <span class="bx-menu-icon">${menuIcon("refresh")}</span>
               Обновить
             </button>
-            <a class="btn btn-ghost bx-top-btn" href="index.html" target="_blank" rel="noopener">На сайт</a>
+            <a class="btn btn-ghost bx-top-btn" href="/" target="_blank" rel="noopener">На сайт</a>
           </div>
         </header>
         <div class="bx-workspace">
@@ -376,7 +376,7 @@
           </div>
           ${error ? `<p class="form-note form-note-error">${esc(error)}</p>` : ""}
           <button class="btn btn-primary" type="submit">Войти</button>
-          <a class="form-note" href="index.html">← На сайт</a>
+          <a class="form-note" href="/">← На сайт</a>
         </form>
       </div>`;
     document.getElementById("adminPasswordToggle")?.addEventListener("click", () => {

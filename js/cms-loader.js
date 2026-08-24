@@ -231,10 +231,10 @@
         const available = !n.productId || (linked ? linked.availableForOrder !== false : true);
         const orderHref = n.productId
           ? `checkout.html?buy=${encodeURIComponent(n.productId)}`
-          : "index.html#catalog";
+          : "/#catalog";
         const moreHref = n.productId
           ? productHref(linked || { id: n.productId })
-          : "index.html#catalog";
+          : "/#catalog";
         const primary = available
           ? `<a class="btn btn-primary" href="${orderHref}">Заказать</a>`
           : `<button class="btn btn-primary" type="button" data-notify-product="${escAttr(
