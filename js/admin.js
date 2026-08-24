@@ -82,6 +82,7 @@
     products: { label: "Товары", group: "content" },
     news: { label: "Новости", group: "content" },
     reviews: { label: "Отзывы", group: "content" },
+    pages: { label: "Страницы", group: "content" },
     site: { label: "Тексты сайта", group: "content" },
     orders: { label: "Заказы", group: "shop" },
     leads: { label: "Заявки", group: "shop" },
@@ -98,6 +99,8 @@
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11v16H5z"/><path d="M16 8h3v12h-3"/><path d="M8 8h5M8 12h5M8 16h3"/></svg>',
       reviews:
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.2 4.5 5 .7-3.6 3.5.9 5L12 14.8 7.5 16.7l.9-5L4.8 8.2l5-.7z"/></svg>',
+      pages:
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="8.2" cy="10.2" r="1.6"/><path d="m21 16-5.2-5.2L8 19"/></svg>',
       site:
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v3H4zM4 10h10v3H4zM4 15h16v3H4z"/></svg>',
       orders:
@@ -137,7 +140,7 @@
       {
         id: "content",
         title: "Контент",
-        items: ["products", "news", "reviews", "site"]
+        items: ["products", "news", "reviews", "pages", "site"]
       },
       {
         id: "shop",
@@ -165,7 +168,8 @@
       products: "Справа — живое превью карточки. «Доступен к заказу» включает покупку, отзывы и звёзды.",
       reviews: "Отзывы на сайте видны только у товаров, доступных к заказу.",
       news: "Новости сразу появляются на главной, если включена публикация.",
-      site: "Тексты главной и контакты. Изменения сразу на витрине.",
+      pages: "Превью и замена картинок. Новый файл станет WebP, старый загруженный удалится. Шапка и подвал берут фото главного баннера.",
+      site: "Тексты главной, «О нас», стиль жизни и контакты. Изменения сразу на витрине.",
       orders: "Статусы заказа и оплаты. Изменения видит покупатель в кабинете.",
       leads: "Заявки «сообщить о поступлении» и сообщения с формы.",
       promotions: "Плашки акций на главной. Цену меняйте в карточке товара."
@@ -1233,21 +1237,134 @@
       }
     );
 
+  /* ---------- Page media ---------- */
+  const renderPages = () => {
+    const slots = Array.isArray(state.cms?.pageMedia) ? state.cms.pageMedia : [];
+    const groups = [];
+    slots.forEach((slot) => {
+      const title = slot.group || "Страницы";
+      let group = groups.find((g) => g.title === title);
+      if (!group) {
+        group = { title, items: [] };
+        groups.push(group);
+      }
+      group.items.push(slot);
+    });
+    const card = (slot) => {
+      const url = String(slot.url || "");
+      const preview = url ? esc(url) : "";
+      const isLogo = slot.id === "logo";
+      const size =
+        slot.width && slot.height ? `${slot.width}×${slot.height}` : slot.custom ? "WebP" : "стандарт";
+      return `<article class="admin-media-card ${isLogo ? "is-logo" : ""}">
+        <div class="admin-media-preview">
+          ${preview ? `<img src="${preview}" alt="${esc(slot.title)}" />` : `<span class="form-note">Нет фото</span>`}
+        </div>
+        <div class="admin-media-body">
+          <h3>${esc(slot.title)}</h3>
+          <p class="form-note">${esc(slot.hint || "")}</p>
+          <p class="form-note">${slot.custom ? "Заменено вами" : "Картинка по умолчанию"} · ${esc(size)}</p>
+          <div class="admin-actions">
+            <button class="btn btn-primary" type="button" data-replace-slot="${esc(slot.id)}">Заменить</button>
+            <input type="file" hidden accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif" data-slot-file="${esc(slot.id)}" />
+          </div>
+        </div>
+      </article>`;
+    };
+    root.innerHTML = shell(`
+      <div class="admin-card">
+        <h3>Настройки страниц</h3>
+        <p class="lead">Нажмите «Заменить» и выберите JPG, PNG, GIF или WebP. На сайт сохранится WebP, предыдущий загруженный файл удалится. Шапка при прокрутке и подвал сами возьмут новое фото главного баннера.</p>
+      </div>
+      ${groups
+        .map(
+          (group) => `<section class="admin-section">
+            <h4>${esc(group.title)}</h4>
+            <div class="admin-media-grid">${group.items.map(card).join("")}</div>
+          </section>`
+        )
+        .join("")}
+      <section class="admin-section">
+        <h4>Тексты и остальные страницы</h4>
+        <p class="form-note">Картинки здесь, тексты — во вкладке «Тексты сайта». Товары, новости и отзывы правятся в своих разделах. Внутренние страницы (доставка, эксплуатация, политика, гайды) используют общий фон «Фон внутренних страниц».</p>
+        <div class="admin-actions">
+          <button class="btn btn-ghost" type="button" data-tab="site">Тексты сайта</button>
+          <button class="btn btn-ghost" type="button" data-tab="products">Товары</button>
+          <button class="btn btn-ghost" type="button" data-tab="news">Новости</button>
+          <button class="btn btn-ghost" type="button" data-tab="reviews">Отзывы</button>
+          <a class="btn btn-ghost" href="/" target="_blank" rel="noopener">Открыть сайт</a>
+        </div>
+      </section>
+    `);
+    bindShell();
+    const replaceSlot = async (id, file) => {
+      if (!id || !file) return;
+      const fd = new FormData();
+      fd.append("file", file);
+      const data = await api(`/api/admin/pages/media/${encodeURIComponent(id)}`, {
+        method: "POST",
+        body: fd
+      });
+      if (data.pageMedia) state.cms.pageMedia = data.pageMedia;
+      if (data.site) state.cms.site = data.site;
+      const w = data.optimized?.width || data.slot?.width;
+      const h = data.optimized?.height || data.slot?.height;
+      window.NMP_toast(
+        w && h ? `Картинка заменена (${w}×${h}, WebP)` : "Картинка заменена и сохранена как WebP"
+      );
+      render();
+    };
+    root.querySelectorAll("[data-replace-slot]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.getAttribute("data-replace-slot");
+        root.querySelector(`[data-slot-file="${id}"]`)?.click();
+      });
+    });
+    root.querySelectorAll("[data-slot-file]").forEach((input) => {
+      input.addEventListener("change", async () => {
+        const file = input.files?.[0];
+        const id = input.getAttribute("data-slot-file");
+        if (!file || !id) return;
+        const btn = root.querySelector(`[data-replace-slot="${id}"]`);
+        if (btn) btn.disabled = true;
+        try {
+          await replaceSlot(id, file);
+        } catch (err) {
+          window.NMP_toast(err.message || "Не удалось заменить картинку");
+          if (btn) btn.disabled = false;
+        } finally {
+          input.value = "";
+        }
+      });
+    });
+  };
+
   /* ---------- Site texts ---------- */
   const renderSite = () => {
     const site = state.cms?.site || {};
     const c = site.contacts || {};
     root.innerHTML = shell(`
       <form class="admin-form" id="siteForm">
-        <h3>Тексты главной и контакты</h3>
+        <h3>Главный экран</h3>
         <div class="field"><label>Заголовок героя (H1)</label><input name="heroTitle" value="${esc(site.heroTitle || "")}" /></div>
-        <div class="field"><label>Подзаголовок героя</label><textarea name="heroLead" rows="2">${esc(site.heroLead || "")}</textarea></div>
+        <div class="field"><label>Подзаголовок героя</label><textarea name="heroLead" rows="3">${esc(site.heroLead || "")}</textarea></div>
+        <h3>Каталог, новости, отзывы</h3>
         <div class="field"><label>Заголовок каталога</label><input name="catalogTitle" value="${esc(site.catalogTitle || "")}" /></div>
         <div class="field"><label>Подзаголовок каталога</label><textarea name="catalogLead" rows="2">${esc(site.catalogLead || "")}</textarea></div>
         <div class="field"><label>Заголовок новостей</label><input name="newsTitle" value="${esc(site.newsTitle || "")}" /></div>
         <div class="field"><label>Подзаголовок новостей</label><input name="newsLead" value="${esc(site.newsLead || "")}" /></div>
         <div class="field"><label>Заголовок отзывов</label><input name="reviewsTitle" value="${esc(site.reviewsTitle || "")}" /></div>
         <div class="field"><label>Подзаголовок отзывов</label><input name="reviewsLead" value="${esc(site.reviewsLead || "")}" /></div>
+        <h3>О нас, преимущества, стиль жизни</h3>
+        <p class="form-note">Если поле пустое, на сайте останется текст из вёрстки. Картинки этих блоков меняйте во вкладке «Страницы».</p>
+        <div class="field"><label>Заголовок «О нас»</label><input name="aboutTitle" value="${esc(site.aboutTitle || "")}" placeholder="Как в блоке «О нас» на главной" /></div>
+        <div class="field"><label>Текст «О нас»</label><textarea name="aboutText" rows="8" placeholder="Абзацы разделяйте пустой строкой">${esc(site.aboutText || "")}</textarea></div>
+        <div class="field"><label>Заголовок преимуществ</label><input name="featuresTitle" value="${esc(site.featuresTitle || "")}" /></div>
+        <div class="field"><label>Подзаголовок преимуществ</label><textarea name="featuresLead" rows="2">${esc(site.featuresLead || "")}</textarea></div>
+        <div class="field"><label>Заголовок «Стиль жизни»</label><input name="lifestyleTitle" value="${esc(site.lifestyleTitle || "")}" /></div>
+        <div class="field"><label>Подзаголовок «Стиль жизни»</label><textarea name="lifestyleLead" rows="2">${esc(site.lifestyleLead || "")}</textarea></div>
+        <div class="field"><label>Заголовок обратной связи</label><input name="contactTitle" value="${esc(site.contactTitle || "")}" /></div>
+        <div class="field"><label>Подзаголовок обратной связи</label><textarea name="contactLead" rows="2">${esc(site.contactLead || "")}</textarea></div>
         <h3>Контакты</h3>
         <div class="admin-form-grid">
           <div class="field"><label>E-mail</label><input name="email" value="${esc(c.email || "")}" /></div>
@@ -1274,6 +1391,14 @@
           newsLead: fd.get("newsLead"),
           reviewsTitle: fd.get("reviewsTitle"),
           reviewsLead: fd.get("reviewsLead"),
+          aboutTitle: fd.get("aboutTitle"),
+          aboutText: fd.get("aboutText"),
+          featuresTitle: fd.get("featuresTitle"),
+          featuresLead: fd.get("featuresLead"),
+          lifestyleTitle: fd.get("lifestyleTitle"),
+          lifestyleLead: fd.get("lifestyleLead"),
+          contactTitle: fd.get("contactTitle"),
+          contactLead: fd.get("contactLead"),
           contacts: {
             email: fd.get("email"),
             phone: fd.get("phone"),
@@ -2412,6 +2537,10 @@
           <span class="form-note">Пока товар не в продаже · всего ${reviews.length}</span>
         </button>
       </div>
+      <div class="admin-actions" style="margin-bottom:1.25rem">
+        <button class="btn btn-primary" type="button" data-tab="pages">Картинки страниц</button>
+        <button class="btn btn-ghost" type="button" data-tab="site">Тексты сайта</button>
+      </div>
       <section class="admin-section">
         <h4>Товары</h4>
         <div class="admin-table">
@@ -2492,6 +2621,7 @@
     if (state.tab === "news") return renderNews();
     if (state.tab === "reviews") return renderReviews();
     if (state.tab === "promotions") return renderPromotions();
+    if (state.tab === "pages") return renderPages();
     if (state.tab === "site") return renderSite();
     if (state.tab === "leads") return renderLeads();
     return renderOrders();

@@ -15,6 +15,10 @@
   --max: 1180px;
   --header-h: 96px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hero-image: url("../images/hero-bg-800.webp");
+  --page-hero-image: url("../images/country-house.webp");
+  --catalog-bg-image: url("../images/mountain-river.webp");
+  --contact-bg-image: none;
 }
 
 *,
@@ -160,7 +164,9 @@ html {
   /* Solid fill only — backdrop-filter on the header creates a containing
      block for position:fixed children, so the mobile .nav overlay collapses
      to the header height and looks like the hamburger “doesn’t open”. */
-  background: rgba(18, 19, 18, 0.96);
+  background:
+    linear-gradient(180deg, rgba(18, 19, 18, 0.92), rgba(18, 19, 18, 0.96)),
+    var(--hero-image, none) center/cover no-repeat;
   border-bottom-color: var(--line);
 }
 
@@ -570,7 +576,7 @@ html {
 .features {
   background:
     linear-gradient(180deg, rgba(28, 30, 28, 0.78), rgba(28, 30, 28, 0.9)),
-    url("../images/mountain-river.webp") center/cover fixed;
+    var(--catalog-bg-image, url("../images/mountain-river.webp")) center/cover fixed;
 }
 
 .features-grid {
@@ -1142,8 +1148,10 @@ html {
 /* Contact */
 .contact {
   background:
-    radial-gradient(circle at 20% 20%, rgba(196, 92, 38, 0.12), transparent 35%),
-    var(--bg-elevated);
+    radial-gradient(circle at 20% 20%, rgba(196, 92, 38, 0.18), transparent 35%),
+    linear-gradient(180deg, rgba(28, 30, 28, 0.82), rgba(28, 30, 28, 0.92)),
+    var(--contact-bg-image, none) center/cover no-repeat;
+  background-color: var(--bg-elevated);
 }
 
 .contact-grid {
@@ -1481,7 +1489,10 @@ html {
 .site-footer {
   border-top: 1px solid var(--line);
   padding: 2rem 0 1.5rem;
-  background: #151715;
+  background:
+    linear-gradient(180deg, rgba(21, 23, 21, 0.94), rgba(15, 17, 15, 0.97)),
+    var(--hero-image, none) center/cover no-repeat;
+  background-color: #151715;
 }
 
 .footer-grid {
@@ -1693,7 +1704,7 @@ html {
   padding: calc(var(--header-h) + 3.5rem) 0 2.5rem;
   background:
     linear-gradient(180deg, rgba(12,13,12,0.7), rgba(12,13,12,0.92)),
-    url("../images/country-house.webp") center/cover;
+    var(--page-hero-image, url("../images/country-house.webp")) center/cover;
 }
 
 .page-hero h1 {
@@ -4163,6 +4174,56 @@ body.nav-lock {
 
 .admin-dash-card:hover {
   border-color: rgba(196, 92, 38, 0.45);
+}
+
+.admin-media-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.admin-media-card {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid rgba(232, 230, 225, 0.12);
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.admin-media-preview {
+  aspect-ratio: 16 / 10;
+  background: #111412;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.admin-media-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin-media-card.is-logo .admin-media-preview img {
+  object-fit: contain;
+  padding: 1rem;
+  background: #1a1d1a;
+}
+
+.admin-media-body {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0 0.9rem 0.95rem;
+}
+
+.admin-media-body h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-media-body .admin-actions {
+  margin-top: 0.35rem;
 }
 
 @media (min-width: 800px) {

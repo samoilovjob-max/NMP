@@ -19,11 +19,14 @@ const ALLOWED_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif"]);
  * @param {string} absolutePath
  * @returns {Promise<{ path: string, filename: string, url: string, width: number, height: number, bytesBefore: number, bytesAfter: number, format: string }>}
  */
-async function optimizeUploadedImage(absolutePath) {
+async function optimizeUploadedImage(absolutePath, options = {}) {
   const bytesBefore = fs.statSync(absolutePath).size;
   const dir = path.dirname(absolutePath);
   const base = path.basename(absolutePath, path.extname(absolutePath));
   const extIn = path.extname(absolutePath).toLowerCase();
+  const forceWebp = options.forceWebp === true;
+  const maxEdge = Number(options.maxEdge) > 0 ? Number(options.maxEdge) : MAX_EDGE;
+  const variantWidths = Array.isArray(options.variantWidths) ? options.variantWidths : [];
 
   if (!ALLOWED_EXT.has(extIn)) {
     return {
@@ -41,8 +44,8 @@ async function optimizeUploadedImage(absolutePath) {
   const image = sharp(absolutePath, { animated: false, failOn: "none" }).rotate();
   const meta = await image.metadata();
 
-  // Leave multi-page/animated GIF alone (sharp stills them by default).
-  if (extIn === ".gif" && (meta.pages || 0) > 1) {
+  // Leave multi-page/animated GIF alone unless the caller asked for WebP.
+  if (extIn === ".gif" && (meta.pages || 0) > 1 && !forceWebp) {
     return {
       path: absolutePath,
       filename: path.basename(absolutePath),
@@ -57,15 +60,18 @@ async function optimizeUploadedImage(absolutePath) {
 
   const hasAlpha = Boolean(meta.hasAlpha);
   const pipeline = image.resize({
-    width: MAX_EDGE,
-    height: MAX_EDGE,
+    width: maxEdge,
+    height: maxEdge,
     fit: "inside",
     withoutEnlargement: true
   });
 
   let outExt;
   let outBuffer;
-  if (hasAlpha && (extIn === ".png" || meta.format === "png")) {
+  if (forceWebp) {
+    outExt = ".webp";
+    outBuffer = await pipeline.webp({ quality: QUALITY, alphaQuality: 85 }).toBuffer();
+  } else if (hasAlpha && (extIn === ".png" || meta.format === "png")) {
     outExt = ".png";
     outBuffer = await pipeline.png({ compressionLevel: 9, palette: false }).toBuffer();
   } else if (extIn === ".png" && !hasAlpha) {
@@ -93,6 +99,26 @@ async function optimizeUploadedImage(absolutePath) {
   }
 
   const outMeta = await sharp(outBuffer).metadata();
+  const variants = [];
+  if (forceWebp && variantWidths.length && outMeta.width) {
+    for (const width of variantWidths) {
+      const w = Math.round(Number(width) || 0);
+      if (w < 320 || w >= outMeta.width) continue;
+      try {
+        const vBuf = await sharp(outBuffer)
+          .resize({ width: w, withoutEnlargement: true })
+          .webp({ quality: QUALITY, alphaQuality: 85 })
+          .toBuffer();
+        const vName = `${base}-${w}.webp`;
+        const vPath = path.join(dir, vName);
+        fs.writeFileSync(vPath, vBuf);
+        variants.push({ url: `images/uploads/${vName}`, width: w });
+      } catch {
+        /* skip a failed variant, keep the main file */
+      }
+    }
+  }
+
   return {
     path: outPath,
     filename: outName,
@@ -101,7 +127,8 @@ async function optimizeUploadedImage(absolutePath) {
     height: outMeta.height || 0,
     bytesBefore,
     bytesAfter: outBuffer.length,
-    format: outExt.replace(".", "")
+    format: outExt.replace(".", ""),
+    variants
   };
 }
 

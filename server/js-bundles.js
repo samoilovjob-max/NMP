@@ -15,7 +15,7 @@ const BUNDLES = {
     "main.js",
     "analytics.js"
   ],
-  "/js/nmp-lite.js": ["config.js", "store.js", "main.js", "analytics.js"],
+  "/js/nmp-lite.js": ["config.js", "store.js", "cms-loader.js", "main.js", "analytics.js"],
   "/js/nmp-checkout.js": ["delivery-providers.js", "checkout.js"],
   "/js/nmp-admin.js": [
     "config.js",

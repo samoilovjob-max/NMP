@@ -266,7 +266,129 @@
     return;
   };
 
+  const mediaUrl = (item, fallback) => {
+    if (item && typeof item === "object") return item.url || fallback;
+    return item || fallback;
+  };
+
+  const toPublicUrl = (url) => {
+    const raw = String(url || "").trim();
+    if (!raw || /^(https?:|data:|blob:)/i.test(raw)) return raw;
+    return raw.startsWith("/") ? raw : `/${raw.replace(/^\.\//, "")}`;
+  };
+
+  const toPublicSrcset = (srcset) =>
+    String(srcset || "")
+      .split(",")
+      .map((part) => {
+        const trimmed = part.trim();
+        if (!trimmed) return "";
+        const bits = trimmed.split(/\s+/);
+        const u = toPublicUrl(bits.shift());
+        return [u, ...bits].join(" ");
+      })
+      .filter(Boolean)
+      .join(", ");
+
+  const escHtml = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  const applyMedia = (site = {}) => {
+    const media = site.media || {};
+    const hero = media.hero;
+    const heroUrl = toPublicUrl(mediaUrl(hero, ""));
+    if (heroUrl) {
+      document.documentElement.style.setProperty("--hero-image", `url("${heroUrl}")`);
+      const img = document.querySelector(".hero-bg img, [data-cms-media='hero']");
+      if (img) {
+        img.src = heroUrl;
+        if (hero?.srcset) img.setAttribute("srcset", toPublicSrcset(hero.srcset));
+        else img.removeAttribute("srcset");
+      }
+    }
+    const pageHero = toPublicUrl(mediaUrl(media.pageHero, ""));
+    if (pageHero) {
+      document.documentElement.style.setProperty("--page-hero-image", `url("${pageHero}")`);
+    }
+    const catalogBg = toPublicUrl(mediaUrl(media.catalogBg, ""));
+    if (catalogBg) {
+      document.documentElement.style.setProperty("--catalog-bg-image", `url("${catalogBg}")`);
+    }
+    const contactBg = toPublicUrl(mediaUrl(media.contactBg, ""));
+    if (contactBg) {
+      document.documentElement.style.setProperty("--contact-bg-image", `url("${contactBg}")`);
+    }
+    const map = {
+      about: media.about,
+      lifeRiver: media.lifeRiver,
+      lifeHouse: media.lifeHouse,
+      lifeLake: media.lifeLake,
+      lifeCamp: media.lifeCamp,
+      logo: media.logo
+    };
+    Object.entries(map).forEach(([slot, item]) => {
+      const url = toPublicUrl(mediaUrl(item, ""));
+      if (!url) return;
+      document.querySelectorAll(`[data-cms-media="${slot}"]`).forEach((el) => {
+        if (el.tagName === "IMG") {
+          el.src = url;
+          if (item?.srcset) el.setAttribute("srcset", toPublicSrcset(item.srcset));
+          else el.removeAttribute("srcset");
+        }
+      });
+    });
+    const logoUrl = toPublicUrl(mediaUrl(media.logo, ""));
+    if (logoUrl) {
+      document.querySelectorAll(".brand img, .footer-logo, .footer-brand img").forEach((el) => {
+        el.src = logoUrl;
+      });
+    }
+    if (site.aboutTitle) {
+      const aboutH2 = document.querySelector("#about h2, .about-text h2");
+      if (aboutH2) aboutH2.textContent = site.aboutTitle;
+    }
+    if (site.aboutText) {
+      const wrap = document.querySelector(".about-text");
+      if (wrap) {
+        const h2 = wrap.querySelector("h2");
+        const paras = String(site.aboutText)
+          .split(/\n{2,}/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        wrap.innerHTML = `${h2 ? h2.outerHTML : ""}` + paras.map((p) => `<p>${escHtml(p)}</p>`).join("");
+      }
+    }
+    if (site.featuresTitle) {
+      const el = document.querySelector("#features .section-head h2, #features .section-title");
+      if (el) el.textContent = site.featuresTitle;
+    }
+    if (site.featuresLead) {
+      const el = document.querySelector("#features .section-head .lead, #features .section-title + .lead");
+      if (el) el.textContent = site.featuresLead;
+    }
+    if (site.lifestyleTitle) {
+      const el = document.querySelector("#lifestyle .section-head h2");
+      if (el) el.textContent = site.lifestyleTitle;
+    }
+    if (site.lifestyleLead) {
+      const el = document.querySelector("#lifestyle .section-head .lead");
+      if (el) el.textContent = site.lifestyleLead;
+    }
+    if (site.contactTitle) {
+      const el = document.querySelector("#contact h2");
+      if (el) el.textContent = site.contactTitle;
+    }
+    if (site.contactLead) {
+      const el = document.querySelector("#contact .lead");
+      if (el) el.textContent = site.contactLead;
+    }
+  };
+
   const applyHero = (site = {}, products = []) => {
+    applyMedia(site);
     const h1 = document.querySelector(".hero-copy h1");
     const lead = document.querySelector(".hero-copy .lead");
     if (h1 && site.heroTitle) h1.textContent = site.heroTitle;

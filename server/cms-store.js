@@ -256,13 +256,18 @@ function getSite() {
 
 function saveSite(patch) {
   const cms = readCms();
-  cms.site = { ...(cms.site || {}), ...(patch || {}) };
+  const prev = cms.site || {};
+  const next = { ...prev, ...(patch || {}) };
   if (patch?.contacts) {
-    cms.site.contacts = { ...(cms.site.contacts || {}), ...patch.contacts };
-    if (cms.site.contacts.maxCard) {
-      cms.site.contacts.maxCard = rewriteLegacyPublicAsset(cms.site.contacts.maxCard);
+    next.contacts = { ...(prev.contacts || {}), ...patch.contacts };
+    if (next.contacts.maxCard) {
+      next.contacts.maxCard = rewriteLegacyPublicAsset(next.contacts.maxCard);
     }
   }
+  if (patch?.media && typeof patch.media === "object") {
+    next.media = { ...(prev.media || {}), ...patch.media };
+  }
+  cms.site = next;
   writeCms(cms);
   return cms.site;
 }
@@ -318,13 +323,15 @@ function getPublicCms() {
 
 function getAdminCms() {
   const cms = readCms();
+  const pageMedia = require("./page-media");
   return {
     updatedAt: cms.updatedAt,
     products: listProducts(),
     news: listCollection("news"),
     reviews: listCollection("reviews"),
     promotions: listCollection("promotions"),
-    site: cms.site || {}
+    site: cms.site || {},
+    pageMedia: pageMedia.listSlots(cms.site || {})
   };
 }
 

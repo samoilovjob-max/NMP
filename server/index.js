@@ -12,6 +12,7 @@ const cms = require("./cms-store");
 const store = require("./orders-store");
 const leads = require("./leads-store");
 const { optimizeUploadedImage } = require("./image-optimize");
+const pageMedia = require("./page-media");
 const orders1c = require("./orders-1c-export");
 const notify = require("./notify");
 const backup = require("./backup");
@@ -1763,6 +1764,25 @@ function collectionRoutes(name) {
 collectionRoutes("news");
 collectionRoutes("reviews");
 collectionRoutes("promotions");
+
+app.post("/api/admin/pages/media/:slot", adminGuard, (req, res) => {
+  upload.single("file")(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: err.message || "Ошибка загрузки" });
+    if (!req.file) return res.status(400).json({ message: "Выберите изображение: JPG, PNG, WebP или GIF" });
+    try {
+      const result = await pageMedia.replaceSlot(req.params.slot, req.file);
+      res.json({
+        ok: true,
+        ...result,
+        format: "webp",
+        site: cms.getSite(),
+        pageMedia: pageMedia.listSlots(cms.getSite())
+      });
+    } catch (error) {
+      res.status(400).json({ message: error.message || "Не удалось заменить картинку" });
+    }
+  });
+});
 
 app.post("/api/admin/upload", adminGuard, (req, res) => {
   upload.single("file")(req, res, async (err) => {
