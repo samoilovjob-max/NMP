@@ -202,7 +202,8 @@
     link.setAttribute("data-cookie-settings", "");
     link.textContent = "Cookies и аналитика";
     link.addEventListener("click", () => window.NMP_analytics.openCookieSettings());
-    footer.appendChild(link);
+    const host = footer.querySelector(".footer-bottom-links") || footer;
+    host.appendChild(link);
   }
 
   function mapLineItems(items) {
