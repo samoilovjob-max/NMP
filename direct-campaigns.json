@@ -1,0 +1,150 @@
+{
+  "campaign": "NMP | Бренд + Северный Кочевник",
+  "type": "Единая перфоманс-кампания (ЕПК) или Текстово-графические объявления",
+  "geo": "Россия",
+  "strategy": "Максимум кликов или ручная ставка с ограничением недельного бюджета",
+  "weeklyBudgetHintRub": "3000-7000 на старт",
+  "utm": "?utm_source=yandex&utm_medium=cpc&utm_campaign=brand_kochevnik&utm_content={campaign_id}&utm_term={keyword}",
+  "minusWordsCampaign": [
+    "тандыр",
+    "амфора",
+    "глина",
+    "чугун",
+    "чугунная",
+    "бесплатно",
+    "своими руками",
+    "чертеж",
+    "скачать",
+    "вакансия",
+    "работа",
+    "авито",
+    "б у",
+    "бу",
+    "ритуал",
+    "кладбище",
+    "аренда",
+    "камин",
+    "печь"
+  ],
+  "groups": [
+    {
+      "name": "Бренд",
+      "landing": "https://northmp.su/?utm_source=yandex&utm_medium=cpc&utm_campaign=brand_kochevnik&utm_content=brand",
+      "match": "фразовое + точное",
+      "keywords": [
+        "\"северное магическое место\"",
+        "[северное магическое место]",
+        "\"northern magical place\"",
+        "[northern magical place]",
+        "\"северное магическое место\" костровая",
+        "\"northern magical place\" чаша",
+        "northmp",
+        "\"nmp\" костровая чаша"
+      ],
+      "ads": [
+        {
+          "title1": "Северное магическое место",
+          "title2": "Костровые чаши NMP",
+          "text": "Официальный сайт бренда. Северный Кочевник и модели из Карелии. Доставка СДЭК.",
+          "path1": "brand",
+          "path2": "nmp"
+        },
+        {
+          "title1": "Northern Magical Place",
+          "title2": "Официальный сайт",
+          "text": "Костровые чаши и системы Flat-Pack из Карелии. Заказ на northmp.su.",
+          "path1": "official",
+          "path2": "site"
+        }
+      ]
+    },
+    {
+      "name": "Северный Кочевник",
+      "landing": "https://northmp.su/product/severnyy-kochevnik?utm_source=yandex&utm_medium=cpc&utm_campaign=brand_kochevnik&utm_content=kochevnik",
+      "match": "фразовое + точное",
+      "keywords": [
+        "\"северный кочевник\" костровая чаша",
+        "[северный кочевник костровая чаша]",
+        "\"северный кочевник\" купить",
+        "костровая чаша \"северный кочевник\"",
+        "\"северный кочевник\" очаг",
+        "\"северный кочевник\" flat pack",
+        "\"северный кочевник\" походная",
+        "[северный кочевник]"
+      ],
+      "minusExtra": ["тандыр", "амфора"],
+      "ads": [
+        {
+          "title1": "Северный Кочевник — чаша",
+          "title2": "Походная разборная",
+          "text": "Сталь 3 мм, чехол в комплекте, сборка без инструментов. Доставка СДЭК по РФ.",
+          "path1": "kochevnik",
+          "path2": "chasha"
+        },
+        {
+          "title1": "Купить Северный Кочевник",
+          "title2": "Northern Magical Place",
+          "text": "Походная костровая чаша из Карелии. Официальный заказ на northmp.su.",
+          "path1": "product",
+          "path2": "order"
+        }
+      ]
+    },
+    {
+      "name": "Синонимы (поиск)",
+      "landing": "https://northmp.su/product/severnyy-kochevnik?utm_source=yandex&utm_medium=cpc&utm_campaign=brand_kochevnik&utm_content=synonyms",
+      "match": "фразовое",
+      "keywords": [
+        "\"чаша для костра\"",
+        "\"чаша для костра\" купить",
+        "\"стальная костровая чаша\"",
+        "\"складная костровая чаша\"",
+        "\"мобильная костровая чаша\"",
+        "\"мангал в багажник\"",
+        "\"походный разборный мангал\"",
+        "\"костровая чаша с чехлом\"",
+        "\"костровая чаша туристическая\"",
+        "\"выездной очаг\" купить"
+      ],
+      "ads": [
+        {
+          "title1": "Чаша для костра из стали 3 мм",
+          "title2": "С чехлом в багажник",
+          "text": "Северный Кочевник — складная чаша для костра из Карелии. Сборка без инструментов, СДЭК.",
+          "path1": "chasha",
+          "path2": "kostra"
+        }
+      ]
+    }
+  ],
+  "sitelinks": [
+    {
+      "title": "Северный Кочевник",
+      "url": "https://northmp.su/product/severnyy-kochevnik",
+      "desc": "Походная разборная чаша"
+    },
+    {
+      "title": "Каталог чаш",
+      "url": "https://northmp.su/kostrovye-chashi.html",
+      "desc": "Все костровые системы"
+    },
+    {
+      "title": "Доставка и оплата",
+      "url": "https://northmp.su/buyers.html",
+      "desc": "СДЭК по России"
+    },
+    {
+      "title": "Связаться",
+      "url": "https://northmp.su/#contact",
+      "desc": "Телефон и мессенджеры"
+    }
+  ],
+  "callouts": [
+    "Производство в Карелии",
+    "Сталь от 3 мм",
+    "Доставка СДЭК",
+    "Гарантия 3 месяца",
+    "Чехол у Кочевника"
+  ],
+  "phone": "+7 (921) 011-03-02"
+}

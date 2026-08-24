@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Оформление заказа — Northern Magical Place</title>
+  <link rel="icon" href="favicon.ico" sizes="any" />
+  <link rel="icon" href="images/favicon.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="images/favicon-16.png" type="image/png" sizes="16x16" />
+  <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=Syne:wght@700&display=swap" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="site-header scrolled" id="header">
+    <div class="header-inner">
+      <a class="brand" href="/" aria-label="Northern Magical Place">
+        <img class="brand-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="160" height="78" />
+        <span class="brand-text">
+          <span>Northern</span>
+          <span>Magical Place</span>
+        </span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Основная навигация">
+        <a href="/#catalog">Изделия</a>
+        <a href="account.html">Личный кабинет</a>
+        <a href="buyers.html">Доставка и возврат</a>
+      </nav>
+      <div class="header-actions">
+        <a class="icon-btn" href="account.html" aria-label="Личный кабинет">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.8-3.2 4.2-4.8 7-4.8s5.2 1.6 7 4.8"/></svg>
+        </a>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Меню" aria-expanded="false"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-hero compact">
+      <div class="container">
+        <div class="eyebrow">Заказ</div>
+        <h1>Оформление заказа</h1>
+        <p class="lead">СДЭК, самовывоз со склада или адресная доставка по Петрозаводску · Оплата через ЮKassa · Статус — в личном кабинете или Telegram</p>
+      </div>
+    </section>
+
+    <section class="section section-compact">
+      <div class="container checkout-grid">
+        <form class="checkout-form" id="checkoutForm">
+          <h2>Данные получателя</h2>
+          <div class="field-row">
+            <div class="field">
+              <label for="lastName">Фамилия</label>
+              <input id="lastName" name="lastName" required autocomplete="family-name" />
+            </div>
+            <div class="field">
+              <label for="firstName">Имя</label>
+              <input id="firstName" name="firstName" required autocomplete="given-name" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="middleName">Отчество (необязательно)</label>
+            <input id="middleName" name="middleName" autocomplete="additional-name" />
+          </div>
+          <div class="field">
+            <label for="phone">Мобильный телефон</label>
+            <input id="phone" name="phone" type="tel" required placeholder="+7 (___) ___-__-__" autocomplete="tel" />
+          </div>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </div>
+
+          <h2>Способ получения</h2>
+          <div class="delivery-methods" role="radiogroup" aria-label="Способ получения">
+            <label class="delivery-method">
+              <input type="radio" name="deliveryMethod" value="cdek" checked />
+              <span class="delivery-method-card">
+                <strong>Доставка СДЭК</strong>
+                <span>До пункта выдачи по всей России. Стоимость и срок — после выбора города и ПВЗ.</span>
+              </span>
+            </label>
+            <label class="delivery-method">
+              <input type="radio" name="deliveryMethod" value="pickup" />
+              <span class="delivery-method-card">
+                <strong>Самовывоз со склада</strong>
+                <span>г. Петрозаводск, ул. Университетская 7/3. Отгрузка по предварительной договорённости.</span>
+              </span>
+            </label>
+            <label class="delivery-method">
+              <input type="radio" name="deliveryMethod" value="local" />
+              <span class="delivery-method-card">
+                <strong>Адресная доставка по Петрозаводску</strong>
+                <span>По городу — по предварительной договорённости. Адрес укажите в поле ниже.</span>
+              </span>
+            </label>
+          </div>
+
+          <div id="pickupInfo" class="pickup-info" hidden>
+            <h3>Самовывоз со склада</h3>
+            <p><strong>Адрес:</strong> г. Петрозаводск, ул. Университетская 7/3</p>
+            <p>Отгрузка товара осуществляется <strong>по предварительной договорённости</strong> после оплаты заказа. Мы свяжемся с вами по телефону или e-mail, чтобы согласовать дату и время.</p>
+            <p class="form-note">Также возможна адресная доставка по городу Петрозаводску — по предварительной договорённости (выберите соответствующий способ выше).</p>
+          </div>
+
+          <div id="localInfo" class="pickup-info" hidden>
+            <h3>Адресная доставка по Петрозаводску</h3>
+            <p>Доставка по городу Петрозаводску — <strong>по предварительной договорённости</strong> после оплаты.</p>
+            <p>Укажите адрес доставки в поле ниже. Мы свяжемся с вами для согласования времени.</p>
+            <div class="field field-flush">
+              <label for="localAddress">Адрес доставки по Петрозаводску</label>
+              <input id="localAddress" name="localAddress" type="text" autocomplete="address-line1" placeholder="Улица, дом, квартира" />
+            </div>
+            <p class="form-note">Самовывоз со склада: г. Петрозаводск, ул. Университетская 7/3.</p>
+          </div>
+
+          <div id="cdekDeliveryBlock">
+          <h2>Доставка СДЭК</h2>
+          <div class="field">
+            <label for="city">Город получения</label>
+            <input id="city" name="city" required placeholder="Начните вводить город" autocomplete="off" />
+            <input type="hidden" id="cityCode" name="cityCode" />
+            <div id="citySuggest" class="suggest-list"></div>
+          </div>
+
+          <div class="field" id="pvzFilterField" hidden>
+            <label for="pvzQuery">Улица или адрес ПВЗ</label>
+            <input
+              id="pvzQuery"
+              name="pvzQuery"
+              type="search"
+              placeholder="Например: Ленина, Авиаторов, Поречная"
+              autocomplete="off"
+              enterkeyhint="search"
+            />
+            <p class="form-note">Можно дописать улицу — список пунктов сузится по адресу</p>
+          </div>
+
+          <div class="field">
+            <label>Пункт выдачи СДЭК</label>
+            <p class="form-note">1) Выберите город → 2) При желании укажите улицу → 3) Нажмите пункт ПВЗ в списке</p>
+            <div id="pvzList" class="pvz-list" role="listbox" aria-label="Пункты выдачи">
+              <p class="form-note">Список ПВЗ появится после выбора города</p>
+            </div>
+            <div class="pvz-toolbar">
+              <button class="btn btn-ghost" type="button" id="openCdekWidget">Показать на карте (необязательно)</button>
+            </div>
+            <div id="cdekWidget" class="cdek-widget-box" hidden>
+              <div id="pvzMap" class="pvz-map" role="region" aria-label="Карта пунктов выдачи СДЭК"></div>
+              <p class="form-note map-attr">Карта: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></p>
+            </div>
+            <input type="hidden" id="pvzCode" name="pvzCode" />
+            <input type="hidden" id="pvzAddress" name="pvzAddress" />
+            <input type="hidden" id="tariffCode" name="tariffCode" value="136" />
+            <p class="form-note" id="pvzSelected">Пункт выдачи не выбран</p>
+            <p class="form-note" id="deliveryInfo">Стоимость и сроки появятся после выбора города</p>
+          </div>
+          </div>
+
+          <div class="field">
+            <label for="comment">Комментарий к заказу</label>
+            <textarea id="comment" name="comment" rows="3" placeholder="Здесь вы можете оставить Ваши пожелания к заказу и мы их обязательно учтем"></textarea>
+          </div>
+
+          <div class="check-stack">
+            <label class="check-line">
+              <input type="checkbox" id="pdConsent" name="consent" required />
+              <span>Я даю согласие на обработку персональных данных (ФИО, телефон, e-mail, адрес доставки) для оформления и исполнения заказа, передачи в ЮKassa и СДЭК — в соответствии с <a href="privacy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a> (152-ФЗ)</span>
+            </label>
+            <label class="check-line">
+              <input type="checkbox" id="agree" name="agree" required />
+              <span>Подтверждаю, что ознакомлен(а) с <a href="buyers.html" target="_blank" rel="noopener">условиями доставки и возврата</a> и <a href="usage.html" target="_blank" rel="noopener">правилами эксплуатации и гарантии</a>. Изделие предназначено для открытого огня на улице. Подтверждение не означает отказа от прав потребителя.</span>
+            </label>
+          </div>
+
+          <button class="btn btn-primary" type="submit" id="payBtn" disabled>Оплатить через ЮKassa</button>
+          <p class="form-note" id="checkoutStatusNote">После оплаты статусы заказа появятся в личном кабинете; при желании можно получать их и в Telegram.</p>
+        </form>
+
+        <aside class="checkout-summary" id="checkoutSummary"></aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-simple">
+      <img class="footer-logo" src="images/logo-mark.jpg" alt="Northern Magical Place" width="160" height="78" loading="lazy" />
+      <div class="footer-simple-copy">
+        <div class="footer-simple-meta">
+          <p class="footer-simple-brand">© 2026 Northern Magical Place</p>
+          <p>Северное магическое место</p>
+          <p>Производитель: Петрозаводск, Республика Карелия</p>
+          <p>ИНН 101390104984</p>
+        </div>
+        <nav class="footer-simple-nav" aria-label="Документы">
+          <a href="buyers.html">Доставка, сборка и возврат</a>
+          <a href="usage.html">Правила эксплуатации</a>
+          <a href="privacy.html">Персональные данные</a>
+        </nav>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/nmp-storefront.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/nmp-checkout.js"></script>
+</body>
+</html>
