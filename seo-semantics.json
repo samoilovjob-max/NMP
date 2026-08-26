@@ -1,0 +1,163 @@
+{
+  "brand": "Северное магическое место / Northern Magical Place",
+  "site": "https://northmp.su",
+  "updated": "2026-08-16",
+  "landingPriority": [
+    {
+      "priority": 1,
+      "url": "https://northmp.su/",
+      "intent": "бренд",
+      "group": "Бренд"
+    },
+    {
+      "priority": 1,
+      "url": "https://northmp.su/product/severnyy-kochevnik",
+      "intent": "модель + коммерция",
+      "group": "Северный Кочевник"
+    },
+    {
+      "priority": 2,
+      "url": "https://northmp.su/pokhodnaya-kostrovaya-chasha.html",
+      "intent": "ниша",
+      "group": "Походная чаша"
+    },
+    {
+      "priority": 2,
+      "url": "https://northmp.su/razbornaya-kostrovaya-chasha.html",
+      "intent": "ниша",
+      "group": "Разборная чаша"
+    },
+    {
+      "priority": 2,
+      "url": "https://northmp.su/kostrovaya-chasha-dlya-kempinga.html",
+      "intent": "ниша",
+      "group": "Кемпинг"
+    },
+    {
+      "priority": 3,
+      "url": "https://northmp.su/kostrovye-chashi.html",
+      "intent": "категория",
+      "group": "Костровые чаши"
+    }
+  ],
+  "directGroups": [
+    {
+      "name": "Бренд",
+      "matchType": "phrase+exact",
+      "landing": "https://northmp.su/",
+      "keywords": [
+        "северное магическое место",
+        "northern magical place",
+        "северное магическое место костровые чаши",
+        "northern magical place костровая чаша",
+        "nmp костровая чаша",
+        "northmp"
+      ]
+    },
+    {
+      "name": "Северный Кочевник",
+      "matchType": "phrase+exact",
+      "landing": "https://northmp.su/product/severnyy-kochevnik",
+      "keywords": [
+        "северный кочевник",
+        "северный кочевник костровая чаша",
+        "северный кочевник купить",
+        "костровая чаша северный кочевник",
+        "северный кочевник очаг",
+        "северный кочевник flat pack"
+      ]
+    },
+    {
+      "name": "Походная чаша",
+      "matchType": "phrase",
+      "landing": "https://northmp.su/pokhodnaya-kostrovaya-chasha.html",
+      "keywords": [
+        "походная костровая чаша",
+        "походная костровая чаша купить",
+        "костровая чаша для похода",
+        "костровая чаша туристическая",
+        "походный очаг купить",
+        "мобильная костровая чаша"
+      ]
+    },
+    {
+      "name": "Разборная чаша",
+      "matchType": "phrase",
+      "landing": "https://northmp.su/razbornaya-kostrovaya-chasha.html",
+      "keywords": [
+        "разборная костровая чаша",
+        "разборная костровая чаша купить",
+        "костровая чаша flat pack",
+        "flat pack костровая чаша",
+        "разборный костровой очаг",
+        "складная костровая чаша"
+      ]
+    },
+    {
+      "name": "Кемпинг",
+      "matchType": "phrase",
+      "landing": "https://northmp.su/kostrovaya-chasha-dlya-kempinga.html",
+      "keywords": [
+        "костровая чаша для кемпинга",
+        "костровая чаша в багажник",
+        "очаг для автопутешествий",
+        "костровая чаша для автодома",
+        "выездной очаг купить",
+        "костровая чаша для стоянки"
+      ]
+    },
+    {
+      "name": "Категория (осторожно)",
+      "matchType": "phrase",
+      "landing": "https://northmp.su/kostrovye-chashi.html",
+      "note": "Дорогой трафик; узкие минус-слова обязательны",
+      "keywords": [
+        "костровые чаши",
+        "костровая чаша купить",
+        "костровые системы",
+        "костровой очаг купить",
+        "металлическая костровая чаша"
+      ]
+    },
+    {
+      "name": "Модели дома (разогрев)",
+      "matchType": "phrase",
+      "landing": "https://northmp.su/kostrovye-chashi.html",
+      "keywords": [
+        "пайкула костровая чаша",
+        "лесная свеча очаг",
+        "северный очаг костровая чаша",
+        "костровая чаша для террасы",
+        "костровой очаг для сада"
+      ]
+    }
+  ],
+  "minusKeywords": [
+    "чугун",
+    "чугунная",
+    "бесплатно",
+    "своими руками",
+    "чертеж",
+    "скачать",
+    "авито",
+    "б у",
+    "бу",
+    "вакансия",
+    "работа",
+    "ритуал",
+    "кладбище",
+    "камин",
+    "печь",
+    "барбекюшница кирпич",
+    "аренда"
+  ],
+  "organicPriority": [
+    "северное магическое место",
+    "северный кочевник костровая чаша",
+    "походная костровая чаша",
+    "разборная костровая чаша",
+    "костровая чаша для кемпинга",
+    "костровая система flat-pack",
+    "костровые чаши карелия"
+  ]
+}
